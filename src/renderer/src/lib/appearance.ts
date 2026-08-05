@@ -112,6 +112,13 @@ export function persistAppearance(patch: Partial<Appearance>): void {
   }
 }
 
+const APPEARANCE_CACHE_KEY = 'readflow:appearance'
+
+/** 把当前外观镜像到 localStorage，供下次启动在首帧前同步应用，消除「默认主题→切换」闪烁。 */
+export function cacheAppearance(a: Appearance): void {
+  try { localStorage.setItem(APPEARANCE_CACHE_KEY, JSON.stringify(a)) } catch { /* 配额/隐私模式忽略 */ }
+}
+
 /** 将外观配置应用到 document，立即生效。 */
 export function applyAppearance(a: Appearance): void {
   const root = document.documentElement
@@ -131,4 +138,21 @@ export function applyAppearance(a: Appearance): void {
   // 全局 UI 字体族：与「阅读字体」保持同一选择（系统配置里选的字体同步到菜单 / 设置等界面）
   root.style.setProperty('--font-ui', readingFontStack(a.fontFamily))
   root.style.setProperty('--reader-weight', String(FONT_WEIGHT_VALUE(a.fontWeight)))
+
+  // 镜像到 localStorage，下次启动首帧前由 bootAppearance 同步应用
+  cacheAppearance(a)
+}
+
+/**
+ * 启动早期同步应用：优先用上次持久化到 localStorage 的外观（与 DB 权威值一致），
+ * 在 React 首次渲染之前就把主题 / 卡片风格 / 字体变量铺好，彻底消除首屏闪烁。
+ * DB 的权威值仍会由 initAppearance 异步加载并再次覆盖（同时刷新缓存）。
+ */
+export function bootAppearance(): void {
+  let a: Appearance | null = null
+  try {
+    const raw = localStorage.getItem(APPEARANCE_CACHE_KEY)
+    if (raw) a = JSON.parse(raw) as Appearance
+  } catch { a = null }
+  applyAppearance(a ?? DEFAULT_APPEARANCE)
 }

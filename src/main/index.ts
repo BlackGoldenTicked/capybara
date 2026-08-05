@@ -240,6 +240,36 @@ function notifyRefresh() {
 function registerIpc() {
   const handlers: Record<string, (...args: never[]) => unknown> = {
     'app:version': () => app.getVersion(),
+    // 启动引导：一次性返回外观 / 音效 / 快捷键 / 开发者模式 / 布局 / 版本，把渲染进程启动时的多次
+    // settings:get 顺序往返合并为 1 次 IPC，缩短首屏耗时（app:bootstrap）
+    'app:bootstrap': (() => {
+      const g = (k: string) => getSetting(k)
+      const num = (k: string, d: number) => { const v = Number(g(k)); return Number.isFinite(v) && v !== 0 ? v : d }
+      const bool = (k: string) => g(k) === '1'
+      const theme = g('theme'); const cardStyle = g('card_style')
+      const weight = g('font_weight') || 'normal'
+      const appearance = {
+        theme: (['system', 'light', 'dark'].includes(theme ?? '') ? theme : 'system') as 'system' | 'light' | 'dark',
+        cardStyle: (cardStyle && cardStyle !== 'none' ? cardStyle : 'none') as string,
+        fontFamily: g('font_family') ?? '',
+        fontScale: Math.min(2, Math.max(0.7, Number(g('font_scale')) || 1)),
+        fontWeight: (['thin', 'normal', 'bold'].includes(weight) ? weight : 'normal') as string
+      }
+      return {
+        appearance,
+        soundEnabled: bool('sound_enabled'),
+        soundVolume: Number(g('sound_volume')) || 0.7,
+        shortcuts: g('shortcuts'),
+        developerMode: bool('developer_mode'),
+        layout: {
+          sideW: num('side_w', 196),
+          listW: num('list_w', 320),
+          feedW: num('feed_w', 188),
+          sideCollapsed: bool('side_collapsed')
+        },
+        version: app.getVersion()
+      }
+    }) as never,
     // 用系统默认浏览器打开链接（仅放行 http/https，避免伪协议风险）
     'shell:openExternal': ((url: string) => {
       try {

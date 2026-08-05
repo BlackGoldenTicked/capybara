@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, RepoInfo, DiscoveredFeed, NetLogEntry } from './env'
-import { loadAppearance, applyAppearance, persistAppearance, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
+import { applyAppearance, persistAppearance, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
 import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/shortcuts'
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
 
@@ -411,16 +411,19 @@ export const useStore = create<State>((set, get) => ({
   },
 
   initAppearance: async () => {
-    const a = await loadAppearance()
-    const enabled = (await window.readflow.invoke('settings:get', 'sound_enabled') as string) === '1'
-    const volRaw = await window.readflow.invoke('settings:get', 'sound_volume') as string
-    const vol = Number(volRaw) || 0.7
-    const shortcutsRaw = await window.readflow.invoke('settings:get', 'shortcuts') as string
-    const devMode = (await window.readflow.invoke('settings:get', 'developer_mode') as string) === '1'
+    // 一次性拉取启动所需的全部设置（外观 / 音效 / 快捷键 / 开发者模式），把原先多次顺序 IPC 合并为 1 次，缩短首屏
+    const boot = await window.readflow.invoke('app:bootstrap') as {
+      appearance: Appearance
+      soundEnabled: boolean
+      soundVolume: number
+      shortcuts?: string | null
+      developerMode: boolean
+    }
+    const a = boot.appearance
     applyAppearance(a)
-    audioSetEnabled(enabled)
-    audioSetVolume(vol)
-    set({ appearance: a, soundEnabled: enabled, soundVolume: vol, shortcuts: parseShortcuts(shortcutsRaw), developerMode: devMode })
+    audioSetEnabled(boot.soundEnabled)
+    audioSetVolume(boot.soundVolume)
+    set({ appearance: a, soundEnabled: boot.soundEnabled, soundVolume: boot.soundVolume, shortcuts: parseShortcuts(boot.shortcuts), developerMode: boot.developerMode })
     // 网络诊断日志：开发者模式下持续追加，供应用内浮动面板显示（最多保留 300 条）
     window.readflow.onNetLog((entry) => {
       if (!get().developerMode) return
