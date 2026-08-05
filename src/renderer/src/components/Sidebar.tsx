@@ -112,14 +112,20 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
 
       {/* 全部（常驻，不折叠）：未读收件箱 + 三个分类，组内不加分隔线 */}
       <nav className="nav-group">
+        {/* 「全部」分组标题：补左侧图标列，使标题文字与下方条目文字在同一基线对齐 */}
         <div className={`nav-group-title ${screen === 'library' && view === 'all' && !activeSourceType ? 'active' : ''}`}
-          onClick={() => setView('all')}>
+          role="button" tabIndex={0}
+          onClick={() => setView('all')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView('all') } }}>
+          <span className="side-ico"><Icon name="all" size={16} /></span>
           <span>全部</span>
           <span className="count">{counts['all'] || ''}</span>
         </div>
         {COLLECT.map((n) => (
-          <div key={n.key} className={`side-item ${screen === 'library' && view === n.key && !activeSourceType ? 'active' : ''}`}
-            onClick={() => setView(n.key)}>
+          <div key={n.key} role="button" tabIndex={0}
+            className={`side-item ${screen === 'library' && view === n.key && !activeSourceType ? 'active' : ''}`}
+            onClick={() => setView(n.key)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView(n.key) } }}>
             <span className="side-ico"><Icon name={n.icon} size={16} /></span>
             <span>{n.label}</span>
             <span className="count">{counts[n.key] || ''}</span>
@@ -130,7 +136,9 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
       <div className="nav-sep" />
 
       {/* GitHub ★（常驻，不折叠） */}
-      <div className={`side-item ${activeSourceType === 'github' ? 'active' : ''}`} onClick={() => setSourceType('github')}>
+      <div className={`side-item ${activeSourceType === 'github' ? 'active' : ''}`} role="button" tabIndex={0}
+        onClick={() => setSourceType('github')}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSourceType('github') } }}>
         <span className="side-ico"><Icon name="github" size={16} /></span>
         <span>GitHub ★</span>
         <span className="count">{sourceCounts['github'] || ''}</span>
@@ -139,7 +147,9 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
       <div className="nav-sep" />
 
       {/* Twitter 书签（常驻，不折叠） */}
-      <div className={`side-item ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} onClick={() => setSourceType('x_bookmark')}>
+      <div className={`side-item ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} role="button" tabIndex={0}
+        onClick={() => setSourceType('x_bookmark')}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSourceType('x_bookmark') } }}>
         <span className="side-ico"><Icon name="twitter" size={16} /></span>
         <span>书签</span>
         <span className="count">{sourceCounts['x_bookmark'] || ''}</span>
@@ -180,7 +190,9 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
       </Section>
 
       {/* 系统设置（底部，常驻，不折叠） */}
-      <div className={`side-item sys-item ${screen === 'settings' ? 'active' : ''}`} onClick={() => setScreen('settings')}>
+      <div className={`side-item sys-item ${screen === 'settings' ? 'active' : ''}`} role="button" tabIndex={0}
+        onClick={() => setScreen('settings')}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setScreen('settings') } }}>
         <span className="side-ico"><Icon name="settings" size={16} /></span>
         <span>系统设置</span>
       </div>
