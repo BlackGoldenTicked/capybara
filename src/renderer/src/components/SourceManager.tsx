@@ -106,19 +106,27 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
 
           {rssMethod === 'add' && (
             <div className="src-form">
-              <label className="src-row">源名称
-                <input placeholder="如：前端周刊" value={name} onChange={(e) => setName(e.target.value)} />
-              </label>
-              <label className="src-row">URL
-                <input placeholder="RSS feed 地址" value={url} onChange={(e) => setUrl(e.target.value)} />
-              </label>
-              <label className="src-row">刷新频率
-                <span className="src-unit">每</span>
-                <input type="number" min={5} value={schedule} onChange={(e) => setSchedule(Number(e.target.value))} className="src-num" />
-                <span className="src-unit">分钟</span>
-              </label>
-              <div className="src-actions">
-                <button onClick={() => void submit()}>添加</button>
+              <div className="src-field">
+                <label htmlFor="rss-name">源名称</label>
+                <input id="rss-name" placeholder="如：前端周刊" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="src-field">
+                <label htmlFor="rss-url">URL</label>
+                <input id="rss-url" placeholder="RSS feed 地址" value={url} onChange={(e) => setUrl(e.target.value)} />
+              </div>
+              <div className="src-field">
+                <label htmlFor="rss-schedule">刷新频率</label>
+                <div className="src-field-cell">
+                  <span className="src-unit">每</span>
+                  <input id="rss-schedule" type="number" min={5} value={schedule} onChange={(e) => setSchedule(Number(e.target.value))} className="src-num" />
+                  <span className="src-unit">分钟</span>
+                </div>
+              </div>
+              <div className="src-field src-actions-field">
+                <div aria-hidden="true" />
+                <div className="src-actions">
+                  <button onClick={() => void submit()}>添加</button>
+                </div>
               </div>
             </div>
           )}
@@ -163,17 +171,22 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
           <p className="src-label">GitHub Star</p>
           <p className="src-hint">填入 GitHub 用户名，拉取你 starred 的仓库作为阅读条目（公开 API 约 60 次/小时，填入 Token 可提升额度）。</p>
           <div className="src-grid-2">
-            <label className="src-row">用户名
-              <input placeholder="例如 torvalds" value={ghUser} onChange={(e) => setGhUser(e.target.value)} />
-            </label>
-            <label className="src-row">GitHub Token
-              <input type="password" placeholder="ghp_...（可选）" value={tokenInput} onChange={(e) => setTokenInput(e.target.value)} />
-            </label>
+            <div className="src-field">
+              <label htmlFor="github-user">用户名</label>
+              <input id="github-user" placeholder="例如 torvalds" value={ghUser} onChange={(e) => setGhUser(e.target.value)} />
+            </div>
+            <div className="src-field">
+              <label htmlFor="github-token">GitHub Token</label>
+              <input id="github-token" type="password" placeholder="ghp_...（可选）" value={tokenInput} onChange={(e) => setTokenInput(e.target.value)} />
+            </div>
           </div>
-          <div className="src-actions">
-            <button onClick={() => void saveToken()}>保存配置</button>
-            <button onClick={() => void fetchStars()}><Icon name="github" size={14} /> 拉取 Star</button>
-            <span className="src-hint src-grow">{ghMsg || (tokenSaved ? '已设置 Token' : '未设置 Token（公开 API 速率较低）')}</span>
+          <div className="src-field src-actions-field">
+            <div aria-hidden="true" />
+            <div className="src-actions">
+              <button onClick={() => void saveToken()}>保存配置</button>
+              <button onClick={() => void fetchStars()}><Icon name="github" size={14} /> 拉取 Star</button>
+              <span className="src-hint src-grow">{ghMsg || (tokenSaved ? '已设置 Token' : '未设置 Token（公开 API 速率较低）')}</span>
+            </div>
           </div>
         </div>
 
