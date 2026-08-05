@@ -1,0 +1,99 @@
+export interface Item {
+  id: number
+  source_type: 'rss' | 'x' | 'wechat' | 'tophub' | 'github' | 'x_bookmark' | 'manual'
+  source_name: string
+  url: string
+  title: string
+  author: string
+  summary: string
+  content_text: string
+  content_html: string
+  cover_path: string
+  status: 'inbox' | 'later' | 'favorite' | 'archived'
+  is_read: number
+  published_at: string
+  fetched_at: string
+}
+
+/** 列表投影行：列表/卡片只用到这些列（不含 content_text / content_html，按需通过 items:get 取详情） */
+export interface ItemRow {
+  id: number
+  source_type: 'rss' | 'x' | 'wechat' | 'tophub' | 'github' | 'x_bookmark' | 'manual'
+  source_name: string
+  url: string
+  title: string
+  author: string
+  summary: string
+  cover_url: string
+  cover_path: string
+  status: 'inbox' | 'later' | 'favorite' | 'archived'
+  is_read: number
+  published_at: string
+  fetched_at: string
+}
+
+export type View = 'rss' | 'read' | 'later' | 'favorite' | 'archived' | 'all'
+export type Screen = 'library' | 'board' | 'settings'
+
+export interface Feed { id: number; type: string; name: string; url: string; schedule_min: number; last_fetched_at: string; error_count: number; last_error: string; enabled: number; etag: string; last_modified: string }
+export interface Board { id: number; name: string; updated_at: string }
+
+/** 白板卡片：独立持久化，按 board_id 归属。kind 决定内容与可承载的附件类型。 */
+export type CardKind = 'ref' | 'text' | 'link' | 'image' | 'file' | 'video'
+export interface Card {
+  id: number
+  board_id: number
+  kind: CardKind
+  item_id: number | null
+  x: number; y: number; w: number; h: number
+  title: string; body: string; payload: string
+  created_at: string
+}
+export interface CardPayload {
+  file?: string   // 本地附件在 board-assets 内的文件名（board-asset://file 访问）
+  name?: string   // 原始文件名
+  size?: number
+  mime?: string
+  url?: string    // 链接 / 远程图片视频地址
+  note?: string
+}
+
+/** 白板卡片之间的连线关系 */
+export interface BoardLink { id: number; board_id: number; from_id: number; to_id: number; label: string }
+
+/** GitHub RSS 发现：高星仓库 + 其 README 中分享的订阅源 */
+export interface RepoInfo {
+  full_name: string
+  name: string
+  html_url: string
+  description: string | null
+  stargazers_count: number
+  language: string | null
+  default_branch: string
+  owner: string
+}
+export interface DiscoveredFeed { url: string; title: string }
+
+/** 网络诊断日志条目（开发者模式面板用） */
+export interface NetLogEntry {
+  time: number
+  url: string
+  method?: string
+  status: number
+  ms: number
+  bytes: number
+  ok: boolean
+  error: string
+  source?: string
+}
+
+interface ReadflowBridge {
+  invoke(channel: string, ...args: unknown[]): Promise<unknown>
+  onSourcesUpdated(cb: () => void): void
+  onNetLog(cb: (entry: NetLogEntry) => void): void
+  getPathForFile(file: File): string
+}
+
+declare global {
+  interface Window { readflow: ReadflowBridge }
+}

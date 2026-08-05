@@ -1,0 +1,95 @@
+import DOMPurify from 'dompurify'
+
+/**
+ * 把 Readability 抽出的原始正文 HTML 规整为「统一、适配暗色主题」的干净排版。
+ *
+ * 采集侧（main / readability.ts）用 linkedom 抽取，会保留源站内联 style/class
+ * （只删了 <style>/<script> 标签）。若直接渲染：
+ *   - 内联 style（颜色/边距/宽度）会破坏暗色主题与对比度；
+ *   - 懒加载图（data-src / data-original）src 为空导致图片不显示；
+ *   - 相对地址、防盗链导致死图。
+ * 这里在渲染端统一清洗 + 规整，让 CSS 完全掌控排版。
+ */
+
+// 懒加载图常见的真实地址承载属性（按优先级）
+const LAZY_SRC_ATTRS = ['data-src', 'data-original', 'data-lazy-src', 'data-true-src', 'data-srcset', 'data-lazy-srcset']
+// 1px 占位 gif / svg 占位（懒加载图常见的空 src）
+const PLACEHOLDER_RE = /^(data:image\/(gif|png|svg\+xml);base64,)/i
+
+function isPlaceholder(src: string | null): boolean {
+  if (!src) return true
+  return PLACEHOLDER_RE.test(src) || src.trim() === ''
+}
+
+/** 清洗并规整一段正文 HTML，返回可直接 dangerouslySetInnerHTML 的安全字符串。 */
+export function renderArticleHtml(raw: string): string {
+  if (!raw || !raw.trim()) return ''
+
+  let doc: Document
+  try {
+    doc = new DOMParser().parseFromString(raw, 'text/html')
+  } catch {
+    return DOMPurify.sanitize(raw)
+  }
+
+  // 1) 剥离所有内联 style / class / 无用 data-*（保留 data-zoom 供点击放大）
+  doc.querySelectorAll('*').forEach((el) => {
+    el.removeAttribute('style')
+    el.removeAttribute('class')
+    Array.from(el.attributes).forEach((attr) => {
+      const n = attr.name.toLowerCase()
+      if (n.startsWith('data-') && n !== 'data-zoom') el.removeAttribute(attr.name)
+    })
+  })
+
+  // 2) 图片：懒加载回填 + 清除尺寸属性（交给 CSS 自适应）+ 懒加载 / 防盗链属性
+  doc.querySelectorAll('img').forEach((img) => {
+    if (isPlaceholder(img.getAttribute('src'))) {
+      for (const a of LAZY_SRC_ATTRS) {
+        const v = img.getAttribute(a)?.trim()
+        if (v && !v.startsWith('data:')) { img.setAttribute('src', v); break }
+      }
+    }
+    img.removeAttribute('width')
+    img.removeAttribute('height')
+    img.setAttribute('loading', 'lazy')
+    img.setAttribute('decoding', 'async')
+    img.setAttribute('referrerpolicy', 'no-referrer')
+    img.setAttribute('data-zoom', '1')
+  })
+
+  // 3) 链接：加安全属性（点击在渲染端统一用系统浏览器打开）
+  doc.querySelectorAll('a[href]').forEach((a) => {
+    a.setAttribute('rel', 'noopener noreferrer')
+    a.setAttribute('target', '_blank')
+  })
+
+  // 4) iframe（嵌入视频 / 外链）：有安全风险且易破坏布局，移除并替换为可点链接
+  doc.querySelectorAll('iframe').forEach((f) => {
+    const src = f.getAttribute('src')?.trim() ?? ''
+    const p = doc.createElement('p')
+    p.className = 'embed-fallback'
+    if (src && /^https?:/i.test(src)) {
+      const a = doc.createElement('a')
+      a.href = src
+      a.textContent = '查看嵌入内容（视频 / 外链）'
+      p.appendChild(a)
+    } else {
+      p.textContent = '（已省略嵌入内容）'
+    }
+    f.replaceWith(p)
+  })
+
+  // 5) 删除空段落 / 纯空白容器（Readability 常残留空 <p><div>）
+  doc.querySelectorAll('p, div, section, article, span').forEach((el) => {
+    const hasMedia = el.querySelector('img, video, picture, figure, blockquote, pre, table, a, iframe')
+    if (!hasMedia && !(el.textContent ?? '').trim()) el.remove()
+  })
+
+  const body = doc.body?.innerHTML ?? ''
+  return DOMPurify.sanitize(body, {
+    FORBID_TAGS: ['style', 'script', 'noscript', 'iframe', 'form', 'input', 'button', 'textarea', 'select', 'canvas'],
+    FORBID_ATTR: ['style', 'class', 'id', 'onerror', 'onload', 'onclick', 'onmouseover', 'onerror'],
+    ADD_ATTR: ['target', 'rel', 'loading', 'decoding', 'referrerpolicy', 'data-zoom'],
+  })
+}

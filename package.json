@@ -1,0 +1,90 @@
+{
+  "name": "readflow",
+  "version": "0.7.21",
+  "private": true,
+  "description": "ReadFlow - personal knowledge pipeline desktop client",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "bg": "node build/gen-bg.mjs",
+    "dmg": "python3 build/build-dmg.py",
+    "dist": "electron-vite build && electron-builder"
+  },
+  "build": {
+    "appId": "app.readflow",
+    "productName": "ReadFlow",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ],
+      "hardenedRuntime": false
+    },
+    "dmg": {
+      "background": "build/dmg-background.png",
+      "iconSize": 128,
+      "iconTextSize": 13,
+      "window": {
+        "width": 660,
+        "height": 440
+      },
+      "contents": [
+        {
+          "x": 165,
+          "y": 150,
+          "type": "file"
+        },
+        {
+          "x": 455,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "extraResources": [
+      {
+        "from": "extension",
+        "to": "extension"
+      }
+    ]
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "@tiptap/core": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
+    "cheerio": "^1.2.0",
+    "dompurify": "^3.4.13",
+    "linkedom": "^0.18.13",
+    "lucide-react": "^1.28.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-window": "^1.8.11",
+    "rss-parser": "^3.13.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^37.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "sharp": "^0.35.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

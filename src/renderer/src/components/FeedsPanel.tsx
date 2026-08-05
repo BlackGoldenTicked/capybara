@@ -1,0 +1,70 @@
+import { useState } from 'react'
+import { useStore } from '../store'
+import { feedColor } from '../lib/feedColor'
+import { Icon } from './icons'
+import type { CSSProperties } from 'react'
+
+/**
+ * 订阅源分类栏（第二栏）：按 RSS 订阅源筛选信息流。
+ * 每一行末尾放一个刷新 icon（hover 才明显），点击只刷新该源，
+ * 失败时显示该源真实的 last_error（hover 看完整）。
+ */
+export function FeedsPanel({ width = 188 }: { width?: number }) {
+  const { feeds, activeFeed, setActiveFeed, refreshFeed, refreshAll } = useStore()
+  // 仅列出 RSS 订阅源：其采集器会把 feed.name 写入 item.source_name，筛选才可靠
+  const rssFeeds = feeds.filter((f) => f.type === 'rss')
+
+  const style: CSSProperties = { width, flexShrink: 0 }
+  const [refreshingId, setRefreshingId] = useState<number | 'all' | null>(null)
+  const refreshOne = async (id: number) => {
+    setRefreshingId(id)
+    try { await refreshFeed(id) } finally { setRefreshingId(null) }
+  }
+  const refreshAllFeeds = async () => {
+    setRefreshingId('all')
+    try { await refreshAll() } finally { setRefreshingId(null) }
+  }
+
+  return (
+    <aside className="feeds-panel" style={style}>
+      <div className="feeds-head">
+        <span>订阅源</span>
+        <button
+          className={`feed-refresh-all ${refreshingId === 'all' ? 'spinning' : ''}`}
+          title="立即刷新全部源"
+          onClick={() => void refreshAllFeeds()}>
+          <Icon name="refresh" size={13} />
+        </button>
+      </div>
+      <div className="feeds-list">
+        <button
+          className={`feed-item ${activeFeed == null ? 'active' : ''}`}
+          onClick={() => setActiveFeed(null)}>
+          <span className="feed-dot all" />
+          <span className="feed-name">全部</span>
+        </button>
+        {rssFeeds.map((f) => {
+          const err = f.error_count > 0
+          return (
+            <div
+              key={f.id}
+              className={`feed-item ${activeFeed === f.name ? 'active' : ''} ${err ? 'err' : ''}`}
+              title={err ? `${f.name}\n${f.last_error || '未知错误'}` : f.name}
+              onClick={() => setActiveFeed(activeFeed === f.name ? null : f.name)}>
+              <span className="feed-dot" style={{ background: feedColor(f.name) }} />
+              <span className="feed-name">{f.name}</span>
+              {err && <span className="feed-err-dot" aria-label="抓取失败" />}
+              <button
+                className={`feed-refresh ${refreshingId === f.id ? 'spinning' : ''}`}
+                title="只刷新此源"
+                onClick={(e) => { e.stopPropagation(); void refreshOne(f.id) }}>
+                <Icon name="refresh" size={12} />
+              </button>
+            </div>
+          )
+        })}
+        {rssFeeds.length === 0 && <p className="feeds-empty">暂无 RSS 订阅源</p>}
+      </div>
+    </aside>
+  )
+}
