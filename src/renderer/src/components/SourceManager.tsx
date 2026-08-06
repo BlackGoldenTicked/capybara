@@ -84,6 +84,9 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
 
   const rssCount = feeds.filter((f) => f.type === 'rss' || f.type === 'tophub').length
 
+  // 错误详情气泡：记录抓取失败信息，点击小图标查看（开发者排查用）
+  const [errId, setErrId] = useState<number | null>(null)
+
   return (
     <section className="sources">
       <div className="feed-header"><span className="title">来源管理</span><span className="keys">RSS / GitHub Star / Twitter 收藏</span></div>
@@ -165,6 +168,27 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
               <span className={`badge ${f.type}`}>{f.type}</span>
               <span className="fr-name">{f.name || f.url}</span>
               <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '无法获取数据') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
+              {f.error_count > 0 && (
+                <span className="feed-err-wrap">
+                  <button className="feed-err-info" title="查看错误详情" aria-label="查看错误详情"
+                    onClick={() => setErrId(errId === f.id ? null : f.id)}>
+                    <Icon name="info" size={14} />
+                  </button>
+                  {errId === f.id && (
+                    <div className="feed-err-pop" onClick={(e) => e.stopPropagation()}>
+                      <div className="feed-err-head">
+                        <span>抓取错误详情</span>
+                        <button className="feed-err-x" onClick={() => setErrId(null)}>×</button>
+                      </div>
+                      <div className="feed-err-row"><span className="feed-err-k">源名称</span><span className="feed-err-v">{f.name || f.url}</span></div>
+                      <div className="feed-err-row"><span className="feed-err-k">URL</span><span className="feed-err-v feed-err-url">{f.url}</span></div>
+                      <div className="feed-err-row"><span className="feed-err-k">失败次数</span><span className="feed-err-v">{f.error_count}</span></div>
+                      <div className="feed-err-row"><span className="feed-err-k">最后抓取</span><span className="feed-err-v">{f.last_fetched_at || '—'}</span></div>
+                      <div className="feed-err-msg">{f.last_error || '（无具体错误信息）'}</div>
+                    </div>
+                  )}
+                </span>
+              )}
               <button onClick={() => void refreshFeed(f.id)}>刷新</button>
               <button onClick={() => void deleteFeed(f.id)}>删除</button>
             </div>

@@ -777,3 +777,38 @@ export function saveDocument(id: number, content_json: string, markdown_cache: s
     .run(content_json, markdown_cache, title, id)
 }
 export function deleteDocument(id: number) { db.prepare('DELETE FROM documents WHERE id = ?').run(id) }
+
+// ===================== 数据库内省（开发者模式 / 数据查看） =====================
+// 仅列出用户表（排除 sqlite_ 内部表），列结构来自 PRAGMA table_info。
+// dbRows 的表名强制走白名单校验，杜绝 SQL 注入。
+export interface TableColumn { name: string; type: string; pk: boolean }
+export interface TableInfo { name: string; columns: TableColumn[]; rowCount: number }
+
+export function dbTables(): TableInfo[] {
+  const names = (db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`).all() as Array<{ name: string }>).map((r) => r.name)
+  return names.map((name) => {
+    const cols = db.prepare(`PRAGMA table_info(${quoteIdent(name)})`).all() as Array<{ name: string; type: string; pk: number }>
+    const n = (db.prepare(`SELECT COUNT(*) c FROM ${quoteIdent(name)}`).get() as { c: number }).c
+    return {
+      name,
+      columns: cols.map((c) => ({ name: c.name, type: c.type || '', pk: c.pk === 1 })),
+      rowCount: n
+    }
+  })
+}
+
+export function dbRows(table: string, limit = 100, offset = 0): { columns: string[]; rows: Array<Record<string, unknown>> } {
+  const allowed = new Set(dbTables().map((t) => t.name))
+  if (!allowed.has(table)) throw new Error('未知或受保护的表：' + table)
+  const l = Math.max(1, Math.min(1000, Math.floor(limit)))
+  const o = Math.max(0, Math.floor(offset))
+  const cols = db.prepare(`PRAGMA table_info(${quoteIdent(table)})`).all() as Array<{ name: string }>
+  const rows = db.prepare(`SELECT * FROM ${quoteIdent(table)} LIMIT ? OFFSET ?`).all(l, o) as Array<Record<string, unknown>>
+  return { columns: cols.map((c) => c.name), rows }
+}
+
+/** 安全引用标识符：双重校验，仅放行 [A-Za-z0-9_]，其余一律拒绝（PRAGMA/表名不接收外部参数绑定） */
+function quoteIdent(name: string): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error('非法标识符：' + name)
+  return '"' + name.replace(/"/g, '') + '"'
+}

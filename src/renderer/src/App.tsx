@@ -216,6 +216,7 @@ function NetPanel() {
     <div className="net-panel">
       <div className="net-head">
         <span>网络诊断{netLog.length ? ` · ${netLog.length} 条` : ''}{failed ? <b className="net-bad"> · {failed} 失败</b> : ''}</span>
+        <button className="net-db" title="查看数据库" onClick={() => useStore.getState().openSettings('data')}>数据库查看 →</button>
         <button className="net-close" title="关闭开发者模式" onClick={() => setDeveloperMode(false)}>×</button>
       </div>
       <div className="net-body">

@@ -3,6 +3,7 @@ import { useStore, type SettingsTab } from '../store'
 import { Icon, type IconName } from './icons'
 import { SourceManager } from './SourceManager'
 import { DiscoverView } from './DiscoverView'
+import { DbView } from './DbView'
 import {
   THEME_OPTIONS, CARD_STYLES,
   type ThemeMode, type CardStyleKey, type FontWeight
@@ -19,7 +20,8 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'sources', label: '来源管理', icon: 'book' },
   { key: 'discover', label: '发现 RSS', icon: 'search' },
   { key: 'actions', label: '操作', icon: 'refresh' },
-  { key: 'shortcuts', label: '快捷键', icon: 'keyboard' }
+  { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
+  { key: 'data', label: '数据查看', icon: 'book' }
 ]
 
 export function SettingsView() {
@@ -41,6 +43,7 @@ export function SettingsView() {
         {settingsTab === 'discover' && <DiscoverView />}
         {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
         {settingsTab === 'shortcuts' && <ShortcutsTab />}
+        {settingsTab === 'data' && <DbView />}
       </div>
     </section>
   )

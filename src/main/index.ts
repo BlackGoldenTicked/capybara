@@ -9,7 +9,8 @@ import {
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
   listLinks, addLink, deleteLink, updateLink,
   getSetting, setSetting, sourceCounts, getDbFile,
-  storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint
+  storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint,
+  dbTables, dbRows
 } from './db'
 import { startIngestServer } from './ingest'
 import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
@@ -333,6 +334,10 @@ function registerIpc() {
       else mainWindow.webContents.openDevTools({ mode: 'detach' })
     }) as never,
     'settings:purge': ((days: number, max: number) => purgeOldItems(days, max)) as never,
+
+    // ===== 数据库内省（开发者模式 / 数据查看）：列出表结构与数据，表名白名单防注入 =====
+    'db:tables': (() => dbTables()) as never,
+    'db:rows': ((table: string, limit: number, offset: number) => dbRows(table, limit, offset)) as never,
 
     'boards:list': (() => listBoards()) as never,
     'boards:create': ((name: string) => createBoard(name)) as never,

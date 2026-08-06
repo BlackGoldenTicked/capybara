@@ -18,7 +18,8 @@ const validChannels = [
   'github:fetchStars', 'twitter:importBookmarks', 'items:sourceCounts',
   'feeds:importOpml',
   'discover:repos', 'discover:feeds',
-  'sync:backup', 'devtools:toggle'
+  'sync:backup', 'devtools:toggle',
+  'db:tables', 'db:rows'
 ] as const
 
 type Channel = (typeof validChannels)[number]
