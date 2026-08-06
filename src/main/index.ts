@@ -9,10 +9,10 @@ import {
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
   listLinks, addLink, deleteLink, updateLink,
   getSetting, setSetting, sourceCounts,
-  storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems
+  storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint
 } from './db'
 import { startIngestServer } from './ingest'
-import { startScheduler, refreshFeed, runDue } from './sources/scheduler'
+import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
 import { extractArticle } from './sources/readability'
 import { backupWebDAV } from './sync'
 import { searchRssRepos, extractFeeds } from './sources/githubDiscover'
@@ -294,7 +294,9 @@ function registerIpc() {
     'feeds:addMany': ((list: Array<{ type: string; name: string; url: string; schedule_min?: number }>) => addFeeds(list)) as never,
     'feeds:delete': ((id: number) => deleteFeed(id)) as never,
     'feeds:refresh': (async (id: number) => { const n = await refreshFeed(id); notifyRefresh(); return n }) as never,
-    'sources:refreshAll': (async () => { await runDue(); notifyRefresh(); return true }) as never,
+    // 强制刷新全部已启用订阅源（忽略到期判断），用于「全部刷新」按钮；
+    // 后台定时仍走 runDue（仅到期源），二者职责分离（修复 RSS 逻辑：全部刷新=真正全刷）
+    'sources:refreshAll': (async () => { await refreshAllFeeds(); notifyRefresh(); return true }) as never,
 
     'items:quickAdd': (async (url: string) => {
       const item = addItem({ source_type: 'manual', source_name: '手动收集', url, title: url })
@@ -452,3 +454,6 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
+
+// 退出前截断 WAL，避免 .db-wal 无限增长、下次启动回放变慢（修复 RSS 逻辑：重启/更新后体验）
+app.on('before-quit', () => { try { checkpoint() } catch { /* */ } })

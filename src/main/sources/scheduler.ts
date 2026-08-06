@@ -56,6 +56,32 @@ export async function runDue(onDone?: () => void) {
   }
 }
 
+/** 强制刷新全部已启用订阅源（忽略到期判断），供「全部刷新」按钮使用。 */
+export async function refreshAllFeeds(onDone?: () => void) {
+  if (running) return
+  running = true
+  try {
+    const feeds = listFeeds().filter((f) => f.enabled !== 0)
+    await pool(feeds, CONCURRENCY, async (feed) => {
+      try {
+        switch (feed.type) {
+          case 'rss': await fetchRssFeed(feed); break
+          case 'tophub': await fetchTopHub(feed); break
+          case 'github': await fetchGithubStars(feed); break
+        }
+      } catch (err) {
+        const msg = extractError(err, feed.url)
+        console.warn(`[refreshAllFeeds] ${feed.type} ${feed.name} 失败:`, msg)
+        markFeedFetched(feed.id, true, msg)
+      }
+    })
+  } finally {
+    running = false
+    try { enforceRetention(RETENTION_MAX) } catch { /* */ }
+    onDone?.()
+  }
+}
+
 export async function refreshFeed(id: number): Promise<number> {
   const feed = listFeeds().find((f) => f.id === id)
   if (!feed) return 0

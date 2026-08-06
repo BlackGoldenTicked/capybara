@@ -398,7 +398,12 @@ export function listFeeds(): Feed[] {
   return db.prepare('SELECT * FROM feeds ORDER BY created_at DESC').all() as unknown as Feed[]
 }
 export function addFeed(f: { type: string; name: string; url: string; schedule_min?: number; config_json?: string }): Feed {
-  const r = db.prepare('INSERT INTO feeds (type, name, url, schedule_min, config_json) VALUES (?, ?, ?, ?, ?)')
+  // 幂等：相同 url 已存在时返回已有源，避免 UNIQUE(url) 约束抛错（手动添加与 Discover 批量行为一致）
+  if (feedExists(f.url)) {
+    const existing = listFeeds().find((x) => x.url === f.url)
+    if (existing) return existing
+  }
+  const r = db.prepare('INSERT OR IGNORE INTO feeds (type, name, url, schedule_min, config_json) VALUES (?, ?, ?, ?, ?)')
     .run(f.type, f.name, f.url, f.schedule_min ?? 120, f.config_json ?? '')
   return { id: Number(r.lastInsertRowid), type: f.type, name: f.name, url: f.url, config_json: f.config_json ?? '', schedule_min: f.schedule_min ?? 120, last_fetched_at: '', error_count: 0, last_error: '', enabled: 1, etag: '', last_modified: '' }
 }

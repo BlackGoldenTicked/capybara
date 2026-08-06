@@ -304,6 +304,7 @@ readflow/
 - **v0.7.24** 来源管理页表单布局对齐（处女座友好）：① 手动添加 RSS / GitHub Star 的 label 与输入框改为固定 92px 右对齐 label 列 + 1fr 输入列的 Grid，所有输入框左边缘严格对齐；② 「每 120 分钟」与单位文字和数字输入框在同一基线；③ 按钮行与上方输入框左边缘对齐（用空 label 列占位）；④ 统一 button 与 input 的 `min-height: 30px`，消除按钮/输入框高度不一致；⑤ `src-actions` 内带图标的按钮改为 `inline-flex` + `gap`，图标与文字垂直居中。
 - **v0.7.25** 信息流分页加载（翻页浏览历史）：① `db.ts` 抽出 `buildListWhere`，新增 `listItemsPage(view, search, sourceType, sourceName, page, pageSize)` 与 IPC `items:listPage`（每页 15 条，`LIMIT/OFFSET` 分页）；② store 新增 `itemsPage`/`itemsDone`/`itemsLoadingMore` 状态，`load()` 改为加载首页并重置分页，`loadMoreItems()` 追加下一页（去重、末页自动标记 `itemsDone`）；③ ItemList 监听 `FixedSizeList` 滚动，距底部 0.8 行内自动触发加载，底部固定 44px 状态栏显示「已显示 N 条 · 滚动到底部加载更多 / 加载中…（accent 旋转环）/ 已显示全部 N 条」。选中某 RSS 订阅源后可一路翻到该源全部历史条目，不再静止在初始 15 条。
 - **v0.7.26** UI 打磨——Discover（RSS 发现）仓库卡片紧凑化：折叠态 `min-height` 由 400px 降为 **200px**（原内容仅约 100px，下方大片留白），`min-width` 由 300px 增至 **350px**（按需求 +50），网格列 `minmax(300px,1fr)` → `minmax(350px,1fr)`、容器 `max-width` 1200 → **1260px**，卡片更宽、每行列数自然减少；展开（拉出 README 解析的 RSS 源列表）仍按内容自然增高。另加窄屏 `@media (max-width:760px)` 兜底，避免 min 350 在极窄窗口横向溢出。
+- **v0.7.27** 重构 RSS 数据流程逻辑（结合完整流程图审查）：①「全部刷新」改为**强制刷新全部已启用源**（`refreshAllFeeds`，忽略到期判断），后台定时仍走 `runDue`（仅到期源），职责分离——此前「全部刷新」因到期限制对刚抓过的源点了没反应；② 新增 RSS **添加即抓取**（store.addFeed 捕获新源 id 立即 `refreshFeed`，无需等 ≤60s 调度），Discover 一键批量添加后也强制刷新全部；③ `feeds:add` 改为**幂等**（UNIQUE(url) 冲突不再抛错，返回已有源），手动添加重复源会提示「已存在，已跳过」，与 Discover 批量行为一致；④ 退出前 `checkpoint()` 截断 WAL，避免 `.db-wal` 无限增长、重启/更新后启动回放变慢。
 
 ---
 
@@ -313,4 +314,4 @@ readflow/
 - **X 书签**走本地文件导入（X 官方读 Bookmark 需付费 API）；浏览器扩展（`extension/`）本体已打包但未联调。
 - **WebDAV 备份** `sync.ts` 结构就绪，需在「系统配置」补充入口并实测。
 - **国际源**（CNBC/Bloomberg/Investing）在大陆常需 VPN，失败会如实显示在「无法获取数据」与开发者网络面板。
-- 参考：`DESIGN.md` 为早期蓝图，本文档以 v0.7.26 实际代码为准；后续里程碑（白板性能、写作闭环、云同步、自动更新）按计划推进。
+- 参考：`DESIGN.md` 为早期蓝图，本文档以 v0.7.27 实际代码为准；后续里程碑（白板性能、写作闭环、云同步、自动更新）按计划推进。

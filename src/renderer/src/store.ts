@@ -252,8 +252,21 @@ export const useStore = create<State>((set, get) => ({
     if (bad) get().showToast('无法获取数据：' + (bad.last_error || '未知错误'))
   },
 
-  addFeed: async (type, name, url, scheduleMin) => { await window.readflow.invoke('feeds:add', type, name, url, scheduleMin); await get().loadFeeds() },
-  addManyFeeds: async (list) => { const n = await window.readflow.invoke('feeds:addMany', list) as number; await get().loadFeeds(); return n },
+  addFeed: async (type, name, url, scheduleMin) => {
+    const existed = get().feeds.some((f) => f.url === url)
+    const feed = await window.readflow.invoke('feeds:add', type, name, url, scheduleMin) as Feed
+    await get().loadFeeds()
+    if (existed) { get().showToast('该 RSS 源已存在，已跳过'); return }
+    // 新增即抓取：用户添加后立刻拉取，无需等待 ≤60s 调度（修复 RSS 逻辑：新增即刷新）
+    if (feed?.id) await get().refreshFeed(feed.id)
+  },
+  addManyFeeds: async (list) => {
+    const n = await window.readflow.invoke('feeds:addMany', list) as number
+    await get().loadFeeds()
+    // 批量新增后强制刷新全部（含新源），立即见效（修复 RSS 逻辑：Discover 一键添加即抓取）
+    if (n > 0) await get().refreshAll()
+    return n
+  },
   deleteFeed: async (id) => { await window.readflow.invoke('feeds:delete', id); await get().loadFeeds() },
   refreshFeed: async (id) => {
     const n = await window.readflow.invoke('feeds:refresh', id) as number
