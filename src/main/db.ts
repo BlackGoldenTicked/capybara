@@ -68,12 +68,13 @@ export function getImagesDir(): string { return imagesDir }
 // 历史上曾经改过路径（扁平的 userData/readflow.db），导致「替换 app 后旧数据被孤立、开空库」的事故。
 // 因此：本路径今后绝不能再改；若迫不得已要改，必须把旧路径加入 legacyDbCandidates() 以便自动迁移。
 function canonicalDbPath(): string {
-  return path.join(app.getPath('userData'), 'readflow', 'readflow.db')
+  // 单层：应用数据直接放在 Electron userData 根目录（不再多套一层 readflow 子目录）
+  return path.join(app.getPath('userData'), 'readflow.db')
 }
-// 历史上曾用过的旧库路径（扁平 userData/readflow.db）。启动时会把「旧位置有数据、新位置为空」的旧库
-// 原样复制过来，避免数据凭空消失。今后若再改路径，把旧路径追加到这里的数组即可。
+// 历史上曾用过的旧库路径：v0.7.33 的嵌套位置 userData/readflow/readflow.db。
+// 启动时会把「旧位置有数据、新位置为空」的旧库原样复制过来，避免数据凭空消失。
 function legacyDbCandidates(): string[] {
-  return [path.join(app.getPath('userData'), 'readflow.db')]
+  return [path.join(app.getPath('userData'), 'readflow', 'readflow.db')]
 }
 
 export function getDbFile(): string {
@@ -134,13 +135,51 @@ function migrateLegacyDatabase(canonical: string) {
 
 export function checkpoint(): void { try { db.exec('PRAGMA wal_checkpoint(TRUNCATE)') } catch { /* */ } }
 
+/**
+ * 单层化收尾：若仍存在 v0.7.33 的嵌套数据子目录 userData/readflow/，
+ * 把里面的 images/backups/board-assets 上移到 userData 根，再删除空壳。
+ * 若嵌套目录里还残留未迁移的库文件（.db/.migrated），则保留该目录，绝不误删。
+ */
+function relocateLegacyDataDir(userData: string) {
+  const legacy = path.join(userData, 'readflow')
+  if (!fs.existsSync(legacy) || !fs.statSync(legacy).isDirectory()) return
+  // 上移数据子目录
+  for (const name of ['images', 'backups', 'board-assets']) {
+    const src = path.join(legacy, name)
+    const dst = path.join(userData, name)
+    if (fs.existsSync(src) && !fs.existsSync(dst)) {
+      try {
+        fs.renameSync(src, dst)
+      } catch {
+        try { fs.cpSync(src, dst, { recursive: true }); fs.rmSync(src, { recursive: true, force: true }) } catch { /* 忽略 */ }
+      }
+    }
+  }
+  // 把嵌套目录里遗留的 .migrated 备份文件上移到 userData 根（避免残留一个空壳 readflow/ 文件夹）
+  try {
+    for (const f of fs.readdirSync(legacy)) {
+      if (f.includes('.migrated')) {
+        const s = path.join(legacy, f)
+        const d = path.join(userData, 'legacy-' + f)
+        if (!fs.existsSync(d)) { try { fs.renameSync(s, d) } catch { /* 忽略 */ } }
+      }
+    }
+  } catch { /* 忽略 */ }
+  // 删除空壳嵌套目录，实现真正单层
+  try {
+    if (fs.readdirSync(legacy).length === 0) fs.rmdirSync(legacy)
+  } catch { /* 残留文件则保留 */ }
+}
+
 export function initDb() {
-  const dir = path.join(app.getPath('userData'), 'readflow')
+  const dir = app.getPath('userData') // 单层：应用数据直接放在 userData 根（readflow.db / images / backups / board-assets）
   fs.mkdirSync(path.join(dir, 'images'), { recursive: true })
   fs.mkdirSync(path.join(dir, 'backups'), { recursive: true })
   dbPath = path.join(dir, 'readflow.db')
-  // 启动前先尝试把历史旧路径的数据库迁移到当前权威位置（修复「替换 app 后数据丢失」）
+  // 1) 迁移历史嵌套旧库 -> 单层（修复「替换 app 后数据丢失」）
   try { migrateLegacyDatabase(dbPath) } catch (e) { console.error('[initDb] 迁移旧库失败：', (e as Error).message) }
+  // 2) 上移遗留的嵌套数据子目录
+  try { relocateLegacyDataDir(dir) } catch (e) { console.error('[initDb] 迁移数据子目录失败：', (e as Error).message) }
   assetsDir = path.join(dir, 'board-assets')
   fs.mkdirSync(assetsDir, { recursive: true })
   imagesDir = path.join(dir, 'images')

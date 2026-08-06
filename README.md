@@ -73,7 +73,7 @@
 │  GitHub★ / Twitter 书签 导入 / OPML / 发现 Discover          │
 │  网络诊断 netlog；本地 HTTP 摄入服务 ingest                   │
 │         ↕                                                     │
-│  node:sqlite —— userData/readflow/readflow.db (WAL)          │
+│  node:sqlite —— userData/readflow.db (WAL)                   │
 │  本地仓：images/（封面）· board-assets/（白板附件）· backups/ │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -310,6 +310,7 @@ readflow/
 - **v0.7.30** 数据可观测性 + 定位「没数据」元凶：经本地用 `node:sqlite` 直接打开真实库实测，确认 `~/Library/Application Support/readflow/readflow/readflow.db`（嵌套路径，本代码库自始至终唯一的库路径）**数据完好**——含 1 个订阅源（潮流周刊）+ 14 条条目（Twitter 书签 / 阮一峰周刊 / 潮流周刊 265–276 期），且 app 原版 `listItems('rss')` 查询对着真实库**返回 12 条**，数据层 100% 正常。据此判定用户所见「没数据」是**运行中的 app 读到了另一个空库**（多为机器上旧副本 / 顶层孤儿 `…/readflow/readflow.db` 0 字节残留），而非数据丢失。新增：① 设置 → 操作 顶部「数据库位置」卡片，**直接显示当前 app 实际指向的库绝对路径**（含「复制路径」「在访达中打开」），IPC `app:dbFile` / `app:openDbDir`；② 该卡片提示用户核对路径是否就是有数据的那个文件。从此"到底读的是哪个库"一眼可见，杜绝旧二进制糊弄。
 - **v0.7.31** 修复「数据库位置」卡片**永远显示"加载中"**：根因是该 `useEffect` 仅 `invoke('app:dbFile').then(...)`，**没有 `.catch`**——一旦主进程未就绪 / 主进程是旧版（无此 handler，常见于 dev 模式 HMR 只热更了渲染层、或旧二进制）/ IPC 被 reject，promise 永不 resolve，`dbFile` 卡在初始空串 → 一直"加载中"。现改为：① `getDbFile()` **惰性兜底**——即便 `initDb` 因异常未跑完，也按 `userData/readflow/readflow.db` 算出本应使用路径，绝不返回空；② 渲染层 `invoke` 加 `.catch` + **最多 3 次 400ms 重试**，失败则显示明确红色错误「⚠ 读取数据库路径失败：…（主进程可能未就绪，请彻底退出后重开应用）」而非无限加载；③ 新增 `.db-err` 样式。从"静默卡死"升级为"可读诊断"。
 - **v0.7.33** 根治「替换 app 后数据丢失 / 出现两个库文件」：① 把数据库路径**锁死为唯一权威位置** `~/Library/Application Support/readflow/readflow/readflow.db`（所有应用数据集中在该 `readflow/` 子目录），并把旧路径 `…/readflow/readflow.db`（扁平）登记为历史遗留；② 新增 `migrateLegacyDatabase()`：每次启动若权威库为空/缺失、而历史旧路径有数据，则**自动整体复制**旧库（含 `-wal`/`-shm`）到权威位置并改名 `.migrated` 备份，**绝不覆盖已有数据的权威库**（经 10 条独立单测验证：迁移/不覆盖/空库填充/无操作四场景全过）；③ 澄清根因——此前「没数据」并非 dev 模式所致，而是**不同版本 app 改过数据库路径**，替换 `.app` 后新二进制去新位置找、旧数据被孤立成空库；dev 模式的 `userData` 重定向仅作用于项目目录 `.readflow-userData`，与用户 `~/Library` 真实数据完全隔离。今后若再改路径，只需把旧路径追加进 `legacyDbCandidates()` 即可自动兼容。
+- **v0.7.34** 数据库改为**单层**结构：应用数据 `readflow.db` / `images/` / `backups/` / `board-assets/` 直接放在 Electron `userData` 根目录（`~/Library/Application Support/readflow/`），**不再多套一层 `readflow/` 子目录**（消除「两个 readflow 文件夹」的视觉冗余）。v0.7.33 的嵌套位置 `…/readflow/readflow.db` 登记为新版的历史遗留路径，`migrateLegacyDatabase()` 仍会在启动时自动把其中的数据迁到单层位置；嵌套数据子目录（images/backups/board-assets）也会上移到根目录后删除空壳。
 
 ---
 
