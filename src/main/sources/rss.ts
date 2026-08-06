@@ -4,6 +4,7 @@ import { upsertItem, markFeedFetched, storeCover, fillCoverIfEmpty } from '../db
 import { decodeHtmlEntities, htmlToSnippet } from '../lib/html'
 import { extractArticle } from './readability'
 import { netLog, extractError } from '../netlog'
+import { diagFetchStart, diagFetchEnd } from '../diag'
 
 // 抓取 RSS 自带的媒体缩略图（podcast / 新闻配图），优先级低于全文提取的 og:image
 const parser = new RssParser({
@@ -98,6 +99,7 @@ const FETCH_HEADERS: Record<string, string> = {
 export async function fetchRssFeed(feed: Feed): Promise<number> {
   // 用自带 fetch 取代 rss-parser 的内部请求，拿到完整 HTTP 状态 / 耗时 / 字节并上报诊断面板
   const start = Date.now()
+  diagFetchStart(feed.id, feed.name)
   // 条件请求：带上次缓存头，源未变时服务端回 304，省去整文件下载
   const headers: Record<string, string> = { ...FETCH_HEADERS }
   if (feed.etag) headers['If-None-Match'] = feed.etag
@@ -106,7 +108,9 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
   try {
     res = await fetch(feed.url, { headers, redirect: 'follow', signal: AbortSignal.timeout(15_000) })
   } catch (e) {
-    netLog({ url: feed.url, method: 'GET', status: 0, ms: Date.now() - start, bytes: 0, ok: false, error: extractError(e, feed.url), source: 'rss' })
+    const durationMs = Date.now() - start
+    netLog({ url: feed.url, method: 'GET', status: 0, ms: durationMs, bytes: 0, ok: false, error: extractError(e, feed.url), source: 'rss' })
+    diagFetchEnd(feed, 0, durationMs, 0, '', '', extractError(e, feed.url))
     throw e
   }
   const status = res.status
@@ -114,6 +118,7 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
   // 304 Not Modified：源未变化，跳过下载与解析，直接记一次抓取
   if (status === 304) {
     markFeedFetched(feed.id, false, undefined, feed.etag, feed.last_modified)
+    diagFetchEnd(feed, 304, Date.now() - start, 0, feed.etag, feed.last_modified, '')
     return 0
   }
   const xml = await res.text()
@@ -121,6 +126,7 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
   if (!res.ok) {
     const err = new Error(`HTTP ${status} ${res.statusText} @ ${feed.url}`) as Error & { code?: string }
     err.code = 'HTTP_' + status
+    diagFetchEnd(feed, status, Date.now() - start, 0, '', '', `HTTP ${status} ${res.statusText}`)
     throw err
   }
   let parsed
@@ -133,6 +139,7 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
     const msg = '解析失败: ' + (e instanceof Error ? e.message : String(e))
     netLog({ url: feed.url, method: 'PARSE', status: 0, ms: Date.now() - start, bytes: Buffer.byteLength(xml), ok: false, error: msg, source: 'rss' })
     markFeedFetched(feed.id, true, msg)
+    diagFetchEnd(feed, 0, Date.now() - start, 0, '', '', msg)
     throw new Error(msg)
   }
   const { items, title: feedTitle } = parsed
@@ -183,5 +190,6 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
   const respEtag = res.headers.get('etag') ?? feed.etag
   const respLm = res.headers.get('last-modified') ?? feed.last_modified
   markFeedFetched(feed.id, false, undefined, respEtag, respLm)
+  diagFetchEnd(feed, status, Date.now() - start, added, respEtag, respLm, '')
   return added
 }

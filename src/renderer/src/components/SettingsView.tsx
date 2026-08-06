@@ -4,6 +4,7 @@ import { Icon, type IconName } from './icons'
 import { SourceManager } from './SourceManager'
 import { DiscoverView } from './DiscoverView'
 import { DbView } from './DbView'
+import { DiagPanel } from './DiagPanel'
 import {
   THEME_OPTIONS, CARD_STYLES,
   type ThemeMode, type CardStyleKey, type FontWeight
@@ -21,7 +22,8 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'discover', label: '发现 RSS', icon: 'search' },
   { key: 'actions', label: '操作', icon: 'refresh' },
   { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
-  { key: 'data', label: '数据查看', icon: 'book' }
+  { key: 'data', label: '数据查看', icon: 'book' },
+  { key: 'diag', label: '刷新诊断', icon: 'activity' }
 ]
 
 export function SettingsView() {
@@ -44,6 +46,7 @@ export function SettingsView() {
         {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
         {settingsTab === 'shortcuts' && <ShortcutsTab />}
         {settingsTab === 'data' && <DbView />}
+        {settingsTab === 'diag' && <DiagPanel />}
       </div>
     </section>
   )

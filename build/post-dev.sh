@@ -60,13 +60,25 @@ echo "==> [4/4] 安装并打开程序"
 # （彻底杜绝之前反复出现的「旧二进制 / 旧副本」问题）
 if [ -d "$PROJECT_DIR/release/mac/ReadFlow.app" ]; then
   echo "    安装最新构建 → $APP"
+  # 多等一会，确保进程完全释放文件句柄，否则 rm 会失败并在 /Applications/ReadFlow.app 下嵌套一层 ReadFlow.app
+  sleep 2
   rm -rf "$APP" 2>/dev/null || true
-  cp -R "$PROJECT_DIR/release/mac/ReadFlow.app" "$APP" 2>/dev/null || true
-  xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
+  if [ -d "$APP" ]; then
+    echo "    ⚠ 首次删除失败，再杀一次进程并重试 ..."
+    pkill -9 -f readflow 2>/dev/null || true
+    sleep 2
+    rm -rf "$APP" 2>/dev/null || true
+  fi
+  if [ -d "$APP" ]; then
+    echo "    ⚠ 无法删除旧版 $APP，请手动关闭/删除后重试"
+  else
+    cp -R "$PROJECT_DIR/release/mac/ReadFlow.app" "$APP"
+    xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
+  fi
 else
   echo "    ⚠ 未找到刚构建的 $PROJECT_DIR/release/mac/ReadFlow.app（第三步构建可能失败）"
 fi
-if [ -d "$APP" ]; then
+if [ -d "$APP" ] && [ -f "$APP/Contents/Info.plist" ]; then
   open "$APP"
   # 前台激活，确保窗口跳到最前（未签名 app 默认可能躲在后面）
   osascript -e 'tell application "ReadFlow" to activate' 2>/dev/null || true

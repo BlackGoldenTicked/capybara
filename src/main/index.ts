@@ -18,6 +18,7 @@ import { extractArticle } from './sources/readability'
 import { backupWebDAV } from './sync'
 import { searchRssRepos, extractFeeds } from './sources/githubDiscover'
 import { netLog, setNetLogWindow } from './netlog'
+import { diagSnapshot, diagTestPurge, diagRefreshFeed, diagRefreshAll, forceRefreshFeed, forceRefreshAll } from './diag'
 
 if (!app.isPackaged) {
   try {
@@ -338,6 +339,14 @@ function registerIpc() {
     // ===== 数据库内省（开发者模式 / 数据查看）：列出表结构与数据，表名白名单防注入 =====
     'db:tables': (() => dbTables()) as never,
     'db:rows': ((table: string, limit: number, offset: number) => dbRows(table, limit, offset)) as never,
+
+    // ===== 刷新诊断：清空验证 / 单源/全量刷新 / 强制刷新 =====
+    'diag:snapshot': (() => diagSnapshot()) as never,
+    'diag:testPurge': ((days: number, max: number) => diagTestPurge(days, max)) as never,
+    'diag:testRefreshOne': (async (id: number) => diagRefreshFeed(id)) as never,
+    'diag:testRefreshAll': (async () => diagRefreshAll()) as never,
+    'diag:testForceOne': (async (id: number) => forceRefreshFeed(id)) as never,
+    'diag:testForceAll': (async () => forceRefreshAll()) as never,
 
     'boards:list': (() => listBoards()) as never,
     'boards:create': ((name: string) => createBoard(name)) as never,

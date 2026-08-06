@@ -62,6 +62,16 @@ let imagesDir = ''
 
 export function getAssetsDir(): string { return assetsDir }
 export function getImagesDir(): string { return imagesDir }
+/** 诊断/内部用途：暴露 DatabaseSync 实例（仅限主进程内使用，绝不给渲染进程） */
+export function getDb(): DatabaseSync { return db }
+/** 清除单个 feed 的条件缓存头（etag/last_modified），下次请求不走 304 强制全量拉取 */
+export function clearFeedCache(id: number) {
+  db.prepare('UPDATE feeds SET etag = \'\', last_modified = \'\' WHERE id = ?').run(id)
+}
+/** 清除全部 feed 的条件缓存头，用于强制全量刷新 */
+export function clearAllFeedCache() {
+  db.prepare('UPDATE feeds SET etag = \'\', last_modified = \'\'').run()
+}
 
 // ===== 数据库路径（单一权威位置，禁止随意变更！） =====
 // 所有应用数据（库 + images + backups + board-assets）统一集中在 userData/readflow/ 下，

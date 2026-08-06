@@ -19,7 +19,8 @@ const validChannels = [
   'feeds:importOpml',
   'discover:repos', 'discover:feeds',
   'sync:backup', 'devtools:toggle',
-  'db:tables', 'db:rows'
+  'db:tables', 'db:rows',
+  'diag:snapshot', 'diag:testPurge', 'diag:testRefreshOne', 'diag:testRefreshAll', 'diag:testForceOne', 'diag:testForceAll'
 ] as const
 
 type Channel = (typeof validChannels)[number]
