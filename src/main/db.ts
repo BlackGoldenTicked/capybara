@@ -287,7 +287,7 @@ function sanitizeMatch(input: string): string {
   return input.split(/\s+/).filter(Boolean).map((t) => `"${t.replace(/"/g, '""')}"*`).join(' ')
 }
 
-export function listItems(view: View, search: string, sourceType?: string | null, sourceName?: string | null): ItemRow[] {
+function buildListWhere(view: View, search: string, sourceType: string | null, sourceName: string | null): { where: string; args: unknown[] } {
   const args: unknown[] = []
   const conds: string[] = []
   if (search && hasFts()) {
@@ -310,13 +310,22 @@ export function listItems(view: View, search: string, sourceType?: string | null
   // 按订阅源名称（source_name，即 feed.name）筛选；与上方视图条件叠加
   if (sourceName) { conds.push('i.source_name = ?'); args.push(sourceName) }
   const where = conds.length ? 'WHERE ' + conds.join(' AND ') : ''
-  // 按「发布时间」倒序（无发布时间则回退抓取时间），与卡片显示的「X 前」保持一致，
-  // 避免「4 小时前」排在「50 分钟前」之前的错位（修复排序问题）
+  return { where, args }
+}
+
+/** 分页列表：按订阅源翻页浏览历史条目，每次一页 15 条 */
+export function listItemsPage(view: View, search: string, sourceType: string | null, sourceName: string | null, page: number, pageSize: number): ItemRow[] {
+  const { where, args } = buildListWhere(view, search, sourceType, sourceName)
   const orderBy = 'COALESCE(i.published_at, i.fetched_at) DESC'
+  const limitArgs = [...args, pageSize, page * pageSize]
   if (search && hasFts()) {
-    return db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY (SELECT rank FROM items_fts WHERE rowid = i.id) LIMIT 500`).all(...args) as unknown as ItemRow[]
+    return db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY (SELECT rank FROM items_fts WHERE rowid = i.id) LIMIT ? OFFSET ?`).all(...limitArgs) as unknown as ItemRow[]
   }
-  return db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY ${orderBy} LIMIT 500`).all(...args) as unknown as ItemRow[]
+  return db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...limitArgs) as unknown as ItemRow[]
+}
+
+export function listItems(view: View, search: string, sourceType?: string | null, sourceName?: string | null): ItemRow[] {
+  return listItemsPage(view, search, sourceType ?? null, sourceName ?? null, 0, 500)
 }
 
 /** 各来源条目计数，供侧边栏 GitHub ★ / Twitter 书签 等分区显示数量 */

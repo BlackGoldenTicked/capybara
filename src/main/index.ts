@@ -278,6 +278,7 @@ function registerIpc() {
       } catch { /* 非法 URL 忽略 */ }
     }) as never,
     'items:list': ((view: View, search: string, sourceType?: string, sourceName?: string) => listItems(view, search, sourceType ?? null, sourceName ?? null)) as never,
+    'items:listPage': ((view: View, search: string, sourceType: string, sourceName: string, page: number, pageSize: number) => listItemsPage(view, search, sourceType || null, sourceName || null, page, pageSize)) as never,
     'items:sourceCounts': (() => sourceCounts()) as never,
     'items:get': ((id: number) => getItem(id)) as never,
     'items:counts': (() => counts()) as never,

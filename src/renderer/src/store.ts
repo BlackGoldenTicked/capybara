@@ -11,6 +11,9 @@ interface State {
   screen: Screen
   view: View
   items: ItemRow[]
+  itemsPage: number
+  itemsDone: boolean
+  itemsLoadingMore: boolean
   counts: Record<View, number>
   sourceCounts: Record<string, number>
   feeds: Feed[]
@@ -50,6 +53,7 @@ interface State {
   setActiveFeed: (name: string | null) => void
   showToast: (msg: string) => void
   load: () => Promise<void>
+  loadMoreItems: () => Promise<void>
   loadFeeds: () => Promise<void>
   loadBoards: () => Promise<void>
   select: (id: number | null, opts?: { click?: boolean }) => void
@@ -99,12 +103,15 @@ interface State {
   purge: (keepArchivedDays: number, maxItems: number) => Promise<void>
 }
 
+/** 信息流每次分页加载条目数（滚动到底部翻页浏览历史） */
+const PAGE_SIZE = 15
+
 const emptyCounts: Record<View, number> = { rss: 0, read: 0, later: 0, favorite: 0, archived: 0, all: 0 }
 
 export const useStore = create<State>((set, get) => ({
   screen: 'library',
   view: 'rss',
-  items: [], counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
+  items: [], itemsPage: 0, itemsDone: false, itemsLoadingMore: false, counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
   selectedId: null, pendingReadId: null, search: '', quickAddOpen: false,
   activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '',
   discoverRepos: [], discoverFeeds: {}, discoverLoading: false, discoverFeedsLoading: null,
@@ -146,12 +153,28 @@ export const useStore = create<State>((set, get) => ({
 
   load: async () => {
     const { view, search, activeSourceType, activeFeed } = get()
-    const [items, counts, sourceCounts] = await Promise.all([
-      window.readflow.invoke('items:list', view, search, activeSourceType, activeFeed) as Promise<ItemRow[]>,
+    const [counts, sourceCounts, page0] = await Promise.all([
       window.readflow.invoke('items:counts') as Promise<Record<View, number>>,
-      window.readflow.invoke('items:sourceCounts') as Promise<Record<string, number>>
+      window.readflow.invoke('items:sourceCounts') as Promise<Record<string, number>>,
+      window.readflow.invoke('items:listPage', view, search, activeSourceType, activeFeed, 0, PAGE_SIZE) as Promise<ItemRow[]>
     ])
-    set({ items, counts, sourceCounts })
+    set({ items: page0, itemsPage: 0, itemsDone: page0.length < PAGE_SIZE, itemsLoadingMore: false, counts, sourceCounts })
+  },
+  loadMoreItems: async () => {
+    const { itemsDone, itemsLoadingMore, itemsPage, view, search, activeSourceType, activeFeed } = get()
+    if (itemsDone || itemsLoadingMore) return
+    set({ itemsLoadingMore: true })
+    try {
+      const more = await window.readflow.invoke('items:listPage', view, search, activeSourceType, activeFeed, itemsPage + 1, PAGE_SIZE) as Promise<ItemRow[]>
+      if (more.length < PAGE_SIZE) set({ itemsDone: true })
+      if (more.length > 0) {
+        const existing = new Set(get().items.map((i) => i.id))
+        const merged = get().items.concat(more.filter((i) => !existing.has(i.id)))
+        set({ items: merged, itemsPage: get().itemsPage + 1 })
+      }
+    } finally {
+      set({ itemsLoadingMore: false })
+    }
   },
   loadFeeds: async () => { set({ feeds: await window.readflow.invoke('feeds:list') as Feed[] }) },
   loadBoards: async () => { set({ boards: await window.readflow.invoke('boards:list') as Board[] }) },

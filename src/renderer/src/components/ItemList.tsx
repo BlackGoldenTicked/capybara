@@ -81,7 +81,7 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
 
 export function ItemList() {
   const { items, selectedId, select, view, activeSourceType, markAllRead, clearInbox, showToast,
-    openInBrowser, toggleRead, setStatus, deleteItem, feeds } = useStore()
+    openInBrowser, toggleRead, setStatus, deleteItem, feeds, itemsLoadingMore, itemsDone, loadMoreItems } = useStore()
   const viewLabel = { rss: 'RSS', later: '稍后读', favorite: '已收藏', read: '已读', archived: '归档', all: '全部条目' }[view]
   const sourceLabelMap: Record<string, string> = { github: 'GitHub ★', x_bookmark: 'Twitter 书签' }
   const headerLabel = activeSourceType ? (sourceLabelMap[activeSourceType] || SOURCE_LABEL[activeSourceType] || '来源') : viewLabel
@@ -103,6 +103,17 @@ export function ItemList() {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+
+  // 底部状态栏高度（与列表分离，始终可见，提示翻页进度）
+  const FOOTER_H = 44
+  const listHeight = Math.max(80, height - FOOTER_H)
+
+  // 滚动到底部阈值内即触发加载下一页（FOUC 无关，纯翻页）
+  const onListScroll = ({ scrollOffset }: { scrollOffset: number }) => {
+    if (itemsDone || itemsLoadingMore || items.length === 0) return
+    const total = items.length * ITEM_SIZE
+    if (scrollOffset + listHeight >= total - ITEM_SIZE * 0.8) void loadMoreItems()
+  }
 
   const onClear = () => {
     if (view !== 'rss') { showToast('仅「RSS」可清空'); return }
@@ -151,16 +162,26 @@ export function ItemList() {
             </div>
           )
         ) : (
-          <FixedSizeList
-            height={height}
-            width="100%"
-            itemCount={items.length}
-            itemSize={ITEM_SIZE}
-            itemData={rowData}
-            overscanCount={6}
-          >
-            {Row}
-          </FixedSizeList>
+          <>
+            <FixedSizeList
+              height={listHeight}
+              width="100%"
+              itemCount={items.length}
+              itemSize={ITEM_SIZE}
+              itemData={rowData}
+              overscanCount={6}
+              onScroll={onListScroll}
+            >
+              {Row}
+            </FixedSizeList>
+            <div className="feed-footer">
+              {itemsLoadingMore
+                ? <><span className="spin" /> 加载中…</>
+                : itemsDone
+                  ? `已显示全部 ${items.length} 条`
+                  : `已显示 ${items.length} 条 · 滚动到底部加载更多`}
+            </div>
+          </>
         )}
       </div>
     </section>

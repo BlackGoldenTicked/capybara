@@ -152,6 +152,14 @@ input:focus { border-color: var(--color-border-info); }
 .feed-actions .mini { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer; }
 .feed-actions .mini:hover { border-color: var(--color-border-info); color: var(--color-text-info); }
 .feed-list { flex: 1; min-height: 0; overflow: hidden; padding: 10px 12px; }
+/* 信息流底部翻页状态栏：始终可见，提示已加载条数与「滚动加载更多」 */
+.feed-footer { height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+  gap: 8px; font-size: 12px; color: var(--color-text-tertiary);
+  border-top: 0.5px solid color-mix(in srgb, var(--card-accent) 14%, var(--color-border-tertiary)); }
+.feed-footer .spin { width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--color-text-tertiary) 35%, transparent);
+  border-top-color: var(--card-accent); animation: feed-spin 0.7s linear infinite; }
+@keyframes feed-spin { to { transform: rotate(360deg) } }
 
 .card {
   position: relative;

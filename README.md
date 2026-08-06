@@ -2,7 +2,7 @@
 
 > 个人知识流桌面客户端 —— 收集 → 速读 → 分类 → 组织 → 沉淀。
 > 本地优先 · 键盘驱动 · 整面配色 · Electron + React。
-> 当前版本 **v0.7.24** · macOS（Electron 37）。
+> 当前版本 **v0.7.25** · macOS（Electron 37）。
 
 ---
 
@@ -302,6 +302,7 @@ readflow/
 - **v0.7.22** UI 像素级打磨（处女座友好）：① 侧栏「全部」分组标题补左侧图标列，标题文字与下方条目在同一基线对齐；② 卡片未读去掉标题前置圆点，改由左侧 accent 竖条统一标识，已读/未读标题不再错位；③ 浮层/卡片/弹窗/白板卡的投影由固定黑 `rgba` 改为随主题自适应的 `color-mix(--color-text-primary)`，在 ocean/sunset 等深色卡片风格下投影可见；④ 分隔条 hover 高亮由硬编码蓝改为 `color-mix(--card-accent)`，随所选卡片风格联动；⑤ 补全键盘焦点环（侧栏项 / 分组标题 / 通用按钮 Tab 聚焦时显示 accent 描边），并给侧栏导航项加 `role="button"` + `tabIndex` + Enter/Space 激活；⑥ 清理 Writer/Gallery/标签/来源徽标底色等残留死 CSS。
 - **v0.7.23** 修复两类体验问题并优化启动：①「全部」视图（及 RSS 未读、各视图计数、标为已读）不再混入 GitHub ★ / Twitter 书签——这两者是有独立侧栏入口的收藏集合，主阅读流保持纯净；② 修复启动首屏「先默认样式再切成已设配色」的闪烁：外观设置持久化到 localStorage，渲染前 `bootAppearance()` 同步铺好主题 / 卡片风格 / 字体，DB 权威值在 `initAppearance` 异步覆盖并刷新缓存；③ 启动提速：新增 `app:bootstrap` 通道，把启动时的多次 `settings:get` 顺序往返合并为 1 次 IPC（`initAppearance` 重写），并为外观变更补充缓存写回。
 - **v0.7.24** 来源管理页表单布局对齐（处女座友好）：① 手动添加 RSS / GitHub Star 的 label 与输入框改为固定 92px 右对齐 label 列 + 1fr 输入列的 Grid，所有输入框左边缘严格对齐；② 「每 120 分钟」与单位文字和数字输入框在同一基线；③ 按钮行与上方输入框左边缘对齐（用空 label 列占位）；④ 统一 button 与 input 的 `min-height: 30px`，消除按钮/输入框高度不一致；⑤ `src-actions` 内带图标的按钮改为 `inline-flex` + `gap`，图标与文字垂直居中。
+- **v0.7.25** 信息流分页加载（翻页浏览历史）：① `db.ts` 抽出 `buildListWhere`，新增 `listItemsPage(view, search, sourceType, sourceName, page, pageSize)` 与 IPC `items:listPage`（每页 15 条，`LIMIT/OFFSET` 分页）；② store 新增 `itemsPage`/`itemsDone`/`itemsLoadingMore` 状态，`load()` 改为加载首页并重置分页，`loadMoreItems()` 追加下一页（去重、末页自动标记 `itemsDone`）；③ ItemList 监听 `FixedSizeList` 滚动，距底部 0.8 行内自动触发加载，底部固定 44px 状态栏显示「已显示 N 条 · 滚动到底部加载更多 / 加载中…（accent 旋转环）/ 已显示全部 N 条」。选中某 RSS 订阅源后可一路翻到该源全部历史条目，不再静止在初始 15 条。
 
 ---
 
@@ -311,4 +312,4 @@ readflow/
 - **X 书签**走本地文件导入（X 官方读 Bookmark 需付费 API）；浏览器扩展（`extension/`）本体已打包但未联调。
 - **WebDAV 备份** `sync.ts` 结构就绪，需在「系统配置」补充入口并实测。
 - **国际源**（CNBC/Bloomberg/Investing）在大陆常需 VPN，失败会如实显示在「无法获取数据」与开发者网络面板。
-- 参考：`DESIGN.md` 为早期蓝图，本文档以 v0.7.24 实际代码为准；后续里程碑（白板性能、写作闭环、云同步、自动更新）按计划推进。
+- 参考：`DESIGN.md` 为早期蓝图，本文档以 v0.7.25 实际代码为准；后续里程碑（白板性能、写作闭环、云同步、自动更新）按计划推进。
