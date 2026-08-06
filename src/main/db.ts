@@ -206,6 +206,14 @@ function seedIfEmpty() {
   // 清理上一版遗留的演示假数据
   cleanupOldMock()
 
+  // 订阅源列表为空（全新安装，或升级后被清空）→ 预置一组精选 RSS 源， ensure 开箱即有内容可看。
+  // addFeeds 幂等（INSERT OR IGNORE），已装过但没源的用户每次启动也会自动补，重复无副作用；
+  // SEED_FEEDS 的 url 刻意避开 LEGACY 列表，不会被 removeLegacySeedsOnce 误删。
+  const feedCount = (db.prepare('SELECT COUNT(*) AS n FROM feeds').get() as { n: number }).n
+  if (feedCount === 0) {
+    addFeeds(SEED_FEEDS.map((f) => ({ type: f.type, name: f.name, url: f.url, schedule_min: f.schedule_min })))
+  }
+
   // 全新安装（一条都没有）给一条引导卡片，真实数据几秒后由采集器补齐
   const itemCount = (db.prepare('SELECT COUNT(*) AS n FROM items').get() as { n: number }).n
   if (itemCount === 0) {
@@ -216,6 +224,20 @@ function seedIfEmpty() {
       'inbox', datetime('now'))`).run()
   }
 }
+
+/**
+ * 全新安装预置的精选订阅源（开箱即有内容）。
+ * 注意：url 必须与下方 LEGACY_SEED_FEEDS 完全不重叠，否则会被 removeLegacySeedsOnce 误删。
+ * key 设较高刷新频率，确保首屏很快有数据。
+ */
+const SEED_FEEDS = [
+  { type: 'rss', name: 'Hacker News', url: 'https://news.ycombinator.com/rss', schedule_min: 30 },
+  { type: 'rss', name: '少数派', url: 'https://sspai.com/feed', schedule_min: 60 },
+  { type: 'rss', name: '酷壳 CoolShell', url: 'https://coolshell.cn/feed', schedule_min: 120 },
+  { type: 'rss', name: '虎嗅', url: 'https://www.huxiu.com/rss/0.xml', schedule_min: 60 },
+  { type: 'rss', name: 'V2EX', url: 'https://www.v2ex.com/index.xml', schedule_min: 60 },
+  { type: 'rss', name: 'GitHub Blog', url: 'https://github.blog/feed/', schedule_min: 120 }
+] as const
 
 /** 旧版预置的真实订阅源（v0.7.18 起不再预置；此列表仅用于一次性清理老用户库里的残留）。 */
 const LEGACY_SEED_FEEDS = [
