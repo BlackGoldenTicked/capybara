@@ -35,8 +35,13 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
 
   // ===== RSS =====
   const submit = async () => {
-    if (!url || !name) return
-    await addFeed('rss', name, url, schedule)
+    if (!url.trim()) { showToast('请填写 RSS 地址'); return }
+    // 名称允许留空：默认用地址占位，抓取后由 feed 标题回填，避免「只填 URL 被静默 return」导致加源无反应
+    const finalName = name.trim() || url.trim()
+    try {
+      await addFeed('rss', finalName, url.trim(), schedule)
+      showToast('已添加「' + finalName + '」，正在抓取…')
+    } catch (e) { showToast('添加失败：' + (e as Error).message) }
     setName(''); setUrl(''); setSchedule(120)
   }
   const importOpml = async () => {

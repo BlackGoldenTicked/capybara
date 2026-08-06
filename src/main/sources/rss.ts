@@ -43,7 +43,17 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
     err.code = 'HTTP_' + status
     throw err
   }
-  const parsed = await parser.parseString(xml)
+  let parsed
+  try {
+    parsed = await parser.parseString(xml)
+  } catch (e) {
+    // 个别源（如虎嗅）rss-parser 解析会抛 p.slice is not a function 等内部错误；
+    // 这里捕获并记录到 last_error，让 UI 显示「无法获取数据：解析失败…」，而不是整源/进程崩
+    const msg = '解析失败: ' + (e instanceof Error ? e.message : String(e))
+    netLog({ url: feed.url, method: 'PARSE', status: 0, ms: Date.now() - start, bytes: Buffer.byteLength(xml), ok: false, error: msg, source: 'rss' })
+    markFeedFetched(feed.id, true, msg)
+    throw new Error(msg)
+  }
   let added = 0
   let extractBudget = MAX_EXTRACT_PER_FEED
   for (const entry of (parsed.items ?? []).slice(0, 40)) {

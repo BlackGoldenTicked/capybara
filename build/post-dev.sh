@@ -7,7 +7,7 @@
 #      ③ 自动构建（electron-vite → electron-builder → DMG）
 #      ④ 打开 /Applications/ReadFlow.app
 # =============================================================
-set -uo pipefail
+set -o pipefail
 
 APP="/Applications/ReadFlow.app"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"

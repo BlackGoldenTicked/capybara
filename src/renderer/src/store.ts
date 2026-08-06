@@ -254,11 +254,14 @@ export const useStore = create<State>((set, get) => ({
 
   addFeed: async (type, name, url, scheduleMin) => {
     const existed = get().feeds.some((f) => f.url === url)
-    const feed = await window.readflow.invoke('feeds:add', type, name, url, scheduleMin) as Feed
-    await get().loadFeeds()
-    if (existed) { get().showToast('该 RSS 源已存在，已跳过'); return }
-    // 新增即抓取：用户添加后立刻拉取，无需等待 ≤60s 调度（修复 RSS 逻辑：新增即刷新）
-    if (feed?.id) await get().refreshFeed(feed.id)
+    try {
+      const feed = await window.readflow.invoke('feeds:add', type, name, url, scheduleMin) as Feed
+      await get().loadFeeds()
+      if (existed) { get().showToast('该 RSS 源已存在，已跳过'); return }
+      // 新增即抓取：用户添加后立刻拉取，无需等待 ≤60s 调度（修复 RSS 逻辑：新增即刷新）
+      if (feed?.id) await get().refreshFeed(feed.id)
+      else get().showToast('添加失败：地址可能无效')
+    } catch (e) { get().showToast('添加失败：' + (e as Error).message) }
   },
   addManyFeeds: async (list) => {
     const n = await window.readflow.invoke('feeds:addMany', list) as number
