@@ -62,14 +62,76 @@ let imagesDir = ''
 export function getAssetsDir(): string { return assetsDir }
 export function getImagesDir(): string { return imagesDir }
 
+// ===== 数据库路径（单一权威位置，禁止随意变更！） =====
+// 所有应用数据（库 + images + backups + board-assets）统一集中在 userData/readflow/ 下，
+// 库文件固定为 userData/readflow/readflow.db。
+// 历史上曾经改过路径（扁平的 userData/readflow.db），导致「替换 app 后旧数据被孤立、开空库」的事故。
+// 因此：本路径今后绝不能再改；若迫不得已要改，必须把旧路径加入 legacyDbCandidates() 以便自动迁移。
+function canonicalDbPath(): string {
+  return path.join(app.getPath('userData'), 'readflow', 'readflow.db')
+}
+// 历史上曾用过的旧库路径（扁平 userData/readflow.db）。启动时会把「旧位置有数据、新位置为空」的旧库
+// 原样复制过来，避免数据凭空消失。今后若再改路径，把旧路径追加到这里的数组即可。
+function legacyDbCandidates(): string[] {
+  return [path.join(app.getPath('userData'), 'readflow.db')]
+}
+
 export function getDbFile(): string {
   // 惰性兜底：即便 initDb 因异常（如数据库被占用）未跑完，也能算出本应使用的库路径，
   // 避免设置页「数据库位置」永远显示「加载中」而给不出任何诊断信息。
   if (!dbPath) {
-    try { dbPath = path.join(app.getPath('userData'), 'readflow', 'readflow.db') } catch { /* app 未就绪，返回空 */ }
+    try { dbPath = canonicalDbPath() } catch { /* app 未就绪，返回空 */ }
   }
   return dbPath
 }
+
+/** 统计某库条目数；文件不存在 / 非合法库时返回 -1（视为「无数据」） */
+function countItems(p: string): number {
+  try {
+    const d = new DatabaseSync(p)
+    const n = (d.prepare('SELECT COUNT(*) c FROM items').get() as { c: number }).c
+    d.close()
+    return n
+  } catch {
+    return -1
+  }
+}
+
+/**
+ * 安全迁移历史旧库：仅当「权威库不存在或为空」且「某旧路径有数据」时，把旧库（含 -wal/-shm 兄弟文件）
+ * 整体复制到权威位置。复制后做校验，成功才把旧库挪到 .migrated 备份（不再被使用，但保留以防万一）。
+ * 绝不覆盖已有数据的权威库。
+ */
+function migrateLegacyDatabase(canonical: string) {
+  const canonN = countItems(canonical)
+  if (canonN > 0) return // 权威库已有数据，绝不覆盖
+  let best = ''
+  let bestN = 0
+  for (const cand of legacyDbCandidates()) {
+    if (cand === canonical || !fs.existsSync(cand)) continue
+    const n = countItems(cand)
+    if (n > bestN) { bestN = n; best = cand }
+  }
+  if (!best) return
+  const dir = path.dirname(canonical)
+  fs.mkdirSync(dir, { recursive: true })
+  // 复制旧库（含 WAL 兄弟文件）到权威位置
+  for (const ext of ['', '-wal', '-shm']) {
+    const src = best + ext
+    if (fs.existsSync(src)) { try { fs.copyFileSync(src, canonical + ext) } catch { /* 单文件失败忽略 */ } }
+  }
+  // 校验复制结果，成功则把旧库挪到 .migrated 备份
+  const copiedN = countItems(canonical)
+  if (copiedN >= bestN) {
+    for (const ext of ['', '-wal', '-shm']) {
+      try { fs.renameSync(best + ext, best + ext + '.migrated') } catch { /* 不存在则忽略 */ }
+    }
+    console.log(`[initDb] 已从历史旧路径迁移数据库：${best} -> ${canonical}（${copiedN} 条条目）`)
+  } else {
+    console.error(`[initDb] 旧库迁移校验失败，已保留原文件：${best}`)
+  }
+}
+
 export function checkpoint(): void { try { db.exec('PRAGMA wal_checkpoint(TRUNCATE)') } catch { /* */ } }
 
 export function initDb() {
@@ -77,11 +139,14 @@ export function initDb() {
   fs.mkdirSync(path.join(dir, 'images'), { recursive: true })
   fs.mkdirSync(path.join(dir, 'backups'), { recursive: true })
   dbPath = path.join(dir, 'readflow.db')
+  // 启动前先尝试把历史旧路径的数据库迁移到当前权威位置（修复「替换 app 后数据丢失」）
+  try { migrateLegacyDatabase(dbPath) } catch (e) { console.error('[initDb] 迁移旧库失败：', (e as Error).message) }
   assetsDir = path.join(dir, 'board-assets')
   fs.mkdirSync(assetsDir, { recursive: true })
   imagesDir = path.join(dir, 'images')
   db = new DatabaseSync(dbPath)
   db.exec('PRAGMA journal_mode = WAL')
+  console.log('[initDb] 数据库：', dbPath)
   migrate()
 }
 

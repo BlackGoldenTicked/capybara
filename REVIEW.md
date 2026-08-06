@@ -47,7 +47,8 @@
 
 ## 四、验证方式（可复现）
 
-1. 删除旧库：`rm ~/Library/Application\ Support/readflow/readflow/readflow.db*`（注意是 `readflow/readflow.db`，非上层占位文件）。
+1. 数据库权威路径固定为 `~/Library/Application Support/readflow/readflow/readflow.db`（所有数据集中在 `readflow/` 子目录下）。
+   历史旧路径（扁平的 `.../readflow/readflow.db`）若含数据，会在启动时**自动迁移**到权威位置并改名 `.migrated` 备份，无需手动处理，也**绝不要手动删除权威库**。
 2. 启动应用，等待 ~30s，查库：
    ```
    node /tmp/qitems.cjs "<上述路径>"
