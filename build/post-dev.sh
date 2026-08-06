@@ -55,12 +55,24 @@ python3 build/make-dmg.py 2>&1 | tail -12
 echo
 
 # ============================================================
-echo "==> [4/4] 打开程序"
+echo "==> [4/4] 安装并打开程序"
+# 把刚构建的 app 覆盖安装到 /Applications，保证「运行的」就是「刚构建的」版本
+# （彻底杜绝之前反复出现的「旧二进制 / 旧副本」问题）
+if [ -d "$PROJECT_DIR/release/mac/ReadFlow.app" ]; then
+  echo "    安装最新构建 → $APP"
+  rm -rf "$APP" 2>/dev/null || true
+  cp -R "$PROJECT_DIR/release/mac/ReadFlow.app" "$APP" 2>/dev/null || true
+  xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
+else
+  echo "    ⚠ 未找到刚构建的 $PROJECT_DIR/release/mac/ReadFlow.app（第三步构建可能失败）"
+fi
 if [ -d "$APP" ]; then
   open "$APP"
-  echo "    已打开 $APP"
+  # 前台激活，确保窗口跳到最前（未签名 app 默认可能躲在后面）
+  osascript -e 'tell application "ReadFlow" to activate' 2>/dev/null || true
+  echo "    已打开并前台激活 $APP（标题栏应为最新版本号）"
 else
-  echo "    ⚠ 未找到 $APP —— 请先把上面生成的 ReadFlow.app 拖进「应用程序」"
+  echo "    ⚠ 未找到 $APP"
 fi
 echo
 echo "==> 完成。请确认标题栏版本号是否为最新，并核对「设置 → 操作」数据库位置路径。"
