@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite'
+import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import path from 'node:path'
 import fs from 'node:fs'
 import { app } from 'electron'
@@ -83,7 +83,6 @@ export function initDb() {
   db = new DatabaseSync(dbPath)
   db.exec('PRAGMA journal_mode = WAL')
   migrate()
-  seedIfEmpty()
 }
 
 function migrate() {
@@ -207,85 +206,6 @@ function migrate() {
   } catch { /* FTS5 不可用，降级 LIKE */ }
 }
 
-function seedIfEmpty() {
-  // 一次性清理旧版预置源（v0.7.18 起不再预置 RSS/tophub）
-  removeLegacySeedsOnce()
-  // 清理上一版遗留的演示假数据
-  cleanupOldMock()
-
-  // 订阅源列表为空（全新安装，或升级后被清空）→ 预置一组精选 RSS 源， ensure 开箱即有内容可看。
-  // addFeeds 幂等（INSERT OR IGNORE），已装过但没源的用户每次启动也会自动补，重复无副作用；
-  // SEED_FEEDS 的 url 刻意避开 LEGACY 列表，不会被 removeLegacySeedsOnce 误删。
-  const feedCount = (db.prepare('SELECT COUNT(*) AS n FROM feeds').get() as { n: number }).n
-  if (feedCount === 0) {
-    addFeeds(SEED_FEEDS.map((f) => ({ type: f.type, name: f.name, url: f.url, schedule_min: f.schedule_min })))
-  }
-
-  // 全新安装（一条都没有）给一条引导卡片，真实数据几秒后由采集器补齐
-  const itemCount = (db.prepare('SELECT COUNT(*) AS n FROM items').get() as { n: number }).n
-  if (itemCount === 0) {
-    db.prepare(`INSERT INTO items (source_type, source_name, url, title, author, summary, content_text, status, published_at)
-      VALUES ('manual','阅流','https://readflow.app','欢迎使用阅流','ReadFlow',
-      '真实订阅源正在后台抓取，几秒后这里就会出现你的财经/科技资讯。左侧「来源管理」可增删 RSS。',
-      '这是一条引导卡片。收藏、稍后读、归档、送白板都会立即生效。',
-      'inbox', datetime('now'))`).run()
-  }
-}
-
-/**
- * 全新安装预置的精选订阅源（开箱即有内容）。
- * 注意：url 必须与下方 LEGACY_SEED_FEEDS 完全不重叠，否则会被 removeLegacySeedsOnce 误删。
- * key 设较高刷新频率，确保首屏很快有数据。
- */
-const SEED_FEEDS = [
-  { type: 'rss', name: 'Hacker News', url: 'https://news.ycombinator.com/rss', schedule_min: 30 },
-  { type: 'rss', name: '少数派', url: 'https://sspai.com/feed', schedule_min: 60 },
-  { type: 'rss', name: '酷壳 CoolShell', url: 'https://coolshell.cn/feed', schedule_min: 120 },
-  { type: 'rss', name: '虎嗅', url: 'https://www.huxiu.com/rss/0.xml', schedule_min: 60 },
-  { type: 'rss', name: 'V2EX', url: 'https://www.v2ex.com/index.xml', schedule_min: 60 },
-  { type: 'rss', name: 'GitHub Blog', url: 'https://github.blog/feed/', schedule_min: 120 }
-] as const
-
-/** 旧版预置的真实订阅源（v0.7.18 起不再预置；此列表仅用于一次性清理老用户库里的残留）。 */
-const LEGACY_SEED_FEEDS = [
-  { type: 'rss', name: '36氪', url: 'https://36kr.com/feed', schedule_min: 30 },
-  { type: 'rss', name: '钛媒体', url: 'https://www.tmtpost.com/rss.xml', schedule_min: 60 },
-  { type: 'rss', name: '阮一峰周刊', url: 'https://www.ruanyifeng.com/blog/atom.xml', schedule_min: 1440 },
-  { type: 'rss', name: 'CNBC Markets', url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664', schedule_min: 30 },
-  { type: 'rss', name: 'Bloomberg Markets', url: 'https://feeds.bloomberg.com/markets/news.rss', schedule_min: 30 },
-  { type: 'rss', name: 'Investing.com', url: 'https://www.investing.com/rss/news_25.rss', schedule_min: 30 },
-  { type: 'tophub', name: '热榜聚合', url: 'https://tophub.today/', schedule_min: 30 }
-] as const
-
-/** 一次性清理旧版预置源：删 feeds 表对应 url，并清理这些源未读未动的自动抓取条目；
- * 保留用户已读 / 收藏 / 稍后 / 归档 的内容（归用户，不算预置垃圾）。
- * 用 settings.seed_feeds_removed 作 sentinel，确保只跑一次。 */
-function removeLegacySeedsOnce() {
-  const done = db.prepare("SELECT 1 FROM settings WHERE key = 'seed_feeds_removed' AND value = '1'").get()
-  if (done) return
-  const urls = LEGACY_SEED_FEEDS.map(f => f.url)
-  const names = LEGACY_SEED_FEEDS.map(f => f.name)
-  const ph = urls.map(() => '?').join(',')
-  // 仅清未读未动的自动抓取条目（status='inbox' AND is_read=0）
-  db.prepare(`DELETE FROM items WHERE source_name IN (${names.map(() => '?').join(',')}) AND status = 'inbox' AND is_read = 0`).run(...names)
-  db.prepare(`DELETE FROM feeds WHERE url IN (${ph})`).run(...urls)
-  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run('seed_feeds_removed', '1')
-}
-
-/** 删除上一版写死的演示假条目（按已知 url 精确清理，不动用户真实数据）。 */
-function cleanupOldMock() {
-  const demoUrls = [
-    'https://x.com/karpathy/status/demo1',
-    'https://weekly.frontend.dev/issue-128',
-    'https://tophub.today/n/mproPpoq6O',
-    'https://mp.weixin.qq.com/s/demo',
-    'https://github.com/tldraw/tldraw',
-    'https://example.com/design-notes'
-  ]
-  const del = db.prepare('DELETE FROM items WHERE url = ?')
-  for (const u of demoUrls) del.run(u)
-}
-
 export type View = 'rss' | 'read' | 'later' | 'favorite' | 'archived' | 'all'
 
 /** 列表投影：只取列表/卡片需要的列，避免把整篇正文（content_html / content_text）跨 IPC 传来传去（性能优化 #1） */
@@ -316,8 +236,8 @@ function sanitizeMatch(input: string): string {
   return input.split(/\s+/).filter(Boolean).map((t) => `"${t.replace(/"/g, '""')}"*`).join(' ')
 }
 
-function buildListWhere(view: View, search: string, sourceType: string | null, sourceName: string | null): { where: string; args: unknown[] } {
-  const args: unknown[] = []
+function buildListWhere(view: View, search: string, sourceType: string | null, sourceName: string | null): { where: string; args: SQLInputValue[] } {
+  const args: SQLInputValue[] = []
   const conds: string[] = []
   if (search && hasFts()) {
     conds.push('i.id IN (SELECT rowid FROM items_fts WHERE items_fts MATCH ?)')
@@ -346,7 +266,7 @@ function buildListWhere(view: View, search: string, sourceType: string | null, s
 export function listItemsPage(view: View, search: string, sourceType: string | null, sourceName: string | null, page: number, pageSize: number): ItemRow[] {
   const { where, args } = buildListWhere(view, search, sourceType, sourceName)
   const orderBy = 'COALESCE(i.published_at, i.fetched_at) DESC'
-  const limitArgs = [...args, pageSize, page * pageSize]
+  const limitArgs: SQLInputValue[] = [...args, pageSize, page * pageSize]
   if (search && hasFts()) {
     return db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY (SELECT rank FROM items_fts WHERE rowid = i.id) LIMIT ? OFFSET ?`).all(...limitArgs) as unknown as ItemRow[]
   }
@@ -604,7 +524,7 @@ export interface NewCard {
 }
 
 function getCard(id: number): StoredCard {
-  return db.prepare('SELECT * FROM board_cards WHERE id = ?').get(id) as StoredCard
+  return db.prepare('SELECT * FROM board_cards WHERE id = ?').get(id) as unknown as StoredCard
 }
 
 /** 把本地文件拷入 board-assets 目录，以 cardId 命名，避免重名；返回可被 board-asset:// 协议访问的元数据 */
@@ -634,7 +554,7 @@ function migrateSnapshotToCards(boardId: number) {
 
 export function listCards(boardId: number): StoredCard[] {
   migrateSnapshotToCards(boardId)
-  return db.prepare('SELECT * FROM board_cards WHERE board_id = ? ORDER BY created_at ASC, id ASC').all(boardId) as StoredCard[]
+  return db.prepare('SELECT * FROM board_cards WHERE board_id = ? ORDER BY created_at ASC, id ASC').all(boardId) as unknown as StoredCard[]
 }
 
 export function addCard(c: NewCard): StoredCard {
@@ -667,7 +587,7 @@ export function updateCard(
     payload = JSON.stringify(p)
   }
   const sets: string[] = []
-  const args: unknown[] = []
+  const args: SQLInputValue[] = []
   if (patch.title !== undefined) { sets.push('title = ?'); args.push(patch.title) }
   if (patch.body !== undefined) { sets.push('body = ?'); args.push(patch.body) }
   if (patch.payload !== undefined || _sourcePath) { sets.push('payload = ?'); args.push(payload) }
