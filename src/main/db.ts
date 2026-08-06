@@ -371,10 +371,12 @@ export function listItemsPage(view: View, search: string, sourceType: string | n
   const { where, args } = buildListWhere(view, search, sourceType, sourceName)
   const orderBy = 'COALESCE(i.published_at, i.fetched_at) DESC'
   const limitArgs: SQLInputValue[] = [...args, pageSize, page * pageSize]
-  if (search && hasFts()) {
-    return db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY (SELECT rank FROM items_fts WHERE rowid = i.id) LIMIT ? OFFSET ?`).all(...limitArgs) as unknown as ItemRow[]
-  }
-  return db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...limitArgs) as unknown as ItemRow[]
+  console.log('[listItemsPage]', { view, search, sourceType, sourceName, page, pageSize, where, args })
+  const rows = search && hasFts()
+    ? db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY (SELECT rank FROM items_fts WHERE rowid = i.id) LIMIT ? OFFSET ?`).all(...limitArgs) as unknown as ItemRow[]
+    : db.prepare(`SELECT ${LIST_COLS} FROM items i ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`).all(...limitArgs) as unknown as ItemRow[]
+  console.log('[listItemsPage] returned', rows.length)
+  return rows
 }
 
 export function listItems(view: View, search: string, sourceType?: string | null, sourceName?: string | null): ItemRow[] {

@@ -153,12 +153,18 @@ export const useStore = create<State>((set, get) => ({
 
   load: async () => {
     const { view, search, activeSourceType, activeFeed } = get()
-    const [counts, sourceCounts, page0] = await Promise.all([
-      window.readflow.invoke('items:counts') as Promise<Record<View, number>>,
-      window.readflow.invoke('items:sourceCounts') as Promise<Record<string, number>>,
-      window.readflow.invoke('items:listPage', view, search, activeSourceType, activeFeed, 0, PAGE_SIZE) as Promise<ItemRow[]>
-    ])
-    set({ items: page0, itemsPage: 0, itemsDone: page0.length < PAGE_SIZE, itemsLoadingMore: false, counts, sourceCounts })
+    try {
+      const [counts, sourceCounts, page0] = await Promise.all([
+        window.readflow.invoke('items:counts') as Promise<Record<View, number>>,
+        window.readflow.invoke('items:sourceCounts') as Promise<Record<string, number>>,
+        window.readflow.invoke('items:listPage', view, search, activeSourceType, activeFeed, 0, PAGE_SIZE) as Promise<ItemRow[]>
+      ])
+      set({ items: page0, itemsPage: 0, itemsDone: page0.length < PAGE_SIZE, itemsLoadingMore: false, counts, sourceCounts })
+    } catch (e) {
+      const msg = (e as Error).message || String(e)
+      console.error('[load] 失败:', msg, { view, activeSourceType, activeFeed })
+      get().showToast('加载失败：' + msg)
+    }
   },
   loadMoreItems: async () => {
     const { itemsDone, itemsLoadingMore, itemsPage, view, search, activeSourceType, activeFeed } = get()
