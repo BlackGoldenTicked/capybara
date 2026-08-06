@@ -514,6 +514,20 @@ export function upsertItem(input: Partial<Item>): { id: number; changed: boolean
   return { id, changed: r.changes > 0 }
 }
 
+/**
+ * 仅当条目当前无封面时补一个（不覆盖已有 og:image）。
+ * 用于 RSS 自带缩略图给预算外条目兜底，避免把已抓取到的更好封面降级成媒体缩略图。
+ */
+export function fillCoverIfEmpty(id: number, url: string): boolean {
+  if (!url) return false
+  const cur = db.prepare('SELECT cover_url, cover_path FROM items WHERE id = ?').get(id) as
+    { cover_url: string; cover_path: string } | undefined
+  if (!cur) return false
+  if (cur.cover_url || cur.cover_path) return false
+  db.prepare('UPDATE items SET cover_url = ? WHERE id = ?').run(url, id)
+  return true
+}
+
 /** 下载封面到本地 images/，离线可用（配合画廊/白板，修复 #8 封面本地化） */
 export async function storeCover(id: number, url: string): Promise<void> {
   if (!url || !imagesDir) return
