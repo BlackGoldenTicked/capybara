@@ -1,6 +1,7 @@
 import RssParser from 'rss-parser'
 import type { Feed } from '../db'
 import { upsertItem, markFeedFetched, storeCover, fillCoverIfEmpty } from '../db'
+import { decodeHtmlEntities, htmlToSnippet } from '../lib/html'
 import { extractArticle } from './readability'
 import { netLog, extractError } from '../netlog'
 
@@ -27,24 +28,6 @@ interface NormEntry {
   contentSnippet?: string
   isoDate?: string
   mediaCover?: string
-}
-
-/** 把 RSS description/content 里的 HTML 实体编码内容还原为纯文本摘要（去掉图片/标签） */
-function htmlToSnippet(raw: string): string {
-  if (!raw) return ''
-  // 1) 解码常见 HTML 实体，2) 剥标签，3) 压缩空白
-  const decoded = raw
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, '&')
-  return decoded
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 300)
 }
 
 /** 从 RSS 媒体标签里取封面 URL（media:content / media:thumbnail / itunes:image） */
@@ -158,13 +141,16 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
   for (const entry of items.slice(0, 40)) {
     const url = entry.link ?? entry.guid ?? ''
     if (!url) continue
+    const rawContent = entry.content ?? entry.contentSnippet ?? ''
     const { id, changed } = upsertItem({
       source_type: 'rss',
       source_name: feed.name,
       url,
       title: entry.title ?? url,
       author: entry.creator ?? feedTitle ?? '',
-      summary: htmlToSnippet(entry.contentSnippet ?? entry.content ?? ''),
+      summary: htmlToSnippet(rawContent),
+      content_text: htmlToSnippet(rawContent),
+      content_html: decodeHtmlEntities(rawContent),
       published_at: entry.isoDate ?? new Date().toISOString()
     })
     if (changed && id) {

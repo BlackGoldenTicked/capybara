@@ -1,5 +1,19 @@
 import DOMPurify from 'dompurify'
 
+/** 把可能带 HTML 实体/标签的字符串转成纯文本（用于列表卡片摘要等兜底场景）。 */
+export function plainTextFromHtml(raw: string): string {
+  if (!raw) return ''
+  const div = document.createElement('div')
+  div.innerHTML = raw
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+  return (div.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 300)
+}
+
 /**
  * 把 Readability 抽出的原始正文 HTML 规整为「统一、适配暗色主题」的干净排版。
  *

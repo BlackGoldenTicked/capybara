@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import type { ItemRow } from '../env'
 import { Icon } from './icons'
 import { feedColor } from '../lib/feedColor'
+import { plainTextFromHtml } from '../lib/reader'
 
 const SOURCE_LABEL: Record<string, string> = {
   rss: 'RSS', x: 'X', wechat: '公众号', tophub: '热榜', github: 'GitHub', x_bookmark: 'X书签', manual: '手动'
@@ -65,7 +66,7 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
           <span className="card-time">{relTime(item.published_at || item.fetched_at)}</span>
         </div>
         <p className="card-title">{item.title}</p>
-        {item.summary && <p className="card-summary">{item.summary}</p>}
+        {item.summary && <p className="card-summary">{plainTextFromHtml(item.summary)}</p>}
 
         <div className="card-actions" onClick={stop} onDragStart={stop}>
           <button className="act" title="用系统默认浏览器打开" onClick={open}><Icon name="external" size={15} /></button>

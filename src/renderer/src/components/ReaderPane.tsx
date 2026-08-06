@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import type { Item } from '../env'
 import { Icon } from './icons'
-import { renderArticleHtml } from '../lib/reader'
+import { renderArticleHtml, plainTextFromHtml } from '../lib/reader'
 
 export function ReaderPane() {
   const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser } = useStore()
@@ -71,7 +71,7 @@ const [noImg, setNoImg] = useState(false)
         <p className="reader-meta">{item.author || item.source_name} · <a href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开">{item.url}</a></p>
         {cleanHtml
           ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: cleanHtml }} />
-          : <div className={`${contentClass} plain`} onClick={onContentClick}>{item.content_text || item.summary || '（无正文快照，等待采集器抓取全文）'}</div>}
+          : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>}
 
         {lightbox && (
           <div className="lightbox" onClick={() => setLightbox(null)}>

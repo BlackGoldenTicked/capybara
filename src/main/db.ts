@@ -2,6 +2,7 @@ import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 import path from 'node:path'
 import fs from 'node:fs'
 import { app } from 'electron'
+import { decodeHtmlEntities, htmlToSnippet } from './lib/html'
 
 export type ItemStatus = 'inbox' | 'later' | 'favorite' | 'archived'
 export type SourceType = 'rss' | 'x' | 'wechat' | 'tophub' | 'github' | 'x_bookmark' | 'manual'
@@ -308,6 +309,34 @@ function migrate() {
     // items 与 items_fts 行数不一致时全量重建索引（兜底触发器失效 / 老库脱节）
     if (ftsN !== itemsN) db.exec(`INSERT INTO items_fts(items_fts) VALUES('rebuild')`)
   } catch { /* FTS5 不可用，降级 LIKE */ }
+
+  // 修复旧数据中 HTML 实体编码的摘要/正文（RSS description 常把 <img> 整段编码，导致卡片与阅读区裸奔源码）
+  try { repairHtmlEncodedItems() } catch (e) { console.error('[initDb] 修复 HTML 实体编码失败：', (e as Error).message) }
+}
+
+/** 一次性修复：把 summary / content_html / content_text 中仍含 &lt; &gt; 等实体编码的行清洗还原。
+ * 注意：summary 只取前 300 字符，不能用来反推完整 content_html，因此 content_html 为空时保持为空，
+ * 等下次非 304 刷新时由 rss.ts 写入完整 decoded HTML。
+ */
+function repairHtmlEncodedItems(): number {
+  const rows = db.prepare(`
+    SELECT id, summary, content_text, content_html FROM items
+    WHERE summary LIKE '%&lt;%' OR summary LIKE '%&gt;%'
+       OR content_text LIKE '%&lt;%' OR content_text LIKE '%&gt;%'
+       OR content_html LIKE '%&lt;%' OR content_html LIKE '%&gt;%'
+  `).all() as Array<{ id: number; summary: string; content_text: string; content_html: string }>
+  if (!rows.length) return 0
+  const update = db.prepare('UPDATE items SET summary = ?, content_text = ?, content_html = ? WHERE id = ?')
+  let fixed = 0
+  for (const row of rows) {
+    const summary = htmlToSnippet(row.summary)
+    const contentText = htmlToSnippet(row.content_text)
+    const contentHtml = row.content_html ? decodeHtmlEntities(row.content_html) : ''
+    update.run(summary, contentText, contentHtml, row.id)
+    fixed++
+  }
+  console.log(`[initDb] 修复 ${fixed} 条 HTML 实体编码的摘要/正文`)
+  return fixed
 }
 
 export type View = 'rss' | 'read' | 'later' | 'favorite' | 'archived' | 'all'
