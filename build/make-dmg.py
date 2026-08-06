@@ -6,20 +6,24 @@ hdiutil 创建可读写 DMG，再用 Python ds_store + mac_alias 直接写入正
 .DS_Store（含 backgroundType=2 + 背景图别名 + 窗口布局 + 图标位置），
 最后压缩为只读 UDZO。全程不打开 Finder，避免其用默认值覆盖。
 """
+import json
 import os
 import shutil
 import subprocess
 
 APP_NAME = "ReadFlow"
-VERSION = "0.7.36"
-VOLUME = f"{APP_NAME} {VERSION}"
 
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASE = os.path.join(PROJECT, "release")
 APP_SRC = os.path.join(RELEASE, "mac", f"{APP_NAME}.app")
 BG = os.path.join(PROJECT, "build", "dmg-background.png")
-RW_DMG = "/tmp/readflow-build-rw.dmg"
+
+with open(os.path.join(PROJECT, "package.json"), encoding="utf-8") as f:
+    VERSION = json.load(f)["version"]
+VOLUME = f"{APP_NAME} {VERSION}"
 OUT_DMG = os.path.join(RELEASE, f"{APP_NAME}-{VERSION}.dmg")
+
+RW_DMG = "/tmp/readflow-build-rw.dmg"
 
 DS_STORE_SCRIPT = r'''
 from mac_alias import Alias
