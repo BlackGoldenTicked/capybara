@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# =============================================================
+# ReadFlow 开发完标准收尾流程（一键执行）
+# 用法： bash build/post-dev.sh
+# 流程：① 关掉所有运行中的 ReadFlow / dev 进程
+#      ② 清理历史构建产物与 DMG 挂载残留
+#      ③ 自动构建（electron-vite → electron-builder → DMG）
+#      ④ 打开 /Applications/ReadFlow.app
+# =============================================================
+set -uo pipefail
+
+APP="/Applications/ReadFlow.app"
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_DIR" || exit 1
+
+echo "==> 项目目录: $PROJECT_DIR"
+echo
+
+# ============================================================
+echo "==> [1/4] 关闭所有运行中的 ReadFlow / dev 进程"
+# 优雅退出（若已安装并正在运行）
+osascript -e 'tell application "ReadFlow" to quit' 2>/dev/null || true
+# 强杀残留（含 dev server：electron-vite / vite）
+pkill -f readflow       2>/dev/null || true
+pkill -f electron-vite  2>/dev/null || true
+pkill -f "vite"         2>/dev/null || true
+sleep 1
+echo "    已发送退出信号，等待 1s"
+echo
+
+# ============================================================
+echo "==> [2/4] 清理历史构建产物与挂载残留"
+# 卸载之前构建/预览残留的 DMG 卷（否则 make-dmg 会拿不到干净挂载点）
+for m in /Volumes/ReadFlow*; do
+  if [ -d "$m" ]; then
+    hdiutil detach "$m" -force -quiet 2>/dev/null && echo "    detached $m" || echo "    (跳过 $m)"
+  fi
+done
+rm -f /tmp/readflow-build-rw.dmg 2>/dev/null || true
+# 删除可再生的构建产物（out=编译缓存，release/mac=打包 app，release/*.dmg=旧安装包）
+rm -rf "$PROJECT_DIR/out"            2>/dev/null || true
+rm -rf "$PROJECT_DIR/release/mac"    2>/dev/null || true
+rm -f  "$PROJECT_DIR"/release/*.dmg  2>/dev/null || true
+echo "    已清理 out/ release/mac/ 旧 DMG 与挂载残留"
+echo "    （注意：不删除 .readflow-userData 与 ~/Library 下的生产数据库）"
+echo
+
+# ============================================================
+echo "==> [3/4] 自动构建（electron-vite → electron-builder → DMG）"
+npm run build 2>&1 | tail -8
+echo "    --- 打包 macOS app (dir) ---"
+./node_modules/.bin/electron-builder --mac --dir 2>&1 | tail -6
+echo "    --- 生成 DMG ---"
+python3 build/make-dmg.py 2>&1 | tail -12
+echo
+
+# ============================================================
+echo "==> [4/4] 打开程序"
+if [ -d "$APP" ]; then
+  open "$APP"
+  echo "    已打开 $APP"
+else
+  echo "    ⚠ 未找到 $APP —— 请先把上面生成的 ReadFlow.app 拖进「应用程序」"
+fi
+echo
+echo "==> 完成。请确认标题栏版本号是否为最新，并核对「设置 → 操作」数据库位置路径。"
