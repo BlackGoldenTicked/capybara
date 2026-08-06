@@ -29,6 +29,24 @@ interface NormEntry {
   mediaCover?: string
 }
 
+/** 把 RSS description/content 里的 HTML 实体编码内容还原为纯文本摘要（去掉图片/标签） */
+function htmlToSnippet(raw: string): string {
+  if (!raw) return ''
+  // 1) 解码常见 HTML 实体，2) 剥标签，3) 压缩空白
+  const decoded = raw
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+  return decoded
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300)
+}
+
 /** 从 RSS 媒体标签里取封面 URL（media:content / media:thumbnail / itunes:image） */
 function rssMediaCover(entry: Record<string, unknown>): string {
   const firstAttr = (v: unknown, attr: string): string => {
@@ -146,7 +164,7 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
       url,
       title: entry.title ?? url,
       author: entry.creator ?? feedTitle ?? '',
-      summary: (entry.contentSnippet ?? entry.content ?? '').slice(0, 300),
+      summary: htmlToSnippet(entry.contentSnippet ?? entry.content ?? ''),
       published_at: entry.isoDate ?? new Date().toISOString()
     })
     if (changed && id) {
