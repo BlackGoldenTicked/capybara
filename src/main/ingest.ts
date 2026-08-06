@@ -60,6 +60,11 @@ export function startIngestServer() {
     res.writeHead(404); res.end()
   })
 
+  server.on('error', (e) => {
+    // 端口被占用（上一次未退干净 / 其它程序占用）时，未捕获的 listen error 会直接崩掉主进程，
+    // 进而 createWindow 不执行 → 表现为「窗口空白 / 没数据」。这里吞掉，保证主程序继续启动。
+    console.error('[ingest] http server listen error:', (e as Error).message)
+  })
   server.listen(PORT, '127.0.0.1')
   return server
 }

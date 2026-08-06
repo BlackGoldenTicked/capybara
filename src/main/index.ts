@@ -427,7 +427,8 @@ function registerIpc() {
 }
 
 app.whenReady().then(() => {
-  initDb()
+  // 1) 数据库先行（同步、极快），但即便失败也要让窗口打开，避免「整片空白」
+  try { initDb() } catch (e) { console.error('[initDb] failed:', (e as Error).message) }
   registerIpc()
   // 注册 board-asset:// 协议，把白板附件目录映射出去供渲染进程加载
   protocol.registerFileProtocol('board-asset', (request, callback) => {
@@ -447,9 +448,10 @@ app.whenReady().then(() => {
       callback({ error: -2 })
     }
   })
-  startIngestServer()
-  startScheduler(notifyRefresh)
+  // 2) 窗口先行：保证 UI 永远能打开；次级服务（ingest / scheduler）即便抛错也不再拖垮窗口
   createWindow()
+  try { startIngestServer() } catch (e) { console.error('[ingest] failed:', (e as Error).message) }
+  try { startScheduler(notifyRefresh) } catch (e) { console.error('[scheduler] failed:', (e as Error).message) }
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 })
 

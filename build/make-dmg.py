@@ -11,7 +11,7 @@ import shutil
 import subprocess
 
 APP_NAME = "ReadFlow"
-VERSION = "0.7.28"
+VERSION = "0.7.29"
 VOLUME = f"{APP_NAME} {VERSION}"
 
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
