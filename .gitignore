@@ -125,3 +125,5 @@ coverage/
 .readflow-userData/Shared Dictionary/cache/index
 .readflow-userData/Shared Dictionary/cache/index-dir/the-real-index
 .readflow-userData/readflow/readflow.db
+.readflow-userData/readflow/readflow.db-shm
+.readflow-userData/readflow/readflow.db-wal
