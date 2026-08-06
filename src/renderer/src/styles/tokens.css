@@ -34,8 +34,8 @@
 
   /* 由外观设置动态覆盖（缺省值见 appearance.ts） */
   --font-scale: 1;
+  --font-weight: 400;
   --font-reading: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
-  /* 全局 UI 字体族：缺省用系统无衬线；initAppearance 后会被外观设置里的字体覆盖 */
   --font-ui: var(--font-sans);
 
   /* 主强调色直接由所选卡片风格的签名色 --card-accent 派生（不再有独立「强调色」控件）：

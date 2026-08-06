@@ -9,7 +9,6 @@ import {
   THEME_OPTIONS, CARD_STYLES,
   type ThemeMode, type CardStyleKey, type FontWeight
 } from '../lib/appearance'
-import { detectMonospaceFonts } from '../lib/monospace'
 import {
   SHORTCUT_GROUPS, DEFAULT_SHORTCUTS, formatCombo, eventToCombo,
   type ShortcutAction
@@ -55,10 +54,12 @@ export function SettingsView() {
 /* ===================== 外观 ===================== */
 function AppearanceTab() {
   const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume } = useStore()
-  const [monoFonts, setMonoFonts] = useState<string[]>([])
+  const [systemFonts, setSystemFonts] = useState<string[]>([])
   const styleGridRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { setMonoFonts(detectMonospaceFonts()) }, [])
+  useEffect(() => {
+    window.readflow.invoke('app:fontList').then((list) => setSystemFonts(list as string[])).catch(() => {})
+  }, [])
 
   const setTheme = (theme: ThemeMode) => updateAppearance({ theme })
   const setCardStyle = (cardStyle: CardStyleKey | 'none') => updateAppearance({ cardStyle })
@@ -110,11 +111,11 @@ function AppearanceTab() {
 
       <div className="set-card">
         <p className="src-label">字体</p>
-        <label className="src-row" style={{ marginBottom: 10 }}>等宽字体
+        <label className="src-row" style={{ marginBottom: 10 }}>全局字体
           <select value={appearance.fontFamily}
             onChange={(e) => updateAppearance({ fontFamily: e.target.value })}>
-            <option value="">系统默认等宽</option>
-            {monoFonts.map((f) => <option key={f} value={f}>{f}</option>)}
+            <option value="">系统默认</option>
+            {systemFonts.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </label>
         <label className="src-row" style={{ marginBottom: 10 }}>
@@ -131,7 +132,7 @@ function AppearanceTab() {
             ))}
           </div>
         </label>
-        <p className="src-hint">等宽字体从系统中探测到的可用字体里选择；字号为全局缩放（70%–200%），字重作用于阅读正文。</p>
+        <p className="src-hint">全局字体从系统已安装的全部字体中选择，字号为全局缩放（70%–200%），字重作用于全部文字。</p>
       </div>
 
       <div className="set-card">

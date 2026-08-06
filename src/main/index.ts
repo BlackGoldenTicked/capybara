@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, protocol, shell, dialog } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
+import os from 'node:os'
 import {
   initDb, listItems, listItemsPage, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
   View, ItemStatus,
@@ -244,7 +245,58 @@ function createWindow() {
   if (getSetting('developer_mode') === '1') mainWindow.webContents.openDevTools()
 }
 
-/** 采集完成后通知渲染进程刷新（不阻塞调度） */
+/** 扫描系统字体目录，返回去重并清洗后的字体家族名称列表 */
+function scanSystemFonts(): string[] {
+  const dirs = [
+    '/System/Library/Fonts',
+    '/Library/Fonts',
+    path.join(os.homedir(), 'Library/Fonts')
+  ]
+  const families = new Set<string>()
+  const blacklist = new Set([
+    'LastResort', 'Apple Color Emoji', 'Keyboard', 'CJK Symbols Fallback',
+    'Symbols Fallback', 'AquaKana', 'Apple Braille', 'Apple Chancery',
+    'Bodoni Ornaments', 'Hoefler Text Ornaments', 'Apple Symbols'
+  ])
+  // 常见字体文件名中的样式后缀（去掉这些以提取纯 family 名）
+  const styleSuffixes = [
+    '-Regular', '-Bold', '-Light', '-Medium', '-Thin', '-Italic', '-Oblique',
+    '-BoldItalic', '-SemiBold', '-ExtraBold', '-Black', '-Heavy',
+    '-UltraLight', '-Condensed', '-Extended', '-DemiBold', '-ExtraLight',
+    '-Semibold', '-Book', '-Roman', '-Normal', 'Regular', 'Bold', 'Light',
+    'Medium', 'Thin', 'Italic', 'Oblique', 'Black', 'Heavy', ' Bold Italic',
+    ' Medium Italic', ' Light Italic'
+  ]
+
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue
+    try {
+      const files = fs.readdirSync(dir)
+      for (const file of files) {
+        const lower = file.toLowerCase()
+        if (!lower.endsWith('.ttf') && !lower.endsWith('.otf') && !lower.endsWith('.ttc') && !lower.endsWith('.dfont'))
+          continue
+        let name = file.replace(/\.(ttf|otf|ttc|dfont)$/i, '')
+        // 去掉 Collection 后缀（.ttc 文件名通常是 PostScript 名称）
+        for (const sfx of styleSuffixes) {
+          if (name.endsWith(sfx)) { name = name.slice(0, -sfx.length); break }
+        }
+        name = name.trim()
+        if (name.length > 1 && !name.startsWith('.') && !blacklist.has(name)) {
+          families.add(name)
+        }
+      }
+    } catch { /* 目录不可读则跳过 */ }
+  }
+
+  // 补充常见缺漏的系统中文字体
+  const always = ['PingFang SC', 'PingFang TC', 'Hiragino Sans GB']
+  for (const a of always) {
+    if (!families.has(a)) families.add(a)
+  }
+
+  return [...families].sort((a, b) => a.localeCompare(b, 'zh-Hans'))
+}
 function notifyRefresh() {
   mainWindow?.webContents.send('sources:updated')
 }
@@ -252,6 +304,7 @@ function notifyRefresh() {
 function registerIpc() {
   const handlers: Record<string, (...args: never[]) => unknown> = {
     'app:version': () => app.getVersion(),
+    'app:fontList': (() => scanSystemFonts()) as never,
     // 暴露数据库文件绝对路径，便于用户在「设置 → 操作」里核对自己运行的 app 到底指向哪个库
     'app:dbFile': () => getDbFile(),
     'app:openDbDir': (() => { try { shell.openPath(path.dirname(getDbFile())); } catch { /* 忽略 */ } return true }) as never,

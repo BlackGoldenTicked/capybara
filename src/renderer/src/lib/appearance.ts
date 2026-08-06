@@ -9,8 +9,8 @@
  *   作为自身签名色；应用的主强调色（按钮 / 开关 / 链接 / 聚焦环 / 选中态）直接
  *   从 --card-accent 派生，因此不再需要独立的「强调色」控件——选了某个卡片风格，
  *   整站配色即随之确定。
- * - 阅读字体：从系统探测到的等宽字体中任选其一（见 lib/monospace.ts），
- *   字号缩放 70%–200%，字重 细 / 正常 / 粗。
+ * - 阅读字体：从系统已安装的全部字体中任选（通过 app:fontList IPC 动态获取），
+ *   字号缩放 70%–200%，字重 细(300) / 正常(400) / 粗(700) 全局生效。
  *
  * 所有配置写进主进程通用 settings 键值表（key 见 SETTING_KEYS）。
  */
@@ -21,17 +21,20 @@ export type CardStyleKey =
   | 'sunset' | 'lavender' | 'forest' | 'rose' | 'slate' | 'amber'
 export type FontWeight = 'thin' | 'normal' | 'bold'
 
-/** 系统默认等宽字体栈：未显式选择具体字体时使用，跨平台兜底。 */
+/** 系统默认 UI 字体栈（全局文字兜底）。 */
+export const DEFAULT_UI_STACK = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif"
+
+/** 等宽字体栈（仅代码块 `<code>` / `<pre>` 使用）。 */
 export const DEFAULT_MONO_STACK = "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
 
 export interface Appearance {
   theme: ThemeMode
   cardStyle: CardStyleKey | 'none'
-  /** 阅读等宽字体族名；空字符串表示使用系统默认等宽栈（DEFAULT_MONO_STACK）。 */
+  /** UI 全文字体族名；空字符串表示使用系统默认（DEFAULT_UI_STACK）。 */
   fontFamily: string
   /** 字号缩放 0.7–2.0（即 70%–200%）。 */
   fontScale: number
-  /** 字重：细(300) / 正常(400) / 粗(700)。 */
+  /** 字重：细(300) / 正常(400) / 粗(700)，全局生效。 */
   fontWeight: FontWeight
 }
 
@@ -76,11 +79,11 @@ export const CARD_STYLES: Array<{ key: CardStyleKey; label: string; preview: str
 const FONT_WEIGHTS: Record<FontWeight, number> = { thin: 300, normal: 400, bold: 700 }
 export const FONT_WEIGHT_VALUE = (w: FontWeight): number => FONT_WEIGHTS[w] ?? 400
 
-/** 阅读正文使用的字体族：显式选择某字体时以其优先，否则用系统默认等宽栈。 */
-export function readingFontStack(family: string): string {
+/** 全局 UI 字体栈：用户选择的字体优先，系统字体兜底（全软件文字统一）。 */
+export function uiFontStack(family: string): string {
   const f = family.trim()
-  if (!f) return DEFAULT_MONO_STACK
-  return `"${f}", ${DEFAULT_MONO_STACK}`
+  if (!f) return DEFAULT_UI_STACK
+  return `"${f}", ${DEFAULT_UI_STACK}`
 }
 
 const asString = (v: unknown, fallback: string): string => (typeof v === 'string' && v ? v : fallback)
@@ -131,13 +134,12 @@ export function applyAppearance(a: Appearance): void {
   if (a.cardStyle === 'none') root.removeAttribute('data-card-style')
   else root.setAttribute('data-card-style', a.cardStyle)
 
-  // 字号缩放 + 阅读字体族 + 字重
+  // 字号缩放 + 字体族 + 字重（全局生效）
   root.style.setProperty('--font-scale', String(a.fontScale))
-  // 阅读字体族
-  root.style.setProperty('--font-reading', readingFontStack(a.fontFamily))
-  // 全局 UI 字体族：与「阅读字体」保持同一选择（系统配置里选的字体同步到菜单 / 设置等界面）
-  root.style.setProperty('--font-ui', readingFontStack(a.fontFamily))
-  root.style.setProperty('--reader-weight', String(FONT_WEIGHT_VALUE(a.fontWeight)))
+  const stack = uiFontStack(a.fontFamily)
+  root.style.setProperty('--font-reading', stack)
+  root.style.setProperty('--font-ui', stack)
+  root.style.setProperty('--font-weight', String(FONT_WEIGHT_VALUE(a.fontWeight)))
 
   // 镜像到 localStorage，下次启动首帧前由 bootAppearance 同步应用
   cacheAppearance(a)
