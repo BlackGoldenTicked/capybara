@@ -704,9 +704,11 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .disc-empty { padding: 40px 24px; color: var(--color-text-tertiary); font-size: 13px; line-height: 1.8; text-align: center; }
 /* 自适应：容器限宽 640px，仓库卡片用 280-320 列，避免宽屏被拉成单条；
    窗口变窄时自动 1 列；多列布局避免每张卡片被拉得很高（信息密度更高） */
-/* 卡片固定最小宽 300 / 高 400；grid 自动按容器宽度排成多列，避免被拉成单条 */
-.repo-grid { flex: 1; overflow-y: auto; padding: 16px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; align-content: start; max-width: 1200px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-.repo-card { min-height: 400px; min-width: 300px; border: 0.5px solid var(--color-border-tertiary); border-radius: 10px; background: var(--color-background-secondary); overflow: hidden; display: flex; flex-direction: column; transition: border-color .12s var(--ease-out), box-shadow .15s var(--ease-out); }
+/* 卡片最小宽 350 / 高 200：折叠态内容约 100px，200 既能读作卡片又不至于大面积留白；grid 自动按容器宽度排成多列，避免被拉成单条 */
+.repo-grid { flex: 1; overflow-y: auto; padding: 16px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 14px; align-content: start; max-width: 1260px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.repo-card { min-height: 200px; min-width: 350px; border: 0.5px solid var(--color-border-tertiary); border-radius: 10px; background: var(--color-background-secondary); overflow: hidden; display: flex; flex-direction: column; transition: border-color .12s var(--ease-out), box-shadow .15s var(--ease-out); }
+/* 窄屏（窗口被压窄）兜底：避免 min 350 触发横向溢出，卡片改回更窄自适应列 */
+@media (max-width: 760px) { .repo-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); } }
 .repo-card.open { border-color: var(--color-border-info); box-shadow: 0 2px 14px color-mix(in srgb, var(--color-text-primary) 22%, transparent); }
 .repo-head { display: flex; gap: 10px; padding: 11px 13px; cursor: pointer; }
 .repo-head:hover { background: var(--color-background-tertiary); }
