@@ -8,7 +8,7 @@ import {
   listBoards, createBoard, deleteBoard,
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
   listLinks, addLink, deleteLink, updateLink,
-  getSetting, setSetting, sourceCounts,
+  getSetting, setSetting, sourceCounts, getDbFile,
   storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint
 } from './db'
 import { startIngestServer } from './ingest'
@@ -240,6 +240,9 @@ function notifyRefresh() {
 function registerIpc() {
   const handlers: Record<string, (...args: never[]) => unknown> = {
     'app:version': () => app.getVersion(),
+    // 暴露数据库文件绝对路径，便于用户在「设置 → 操作」里核对自己运行的 app 到底指向哪个库
+    'app:dbFile': () => getDbFile(),
+    'app:openDbDir': (() => { try { shell.openPath(path.dirname(getDbFile())); } catch { /* 忽略 */ } return true }) as never,
     // 启动引导：一次性返回外观 / 音效 / 快捷键 / 开发者模式 / 布局 / 版本，把渲染进程启动时的多次
     // settings:get 顺序往返合并为 1 次 IPC，缩短首屏耗时（app:bootstrap）
     'app:bootstrap': (() => {

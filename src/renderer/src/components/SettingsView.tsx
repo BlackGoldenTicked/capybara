@@ -225,6 +225,12 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
   const [msg, setMsg] = useState('')
   const [keepDays, setKeepDays] = useState(90)
   const [maxItems, setMaxItems] = useState(2000)
+  const [dbFile, setDbFile] = useState('')
+
+  useEffect(() => {
+    const w = window as unknown as { readflow?: { invoke: (c: string, ...a: unknown[]) => Promise<unknown> } }
+    void w.readflow?.invoke('app:dbFile').then((r) => setDbFile(String(r || '')))
+  }, [])
 
   const refresh = async () => { setMsg('刷新中…'); await onRefresh(); setMsg('已触发全部源刷新'); showToast('已开始刷新') }
   const clear = async () => {
@@ -234,9 +240,25 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
     await purge(keepDays, maxItems)
     setMsg(`已按保留策略清理（保留 ${keepDays} 天内的归档，单库上限 ${maxItems} 条）`)
   }
+  const copyDbPath = async () => {
+    try { await navigator.clipboard.writeText(dbFile); showToast('数据库路径已复制') } catch { showToast('复制失败') }
+  }
+  const openDbDir = async () => {
+    const w = window as unknown as { readflow?: { invoke: (c: string, ...a: unknown[]) => Promise<unknown> } }
+    await w.readflow?.invoke('app:openDbDir')
+  }
 
   return (
     <div className="set-scroll">
+      <div className="set-card">
+        <p className="src-label">数据库位置</p>
+        <p className="src-hint">本应用所有订阅源与文章都存于本地 SQLite 文件。若你看到「没数据」，先核对这里显示的<strong>是否就是下面这个有数据的文件</strong>：<br /><code className="db-path">{dbFile || '加载中…'}</code></p>
+        <div className="src-actions">
+          <button onClick={() => void copyDbPath()}><Icon name="file" size={14} /> 复制路径</button>
+          <button onClick={() => void openDbDir()}><Icon name="external" size={14} /> 在访达中打开</button>
+        </div>
+      </div>
+
       <div className="set-card">
         <p className="src-label">开发者模式</p>
         <p className="src-hint">开启后自动打开 DevTools 并在界面右下角显示网络诊断面板（每个 RSS 请求的状态 / 耗时 / 字节 / 错误），便于排查「无法获取数据」。</p>
