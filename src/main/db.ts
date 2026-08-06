@@ -62,7 +62,14 @@ let imagesDir = ''
 export function getAssetsDir(): string { return assetsDir }
 export function getImagesDir(): string { return imagesDir }
 
-export function getDbFile(): string { return dbPath }
+export function getDbFile(): string {
+  // 惰性兜底：即便 initDb 因异常（如数据库被占用）未跑完，也能算出本应使用的库路径，
+  // 避免设置页「数据库位置」永远显示「加载中」而给不出任何诊断信息。
+  if (!dbPath) {
+    try { dbPath = path.join(app.getPath('userData'), 'readflow', 'readflow.db') } catch { /* app 未就绪，返回空 */ }
+  }
+  return dbPath
+}
 export function checkpoint(): void { try { db.exec('PRAGMA wal_checkpoint(TRUNCATE)') } catch { /* */ } }
 
 export function initDb() {
