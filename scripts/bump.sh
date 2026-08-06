@@ -6,6 +6,9 @@
 #
 # 用法：
 #   bash scripts/bump.sh "本次改动简述"
+#
+# 注意：本脚本执行 git commit 后，会由 .git/hooks/post-commit 钩子
+#       自动触发完整构建并安装（bash build/post-dev.sh），无需手动构建。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
