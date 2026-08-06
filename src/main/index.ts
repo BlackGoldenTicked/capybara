@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, protocol, shell, dialog } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import {
-  initDb, listItems, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
+  initDb, listItems, listItemsPage, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
   View, ItemStatus,
   listFeeds, addFeed, addFeeds, deleteFeed, upsertItem,
   listBoards, createBoard, deleteBoard,
@@ -17,6 +17,16 @@ import { extractArticle } from './sources/readability'
 import { backupWebDAV } from './sync'
 import { searchRssRepos, extractFeeds } from './sources/githubDiscover'
 import { netLog, setNetLogWindow } from './netlog'
+
+if (!app.isPackaged) {
+  try {
+    const devUserData = path.join(process.cwd(), '.readflow-userData')
+    fs.mkdirSync(devUserData, { recursive: true })
+    app.setPath('userData', devUserData)
+    app.commandLine.appendSwitch('no-sandbox')
+    app.commandLine.appendSwitch('disable-gpu-sandbox')
+  } catch {}
+}
 
 /** 轻量 OPML 解析：提取所有带 xmlUrl 的 outline（兼容嵌套分组），返回 {title,url} 列表 */
 function parseOpml(xml: string): Array<{ title: string; url: string }> {

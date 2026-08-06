@@ -14,3 +14,114 @@ coverage/
 # 本地配置（如有）
 .env
 .env.local
+.readflow-userData/Cookies
+.readflow-userData/Cookies-journal
+.readflow-userData/DIPS
+.readflow-userData/Network Persistent State
+.readflow-userData/Preferences
+.readflow-userData/Trust Tokens
+.readflow-userData/Trust Tokens-journal
+.readflow-userData/Cache/Cache_Data/1eb05245e65f8565_0
+.readflow-userData/Cache/Cache_Data/2d08beeb0326902b_0
+.readflow-userData/Cache/Cache_Data/2f4956b83bbca131_0
+.readflow-userData/Cache/Cache_Data/03cd933a3c4440c7_0
+.readflow-userData/Cache/Cache_Data/4a2815c150dd1b4e_0
+.readflow-userData/Cache/Cache_Data/4fba80b0cb9bd4b1_0
+.readflow-userData/Cache/Cache_Data/5b4dee81c3d42609_0
+.readflow-userData/Cache/Cache_Data/6c3165b295b4ec07_0
+.readflow-userData/Cache/Cache_Data/7ee111201262db5c_0
+.readflow-userData/Cache/Cache_Data/8a5021874a654d5f_0
+.readflow-userData/Cache/Cache_Data/8d064a42c1db9bfb_0
+.readflow-userData/Cache/Cache_Data/8eb2411b5dd148ba_0
+.readflow-userData/Cache/Cache_Data/09dc165e42af1973_0
+.readflow-userData/Cache/Cache_Data/22e30208a7bfbaf0_0
+.readflow-userData/Cache/Cache_Data/60d63d629c5eb150_0
+.readflow-userData/Cache/Cache_Data/82bd6a484600efdc_0
+.readflow-userData/Cache/Cache_Data/84aa6a4dff24cba8_0
+.readflow-userData/Cache/Cache_Data/0918f63fd65b4a7f_0
+.readflow-userData/Cache/Cache_Data/3861d973bcf863e7_0
+.readflow-userData/Cache/Cache_Data/4033b1e5c0a0449a_0
+.readflow-userData/Cache/Cache_Data/5080cc3c41ad85df_0
+.readflow-userData/Cache/Cache_Data/a0e1f5f4c70cf5b4_0
+.readflow-userData/Cache/Cache_Data/a31be30dca2eb360_0
+.readflow-userData/Cache/Cache_Data/a824df4eaf4f174e_0
+.readflow-userData/Cache/Cache_Data/b8bcb82e76d127da_0
+.readflow-userData/Cache/Cache_Data/b669d2faf7ea83c0_0
+.readflow-userData/Cache/Cache_Data/cad7551483bf8ea3_0
+.readflow-userData/Cache/Cache_Data/cc6aa14b83540ee4_0
+.readflow-userData/Cache/Cache_Data/ce310c70626f2529_0
+.readflow-userData/Cache/Cache_Data/dc4615cd8d262376_0
+.readflow-userData/Cache/Cache_Data/de6fa420f68b157e_0
+.readflow-userData/Cache/Cache_Data/e0af531ad4fa84bc_0
+.readflow-userData/Cache/Cache_Data/e0d3e5ed7a217277_0
+.readflow-userData/Cache/Cache_Data/ec8675651a3747a4_0
+.readflow-userData/Cache/Cache_Data/fa69ffda9f1dc96d_0
+.readflow-userData/Cache/Cache_Data/fba1698e4a1715e8_0
+.readflow-userData/Cache/Cache_Data/index
+.readflow-userData/Cache/Cache_Data/index-dir/the-real-index
+.readflow-userData/Code Cache/js/0b885c280605fe79_0
+.readflow-userData/Code Cache/js/1a13777fb74e0096_0
+.readflow-userData/Code Cache/js/2fb6f6e4e0e41c54_0
+.readflow-userData/Code Cache/js/3a675c797620ded1_0
+.readflow-userData/Code Cache/js/3bc9c7a59e166645_0
+.readflow-userData/Code Cache/js/6f76cabefaf66b10_0
+.readflow-userData/Code Cache/js/7d1ac5b335528ba8_0
+.readflow-userData/Code Cache/js/9d194a07d3cb3bee_0
+.readflow-userData/Code Cache/js/26bdc2dbdd8340f5_0
+.readflow-userData/Code Cache/js/30b288ec887360bb_0
+.readflow-userData/Code Cache/js/046a721bcfe4f22c_0
+.readflow-userData/Code Cache/js/65b61282fabd7189_0
+.readflow-userData/Code Cache/js/145bcffccbf3cb89_0
+.readflow-userData/Code Cache/js/238cb81459d296b6_0
+.readflow-userData/Code Cache/js/425ca3597a0c46af_0
+.readflow-userData/Code Cache/js/741db8f663a3f93f_0
+.readflow-userData/Code Cache/js/9613c2c082af3179_0
+.readflow-userData/Code Cache/js/48364f31e6ab86f9_0
+.readflow-userData/Code Cache/js/5824588ebdab5e6b_0
+.readflow-userData/Code Cache/js/7597887f1ddbbb1d_0
+.readflow-userData/Code Cache/js/a2f798e38cbe9ecd_0
+.readflow-userData/Code Cache/js/b5ad6d442dd9610c_0
+.readflow-userData/Code Cache/js/b5d796bbd7d3dfa4_0
+.readflow-userData/Code Cache/js/b45f5c4240ed753b_0
+.readflow-userData/Code Cache/js/c89d94fd1e978165_0
+.readflow-userData/Code Cache/js/c5556343f37e7dde_0
+.readflow-userData/Code Cache/js/d6d5243bf72de762_0
+.readflow-userData/Code Cache/js/dc0c1c1c0660d8c8_0
+.readflow-userData/Code Cache/js/e92226b9a6d10443_0
+.readflow-userData/Code Cache/js/ea910a67dd72de86_0
+.readflow-userData/Code Cache/js/ef59ad035facc758_0
+.readflow-userData/Code Cache/js/f9e9889b191e7591_0
+.readflow-userData/Code Cache/js/f78fac30a88806b4_0
+.readflow-userData/Code Cache/js/fa58701a231e5542_0
+.readflow-userData/Code Cache/js/index
+.readflow-userData/Code Cache/js/index-dir/the-real-index
+.readflow-userData/Code Cache/wasm/index
+.readflow-userData/Code Cache/wasm/index-dir/the-real-index
+.readflow-userData/DawnGraphiteCache/data_0
+.readflow-userData/DawnGraphiteCache/data_1
+.readflow-userData/DawnGraphiteCache/data_2
+.readflow-userData/DawnGraphiteCache/data_3
+.readflow-userData/DawnGraphiteCache/index
+.readflow-userData/DawnWebGPUCache/data_0
+.readflow-userData/DawnWebGPUCache/data_1
+.readflow-userData/DawnWebGPUCache/data_2
+.readflow-userData/DawnWebGPUCache/data_3
+.readflow-userData/DawnWebGPUCache/index
+.readflow-userData/GPUCache/data_0
+.readflow-userData/GPUCache/data_1
+.readflow-userData/GPUCache/data_2
+.readflow-userData/GPUCache/data_3
+.readflow-userData/GPUCache/index
+.readflow-userData/Local Storage/leveldb/CURRENT
+.readflow-userData/Local Storage/leveldb/LOCK
+.readflow-userData/Local Storage/leveldb/LOG
+.readflow-userData/Local Storage/leveldb/MANIFEST-000001
+.readflow-userData/Session Storage/CURRENT
+.readflow-userData/Session Storage/LOCK
+.readflow-userData/Session Storage/LOG
+.readflow-userData/Session Storage/MANIFEST-000001
+.readflow-userData/Shared Dictionary/db
+.readflow-userData/Shared Dictionary/db-journal
+.readflow-userData/Shared Dictionary/cache/index
+.readflow-userData/Shared Dictionary/cache/index-dir/the-real-index
+.readflow-userData/readflow/readflow.db
