@@ -277,7 +277,7 @@ export const useStore = create<State>((set, get) => ({
       const bad = get().feeds.find((f) => f.id === id)
       get().showToast('无法获取数据：' + (bad?.last_error || '未知错误'))
     }
-    await get().load()
+    await Promise.all([get().load(), get().loadFeeds()])
   },
   markAllRead: async (view) => { const counts = await window.readflow.invoke('items:markAllRead', view) as Record<View, number>; set({ counts }); playSound('complete'); await get().load() },
   clearInbox: async () => { const counts = await window.readflow.invoke('items:clearInbox') as Record<View, number>; set({ counts }); playSound('complete'); await get().load() },

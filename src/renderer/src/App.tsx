@@ -66,7 +66,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const cb = () => { void useStore.getState().load() }
+    const cb = () => { void useStore.getState().load(); void useStore.getState().loadFeeds() }
     window.readflow.onSourcesUpdated(cb)
   }, [])
 
