@@ -47,7 +47,7 @@ icvp = {
     "showItemInfo": False,
     "labelOnBottom": True,
     "textSize": 13,
-    "iconSize": 128,
+    "iconSize": 80,
     "scrollOrigin": "{0, 0}",
     "gridSpacing": 100,
     "arrangeBy": "none",
@@ -74,8 +74,8 @@ with DSStore.open(DS_STORE, "w+") as d:
     d["."]["bwsp"] = bwsp
     d["."]["icvp"] = icvp
     d["."]["icvl"] = ("long", 64)
-    d["ReadFlow.app"]["Iloc"] = (200, 170)
-    d["Applications"]["Iloc"] = (470, 170)
+    d["ReadFlow.app"]["Iloc"] = (180, 190)
+    d["Applications"]["Iloc"] = (490, 170)
 print("DS_Store written")
 '''
 
