@@ -71,7 +71,7 @@ export function DiscoverView() {
         <div className="disc-search">
           <input placeholder="追加搜索（如：awesome rss）" value={query} onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') search() }} />
-          <button onClick={search}>搜索</button>
+          <button className="beam-border" onClick={search}>搜索</button>
         </div>
       </div>
 

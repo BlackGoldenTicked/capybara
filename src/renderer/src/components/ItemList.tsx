@@ -3,7 +3,6 @@ import { FixedSizeList, type ListChildComponentProps } from 'react-window'
 import { useStore } from '../store'
 import type { ItemRow } from '../env'
 import { Icon } from './icons'
-import { feedColor } from '../lib/feedColor'
 import { plainTextFromHtml } from '../lib/reader'
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -60,7 +59,6 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
         onClick={() => data.onSelect(item.id)}>
         <div className="card-meta">
           <span className={`badge ${item.source_type}`}>
-            <span className="src-dot" style={{ background: feedColor(item.source_name) }} />
             {SOURCE_LABEL[item.source_type]} · {item.source_name}
           </span>
           <span className="card-time">{relTime(item.published_at || item.fetched_at)}</span>
