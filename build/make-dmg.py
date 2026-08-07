@@ -74,8 +74,8 @@ with DSStore.open(DS_STORE, "w+") as d:
     d["."]["bwsp"] = bwsp
     d["."]["icvp"] = icvp
     d["."]["icvl"] = ("long", 64)
-    d["ReadFlow.app"]["Iloc"] = (220, 170)
-    d["Applications"]["Iloc"] = (600, 170)
+    d["ReadFlow.app"]["Iloc"] = (200, 170)
+    d["Applications"]["Iloc"] = (470, 170)
 print("DS_Store written")
 '''
 
