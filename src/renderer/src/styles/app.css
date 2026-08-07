@@ -237,7 +237,7 @@ input:focus { border-color: var(--color-border-info); }
 .db-err { margin-top: 6px; color: var(--color-danger, #e5484d); }
 .set-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
 .set-card .src-label { margin: 0; }
-.set-card button { align-self: flex-start; }
+.set-card > button { align-self: flex-start; }
 .soon { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--color-background-info); color: var(--color-text-info); margin-left: 6px; }
 .soon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .soon-item { padding: 10px 12px; border: 0.5px dashed var(--color-border-secondary); border-radius: 8px; color: var(--color-text-tertiary); font-size: 13px; }
