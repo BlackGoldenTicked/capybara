@@ -54,7 +54,7 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
   return (
     <div style={style}>
       <div
-        className={`card ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
+        className={`card beam-border ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
         draggable
         onDragStart={(e) => { e.dataTransfer.setData('application/x-item-id', String(item.id)); e.dataTransfer.effectAllowed = 'copy' }}
         onClick={() => data.onSelect(item.id)}>

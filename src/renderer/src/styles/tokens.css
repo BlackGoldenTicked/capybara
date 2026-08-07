@@ -5,6 +5,13 @@
    - 圆角 8/12/16
    ============================================ */
 
+/* 边框光效动画（CSS @property 需顶层声明） */
+@property --beam-opacity {
+  syntax: '<number>';
+  initial-value: 0.06;
+  inherits: false;
+}
+
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", Menlo, monospace;
