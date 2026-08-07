@@ -79,7 +79,7 @@ function AppearanceTab() {
 
   return (
     <div className="set-scroll">
-      <div className="set-card beam-border">
+      <div className="set-card">
         <p className="src-label">主题</p>
         <div className="seg">
           {THEME_OPTIONS.map((o) => (
@@ -88,7 +88,7 @@ function AppearanceTab() {
         </div>
       </div>
 
-      <div className="set-card beam-border">
+      <div className="set-card">
         <div className="src-head-row">
           <p className="src-label">卡片风格（整面配色 · 共 12 种，选其一即确定全站配色）</p>
           <span className="cur-chip"><span className="cur-swatch" style={{ background: currentStyle.preview }} />{currentStyle.label}</span>
@@ -109,7 +109,7 @@ function AppearanceTab() {
         </div>
       </div>
 
-      <div className="set-card beam-border">
+      <div className="set-card">
         <p className="src-label">字体</p>
         <label className="src-row" style={{ marginBottom: 10 }}>全局字体
           <select value={appearance.fontFamily}
@@ -135,7 +135,7 @@ function AppearanceTab() {
         <p className="src-hint">全局字体从系统已安装的全部字体中选择，字号为全局缩放（70%–200%），字重作用于全部文字。</p>
       </div>
 
-      <div className="set-card beam-border">
+      <div className="set-card">
         <p className="src-label">音效</p>
         <label className="switch-row">
           <span>启用界面音效</span>
@@ -185,7 +185,7 @@ function ShortcutsTab() {
 
   return (
     <div className="set-scroll">
-      <div className="set-card beam-border">
+      <div className="set-card">
         <div className="src-head-row">
           <p className="src-label">快捷键</p>
           <button className="mini-btn" onClick={() => resetShortcuts()}><Icon name="refresh" size={13} /> 全部重置</button>
@@ -269,7 +269,7 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
 
   return (
     <div className="set-scroll">
-      <div className="set-card beam-border">
+      <div className="set-card">
         <p className="src-label">数据库位置</p>
         <p className="src-hint">本应用所有订阅源与文章都存于本地 SQLite 文件。若你看到「没数据」，先核对这里显示的<strong>是否就是下面这个有数据的文件</strong>：</p>
         {dbErr
@@ -281,7 +281,7 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
         </div>
       </div>
 
-      <div className="set-card beam-border">
+      <div className="set-card">
         <p className="src-label">开发者模式</p>
         <p className="src-hint">开启后自动打开 DevTools 并在界面右下角显示网络诊断面板（每个 RSS 请求的状态 / 耗时 / 字节 / 错误），便于排查「无法获取数据」。</p>
         <div className="switch-row">
@@ -290,7 +290,7 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
         </div>
       </div>
 
-      <div className="set-card beam-border">
+      <div className="set-card">
         <p className="src-label">数据操作</p>
         <div className="src-actions">
           <button onClick={() => void refresh()}><Icon name="refresh" size={14} /> 立即刷新全部源</button>
@@ -299,7 +299,7 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
         </div>
       </div>
 
-      <div className="set-card beam-border">
+      <div className="set-card">
         <p className="src-label">性能 · 保留策略</p>
         <p className="src-hint">仅清理「已归档」且抓取时间早于阈值的条目，以及单库总量超出上限时最旧的归档；RSS / 稍后读 / 收藏永不被自动清理。</p>
         <div className="src-grid-2">

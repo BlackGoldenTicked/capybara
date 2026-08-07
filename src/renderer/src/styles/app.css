@@ -984,11 +984,6 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 
 /* 卡片已选中时：保持原有强调框，beam 降到几乎不可见 */
 .card.beam-border.selected::before { opacity: 0.05; animation: none; }
-/* 搜索框获得焦点时：保持原有 focus 框，beam 微亮 */
-.sidebar-search-input.beam-border:focus::before { opacity: 0.2; animation: none; }
-/* 搜索按钮：更显眼，hover 持续呼吸 */
-button.beam-border { position: relative; z-index: 0; }
-button.beam-border::before { animation: beam-breathe 2.4s ease-in-out infinite; }
 
 /* ====== 刷新诊断面板 ====== */
 .diag-panel { padding: 16px 20px; max-height: 100%; overflow-y: auto; }
