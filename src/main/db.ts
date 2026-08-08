@@ -146,6 +146,28 @@ function migrateLegacyDatabase(canonical: string) {
 
 export function checkpoint(): void { try { db.exec('PRAGMA wal_checkpoint(TRUNCATE)') } catch { /* */ } }
 
+// 定期 WAL checkpoint：每 30 分钟或 WAL 文件超过 10MB 时自动截断
+let walTimer: ReturnType<typeof setInterval> | null = null
+const WAL_CHECKPOINT_INTERVAL = 30 * 60 * 1000
+const WAL_SIZE_THRESHOLD = 10 * 1024 * 1024
+
+function startWalCheckpoint() {
+  walTimer = setInterval(() => {
+    try {
+      const walFile = dbPath.replace(/\.db$/, '.db-wal')
+      const stat = fs.statSync(walFile)
+      if (stat.size > WAL_SIZE_THRESHOLD) {
+        console.log(`[db] WAL 文件 ${(stat.size / 1024 / 1024).toFixed(1)}MB，执行 checkpoint`)
+        checkpoint()
+      }
+    } catch { /* WAL 文件可能不存在 */ }
+  }, WAL_CHECKPOINT_INTERVAL)
+}
+
+export function stopWalCheckpoint() {
+  if (walTimer) { clearInterval(walTimer); walTimer = null }
+}
+
 /**
  * 单层化收尾：若仍存在 v0.7.33 的嵌套数据子目录 userData/readflow/，
  * 把里面的 images/backups/board-assets 上移到 userData 根，再删除空壳。
@@ -198,6 +220,8 @@ export function initDb() {
   db.exec('PRAGMA journal_mode = WAL')
   console.log('[initDb] 数据库：', dbPath)
   migrate()
+  // 定期 WAL checkpoint，防止长时间运行后 WAL 文件膨胀
+  startWalCheckpoint()
 }
 
 function migrate() {

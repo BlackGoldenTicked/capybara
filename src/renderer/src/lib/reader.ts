@@ -14,6 +14,56 @@ export function plainTextFromHtml(raw: string): string {
   return (div.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 300)
 }
 
+// ---- Worker 初始化 ----
+
+let workerPromise: Promise<Worker | null> | undefined
+
+function getWorker(): Promise<Worker | null> {
+  if (workerPromise === undefined) {
+    workerPromise = new Promise((resolve) => {
+      try {
+        const w = new Worker(
+          new URL('../workers/article-cleaner.worker.ts', import.meta.url),
+          { type: 'module' }
+        )
+        resolve(w)
+      } catch {
+        console.warn('[reader] Web Worker 不可用，回退到主线程清洗')
+        resolve(null)
+      }
+    })
+  }
+  return workerPromise
+}
+
+/**
+ * 通过 Web Worker 异步清洗正文 HTML。
+ * 成功时返回干净 HTML，失败或 Worker 不可用时回退到同步清洗。
+ */
+export async function cleanArticleHtml(raw: string): Promise<string> {
+  if (!raw || !raw.trim()) return ''
+
+  const worker = await getWorker()
+  if (!worker) return renderArticleHtml(raw)
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      // 3 秒超时，回退到同步清洗
+      resolve(renderArticleHtml(raw))
+    }, 3000)
+
+    worker.onmessage = (e: MessageEvent<string>) => {
+      clearTimeout(timer)
+      resolve(e.data || '')
+    }
+    worker.onerror = () => {
+      clearTimeout(timer)
+      resolve(renderArticleHtml(raw))
+    }
+    worker.postMessage({ html: raw })
+  })
+}
+
 /**
  * 把 Readability 抽出的原始正文 HTML 规整为「统一、适配暗色主题」的干净排版。
  *

@@ -10,7 +10,7 @@ import {
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
   listLinks, addLink, deleteLink, updateLink,
   getSetting, setSetting, sourceCounts, getDbFile,
-  storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint,
+  storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint, stopWalCheckpoint,
   dbTables, dbRows
 } from './db'
 import { startIngestServer } from './ingest'
@@ -537,5 +537,5 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 
-// 退出前截断 WAL，避免 .db-wal 无限增长、下次启动回放变慢（修复 RSS 逻辑：重启/更新后体验）
-app.on('before-quit', () => { try { checkpoint() } catch { /* */ } })
+// 退出前截断 WAL + 停止定时 checkpoint
+app.on('before-quit', () => { try { stopWalCheckpoint(); checkpoint() } catch { /* */ } })

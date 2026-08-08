@@ -277,6 +277,7 @@ input:focus { border-color: var(--color-border-info); }
   color: var(--color-text-tertiary); font-size: 13px;
 }
 .reader-body { flex: 1; overflow-y: auto; padding: 20px clamp(24px, 6vw, 140px); user-select: text; }
+.reader-frame { width: 100%; height: 100%; border: none; display: block; }
 /* Vercel 编辑规范：正文 60-68 字符行宽、1.75 行高、段落间距分隔 */
 .reader-title { font-size: 15px; font-weight: 500; line-height: 1.5; margin-bottom: 6px; }
 .reader-meta { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 16px; }
@@ -333,6 +334,42 @@ input:focus { border-color: var(--color-border-info); }
 .reader-content th { background: var(--color-background-secondary); font-weight: 600; }
 .reader-content .embed-fallback { font-size: 0.9em; color: var(--color-text-tertiary); padding: 10px 14px; border: 0.5px dashed var(--color-border-tertiary); border-radius: 8px; margin: 1.1em 0; }
 .reader-content .embed-fallback a { color: var(--color-text-info); }
+
+/* 广告 / 社交分享按钮过滤（参考 NetNewsWire core.css） */
+.reader-content iframe[src*="feedads"],
+.reader-content iframe[src*="doubleclick"],
+.reader-content iframe[src*="plusone.google"] { display: none !important; }
+
+.reader-content a[href*="feedburner"],
+.reader-content a[href*="feedblitz"],
+.reader-content a[href*="api.tweetmeme"],
+.reader-content a[href*="delicious.com/post?"],
+.reader-content a[href*="digg.com/submit?"],
+.reader-content a[href*="tumblr.com/share?"],
+.reader-content a[href*="linkedin.com/shareArticle?"],
+.reader-content a[href*="facebook.com/share.php?"],
+.reader-content a[href*="twitter.com/home?"],
+.reader-content a[href*="addtoany.com/share_save"],
+.reader-content a[href*="//ads."],
+.reader-content a[href*=".ads."] { display: none !important; }
+
+.reader-content img[src*=".ads."],
+.reader-content img[src*="//ads."],
+.reader-content img[src*="doubleclick"],
+.reader-content img[src*="feedads"],
+.reader-content img[src*="feedburner"],
+.reader-content img[src*="feedblitz"],
+.reader-content img[src*="share-buttons"],
+.reader-content img[src*="/img/social/"] { display: none !important; }
+
+.reader-content .social_items,
+.reader-content .mcnFollowBlock { display: none !important; }
+
+/* 防止 emoji/twemoji 撑大行高 */
+.reader-content .twemoji,
+.reader-content .wp-smiley,
+.reader-content img.emoji,
+.reader-content img.wp-smiley { height: 1em !important; max-height: 1em !important; width: auto; }
 
 /* 图片灯箱 */
 .lightbox {

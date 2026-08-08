@@ -1,19 +1,33 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useStore } from '../store'
 import type { Item } from '../env'
 import { Icon } from './icons'
-import { renderArticleHtml, plainTextFromHtml } from '../lib/reader'
+import { cleanArticleHtml, plainTextFromHtml } from '../lib/reader'
+import { buildArticlePage } from '../lib/article-frame'
+
+// iframe 内注入的点击劫持脚本（轻量，仅转发 click 事件到父窗口）
+const IFRAME_SCRIPT = `
+<script>
+document.addEventListener('click',function(e){
+  var img=e.target.closest('img[data-zoom]');
+  if(img&&img.src){parent.postMessage({t:'zoom',s:img.src},'*');e.preventDefault();return}
+  var a=e.target.closest('a');
+  if(a&&a.href&&a.href.startsWith('http')){parent.postMessage({t:'link',h:a.href},'*');e.preventDefault();return}
+})
+</script>`
 
 export function ReaderPane() {
   const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser } = useStore()
   const [item, setItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(false)
-const [noImg, setNoImg] = useState(false)
+  const [noImg, setNoImg] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  const [frameHtml, setFrameHtml] = useState<string>('')
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
   // 按需取单条完整数据（含正文），列表不再全量传正文（性能优化 #1）
   useEffect(() => {
-    if (selectedId == null) { setItem(null); return }
+    if (selectedId == null) { setItem(null); setFrameHtml(''); return }
     let alive = true
     setLoading(true)
     window.readflow.invoke('items:get', selectedId).then((r) => {
@@ -21,6 +35,45 @@ const [noImg, setNoImg] = useState(false)
     }).catch(() => { if (alive) setLoading(false) })
     return () => { alive = false }
   }, [selectedId])
+
+  // 正文异步清洗（Web Worker）+ 构建 iframe 页面
+  useEffect(() => {
+    if (!item) { setFrameHtml(''); return }
+    let alive = true
+    const html = item.content_html
+    if (!html) { setFrameHtml(''); return }
+
+    void (async () => {
+      const clean = await cleanArticleHtml(html)
+      if (!alive) return
+      const page = buildArticlePage({
+        title: item.title,
+        author: item.author,
+        sourceName: item.source_name,
+        url: item.url,
+        bodyHtml: clean,
+        noImg,
+      })
+      if (alive) setFrameHtml(page)
+    })()
+    return () => { alive = false }
+  }, [item, noImg])
+
+  // 监听 iframe 内的 click 事件（通过 postMessage 转发）
+  const onFrameMessage = useCallback((e: MessageEvent) => {
+    const d = e.data as { t: string; s?: string; h?: string }
+    if (!d || typeof d.t !== 'string') return
+    if (d.t === 'zoom' && d.s) {
+      setLightbox(d.s)
+    } else if (d.t === 'link' && d.h) {
+      openInBrowser(d.h, { x: 0, y: 0 })
+    }
+  }, [openInBrowser])
+
+  useEffect(() => {
+    window.addEventListener('message', onFrameMessage)
+    return () => window.removeEventListener('message', onFrameMessage)
+  }, [onFrameMessage])
 
   useEffect(() => {
     void (window.readflow.invoke('settings:get', 'reader_noimg') as Promise<string>).then((r) => setNoImg(r === '1'))
@@ -43,23 +96,10 @@ const [noImg, setNoImg] = useState(false)
     }
   }
 
-  // 正文内点击：图片 → 灯箱；链接 → 系统默认浏览器打开（不在应用内跳转）
-  const onContentClick = (e: React.MouseEvent) => {
-    const img = (e.target as HTMLElement).closest('img[data-zoom]') as HTMLImageElement | null
-    if (img && img.getAttribute('src')) {
-      e.preventDefault()
-      setLightbox(img.getAttribute('src'))
-      return
-    }
-    const a = (e.target as HTMLElement).closest('a')
-    if (a && a.getAttribute('href')) {
-      e.preventDefault()
-      openInBrowser(a.getAttribute('href')!, { x: e.clientX, y: e.clientY })
-    }
-  }
-
-  const contentClass = `reader-content ${noImg ? 'no-img' : ''}`
-  const cleanHtml = item.content_html ? renderArticleHtml(item.content_html) : ''
+  // 构建带点击劫持脚本的完整 srcdoc
+  const srcdoc = frameHtml
+    ? frameHtml.replace('</head>', IFRAME_SCRIPT + '</head>')
+    : ''
 
   return (
     <section className="reader">
@@ -67,11 +107,19 @@ const [noImg, setNoImg] = useState(false)
         <button className={`rb-toggle ${noImg ? 'on' : ''}`} onClick={toggleNoImg} title="隐藏正文中的图片 / 视频，纯文字阅读"><Icon name={noImg ? 'eye' : 'eyeOff'} size={14} /> 无图模式</button>
       </div>
       <div className="reader-body">
-        <p className="reader-title">{item.title}</p>
-        <p className="reader-meta">{item.author || item.source_name} · <a href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开">{item.url}</a></p>
-        {cleanHtml
-          ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: cleanHtml }} />
-          : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>}
+        {srcdoc
+          ? <iframe
+              ref={iframeRef}
+              className="reader-frame"
+              sandbox="allow-scripts"
+              srcDoc={srcdoc}
+              title={item.title}
+            />
+          : <div className="reader-fallback">
+              <p className="reader-title">{item.title}</p>
+              <p className="reader-meta">{item.author || item.source_name} · <a href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }}>{item.url}</a></p>
+              <div className="reader-content plain">{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>
+            </div>}
 
         {lightbox && (
           <div className="lightbox" onClick={() => setLightbox(null)}>
