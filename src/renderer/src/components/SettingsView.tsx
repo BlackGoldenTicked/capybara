@@ -232,24 +232,6 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
   const [msg, setMsg] = useState('')
   const [keepDays, setKeepDays] = useState(90)
   const [maxItems, setMaxItems] = useState(2000)
-  const [dbFile, setDbFile] = useState('')
-  const [dbErr, setDbErr] = useState('')
-
-  useEffect(() => {
-    const w = window as unknown as { readflow?: { invoke: (c: string, ...a: unknown[]) => Promise<unknown> } }
-    let cancelled = false
-    const load = (attempt = 0) => {
-      w.readflow?.invoke('app:dbFile')
-        .then((r) => { if (!cancelled) setDbFile(String(r || '')) })
-        .catch((e: unknown) => {
-          if (cancelled) return
-          if (attempt < 3) { setTimeout(() => load(attempt + 1), 400) }
-          else { setDbErr(String((e as { message?: string })?.message || e || '未知错误')) }
-        })
-    }
-    load()
-    return () => { cancelled = true }
-  }, [])
 
   const refresh = async () => { setMsg('刷新中…'); await onRefresh(); setMsg('已触发全部源刷新'); showToast('已开始刷新') }
   const clear = async () => {
@@ -259,27 +241,9 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
     await purge(keepDays, maxItems)
     setMsg(`已按保留策略清理（保留 ${keepDays} 天内的归档，单库上限 ${maxItems} 条）`)
   }
-  const copyDbPath = async () => {
-    try { await navigator.clipboard.writeText(dbFile); showToast('数据库路径已复制') } catch { showToast('复制失败') }
-  }
-  const openDbDir = async () => {
-    const w = window as unknown as { readflow?: { invoke: (c: string, ...a: unknown[]) => Promise<unknown> } }
-    await w.readflow?.invoke('app:openDbDir')
-  }
 
   return (
     <div className="set-scroll">
-      <div className="set-card">
-        <p className="src-label">数据库位置</p>
-        <p className="src-hint">本应用所有订阅源与文章都存于本地 SQLite 文件。若你看到「没数据」，先核对这里显示的<strong>是否就是下面这个有数据的文件</strong>：</p>
-        {dbErr
-          ? <p className="src-hint db-err">⚠ 读取数据库路径失败：{dbErr}（主进程可能未就绪，请彻底退出后重开应用）</p>
-          : <code className="db-path">{dbFile || '加载中…'}</code>}
-        <div className="src-actions">
-          <button onClick={() => void copyDbPath()}><Icon name="file" size={14} /> 复制路径</button>
-          <button onClick={() => void openDbDir()}><Icon name="external" size={14} /> 在访达中打开</button>
-        </div>
-      </div>
 
       <div className="set-card">
         <p className="src-label">开发者模式</p>

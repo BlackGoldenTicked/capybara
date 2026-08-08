@@ -231,11 +231,11 @@ input:focus { border-color: var(--color-border-info); }
 .set-nav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: none; background: transparent; color: var(--color-text-secondary); font-size: 13px; border-radius: 8px; cursor: pointer; text-align: left; }
 .set-nav:hover { background: var(--color-background-tertiary); }
 .set-nav.active { background: var(--color-background-info); color: var(--color-text-info); }
-.settings-panel { flex: 1; min-width: 0; overflow-y: auto; }
-.set-scroll { padding: 22px 26px; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.settings-panel { flex: 1; min-width: 0; overflow-y: auto; background: var(--color-background-primary); }
+.set-scroll { padding: 28px 32px; max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 .db-path { display: inline-block; margin-top: 6px; padding: 4px 8px; border-radius: 6px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); font-family: var(--font-ui); font-size: 12px; word-break: break-all; color: var(--color-text-secondary); }
 .db-err { margin-top: 6px; color: var(--color-danger, #e5484d); }
-.set-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+.set-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
 .set-card .src-label { margin: 0; }
 .set-card > button { align-self: flex-start; }
 .soon { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--color-background-info); color: var(--color-text-info); margin-left: 6px; }
@@ -920,7 +920,8 @@ button:focus-visible,
 .switch-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
 .switch {
   position: relative; width: 42px; height: 24px; padding: 0; border-radius: 999px;
-  background: var(--color-border-secondary); cursor: pointer; transition: background .16s var(--ease-out);
+  background: color-mix(in srgb, var(--color-text-primary) 14%, var(--color-background-secondary)); cursor: pointer; transition: background .16s var(--ease-out);
+  border: 0.5px solid color-mix(in srgb, var(--color-text-primary) 18%, transparent);
 }
 .switch.on { background: var(--accent-info); }
 .switch .knob {
