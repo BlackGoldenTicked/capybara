@@ -52,7 +52,9 @@ export function BoardView() {
   const fileRef = useRef<HTMLInputElement>(null)
   const pendingKind = useRef<CardKind | null>(null)
   // 卡片实际渲染高度（DOM 测量）—— card.h 字段是 140 默认值不可靠，长卡片会超出
-  const [cardHeights, setCardHeights] = useState<Record<number, number>>({})
+  // 用 ref + 手动触发 tick，避免在 ref 回调中 setState 引发的无限渲染
+  const cardHeightsRef = useRef<Record<number, number>>({})
+  const [, heightTick] = useState(0)
 
   useEffect(() => {
     window.readflow.invoke('items:list', 'all', '').then((r) => {
@@ -192,7 +194,7 @@ export function BoardView() {
   // 卡片 payload 只解析一次（性能 #20）
   const cardsView = useMemo(() => cards.map((c) => ({ card: c, p: safeParse(c.payload) })), [cards])
   const cardMap = new Map(cardsView.map((cv) => [cv.card.id, cv]))
-  const center = (c: Card) => { const p = posOf(c); const h = cardHeights[c.id] || c.h; return { x: p.x + c.w / 2, y: p.y + h / 2 } }
+  const center = (c: Card) => { const p = posOf(c); const h = cardHeightsRef.current[c.id] || c.h; return { x: p.x + c.w / 2, y: p.y + h / 2 } }
   const linkMid = (a: Card, b: Card) => { const ca = center(a), cb = center(b); return { x: (ca.x + cb.x) / 2, y: (ca.y + cb.y) / 2 } }
   /**
    * 取连线锚点：根据两卡相对方向，取较远方向的边中点；返回边类型供曲线选切线。
@@ -201,8 +203,8 @@ export function BoardView() {
   const edgeAnchor = (from: Card, to: Card): { x: number; y: number; side: 'top'|'right'|'bottom'|'left' } => {
     const fp = posOf(from)
     const tp = posOf(to)
-    const fh = cardHeights[from.id] || from.h
-    const th = cardHeights[to.id] || to.h
+    const fh = cardHeightsRef.current[from.id] || from.h
+    const th = cardHeightsRef.current[to.id] || to.h
     const fcx = fp.x + from.w / 2, fcy = fp.y + fh / 2
     const tcx = tp.x + to.w / 2, tcy = tp.y + th / 2
     const dx = tcx - fcx, dy = tcy - fcy
@@ -320,12 +322,16 @@ export function BoardView() {
               <div key={card.id} data-card-id={card.id} className={`board-card kind-${card.kind}`}
                 style={{ left: pos.x, top: pos.y, width: card.w }}
                 ref={(el) => {
-                  // 实测卡片渲染高度（card.h 字段是 140 默认值不可靠），存 state 里供 edgeAnchor 使用
+                  // 实测卡片渲染高度（card.h 字段是 140 默认值不可靠）
+                  // 仅写入 ref，不在此处 setState，避免无限渲染循环
                   if (el) {
                     const h = el.offsetHeight
-                    setCardHeights((prev) => prev[card.id] === h ? prev : { ...prev, [card.id]: h })
+                    if (cardHeightsRef.current[card.id] !== h) {
+                      cardHeightsRef.current[card.id] = h
+                      heightTick((t) => (t + 1) & 0xffff)
+                    }
                   } else {
-                    setCardHeights((prev) => { if (!(card.id in prev)) return prev; const n = { ...prev }; delete n[card.id]; return n })
+                    delete cardHeightsRef.current[card.id]
                   }
                 }}
                 onPointerDown={(e) => startNodeDrag(e, card)} onDoubleClick={() => setEditingId(card.id)}
@@ -405,26 +411,6 @@ export function BoardView() {
               onKeyDown={(e) => { if (e.key === 'Enter') commitEditLink(); if (e.key === 'Escape') setEditingLinkId(null) }} />
           )
         })()}
-
-        {/* 空白白板：居中引导面板 */}
-        {cards.length === 0 && (
-          <div className="board-center-palette" onPointerDown={(e) => e.stopPropagation()}>
-            <div className="bcp-card">
-              <p className="bcp-title">从一张卡片开始</p>
-              <p className="bcp-sub">选择一种类型，把想法、收藏或文件摆上白板</p>
-              <div className="bcp-grid">
-                {CARD_TYPES.map((t) => (
-                  <button key={t.kind} className="bcp-btn" onClick={() => onPickType(t.kind)}>
-                    <span className="bcp-icon"><Icon name={t.icon} size={22} strokeWidth={1.6} /></span>
-                    <span className="bcp-label">{t.label}</span>
-                    <span className="bcp-desc">{t.desc}</span>
-                  </button>
-                ))}
-              </div>
-              <p className="bcp-foot">也可以把左侧信息流或本地文件直接拖进画布</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {editingId != null && (() => {
