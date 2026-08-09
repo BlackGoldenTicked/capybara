@@ -4,7 +4,7 @@
 html, body, #root { height: 100%; }
 
 body {
-  font-family: var(--font-ui);
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif);
   font-size: 13px;
   font-weight: var(--font-weight, 400);
   line-height: 1.6;
@@ -887,7 +887,7 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 
 /* ===== 字号缩放（外观设置） ===== */
 body { font-size: calc(13px * var(--font-scale)); }
-.reader-content { font-family: var(--font-reading); }
+.reader-content { font-family: var(--font-reading, -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif); }
 .reader-title { font-size: calc(15px * var(--font-scale)); }
 .card-title { font-size: calc(13px * var(--font-scale)); }
 .card-summary { font-size: calc(12px * var(--font-scale)); }

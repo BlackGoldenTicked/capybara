@@ -108,7 +108,8 @@ export async function loadAppearance(): Promise<Appearance> {
     cardStyle: validStyle in Object.fromEntries(CARD_STYLES.map((s) => [s.key, 1])) || validStyle === 'none' ? validStyle : DEFAULT_APPEARANCE.cardStyle,
     fontFamily: asString(ff, DEFAULT_APPEARANCE.fontFamily),
     fontScale: Number.isFinite(scale) ? Math.min(2, Math.max(0.7, scale)) : DEFAULT_APPEARANCE.fontScale,
-    fontWeight: (['thin', 'normal', 'bold'].includes(weight) ? weight : DEFAULT_APPEARANCE.fontWeight) as FontWeight
+    fontWeight: (['thin', 'normal', 'bold'].includes(weight) ? weight : DEFAULT_APPEARANCE.fontWeight) as FontWeight,
+    readingTheme: asString(undefined, FOLLOW_UI_ID) // 兼容旧缓存：缺失时跟随界面
   }
 }
 
@@ -181,6 +182,8 @@ export function bootAppearance(): void {
   try {
     const raw = localStorage.getItem(APPEARANCE_CACHE_KEY)
     if (raw) a = JSON.parse(raw) as Appearance
+    // 兼容旧缓存：缺失 readingTheme 字段时补默认值
+    if (a && !a.readingTheme) a.readingTheme = FOLLOW_UI_ID
   } catch { a = null }
   applyAppearance(a ?? DEFAULT_APPEARANCE)
 }
