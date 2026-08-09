@@ -22,7 +22,7 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'rss', label: 'RSS 订阅', icon: 'rss' },
   { key: 'github', label: 'GitHub Star', icon: 'github' },
   { key: 'twitter', label: 'X 书签', icon: 'twitter' },
-  { key: 'actions', label: '操作', icon: 'refresh' },
+  { key: 'actions', label: '数据管理', icon: 'archive' },
   { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
   { key: 'data', label: '数据查看', icon: 'book' },
   { key: 'diag', label: '刷新诊断', icon: 'activity' }
