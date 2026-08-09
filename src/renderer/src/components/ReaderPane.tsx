@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import type { Item } from '../env'
 import { Icon } from './icons'
 import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml } from '../lib/reader'
-import { READING_THEMES, FOLLOW_UI_ID } from '../lib/reading-themes'
+import { getAllReadingThemes, FOLLOW_UI_ID } from '../lib/reading-themes'
 
 export function ReaderPane() {
   const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser, appearance, updateAppearance } = useStore()
@@ -73,8 +73,9 @@ export function ReaderPane() {
   const contentClass = `reader-content ${noImg ? 'no-img' : ''}`
   const html = cleanHtml || (item.content_html ? renderArticleHtml(item.content_html) : '')
 
-  const darkThemes = READING_THEMES.filter((t) => t.mode === 'dark')
-  const lightThemes = READING_THEMES.filter((t) => t.mode === 'light')
+  const allThemes = getAllReadingThemes()
+  const darkThemes = allThemes.filter((t) => t.mode === 'dark')
+  const lightThemes = allThemes.filter((t) => t.mode === 'light')
 
   return (
     <section className="reader">

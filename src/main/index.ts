@@ -9,7 +9,7 @@ import {
   listBoards, createBoard, deleteBoard,
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
   listLinks, addLink, deleteLink, updateLink,
-  getSetting, setSetting, sourceCounts, getDbFile,
+  getSetting, setSetting, sourceCounts, getDbFile, getDb,
   setCustomDbPath, getCustomDbPath,
   storeCover, enforceRetention, markAllRead, clearInbox, purgeOldItems, checkpoint, stopWalCheckpoint,
   dbTables, dbRows
@@ -388,6 +388,41 @@ function registerIpc() {
     'settings:set': ((key: string, value: string) => setSetting(key, value)) as never,
     'settings:setDbPath': ((newPath: string) => setCustomDbPath(newPath)) as never,
     'settings:getDbPath': (() => getCustomDbPath()) as never,
+
+    // ===== JSON 配置导出/导入 =====
+    'settings:export': (async () => {
+      const settings: Record<string, string> = {}
+      const rows = getDb().prepare('SELECT key, value FROM settings').all() as Array<{ key: string; value: string }>
+      for (const r of rows) { settings[r.key] = r.value }
+      const feeds = listFeeds()
+      const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), settings, feeds }, null, 2)
+      const r = await dialog.showSaveDialog(mainWindow!, { title: '导出 ReadFlow 配置', defaultPath: 'readflow-config.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+      if (r.canceled || !r.filePath) return false
+      await fs.promises.writeFile(r.filePath, json, 'utf-8')
+      return true
+    }) as never,
+    'settings:import': (async () => {
+      const r = await dialog.showOpenDialog(mainWindow!, { title: '导入 ReadFlow 配置', filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] })
+      if (r.canceled || r.filePaths.length === 0) return { ok: false, error: '已取消' }
+      try {
+        const raw = await fs.promises.readFile(r.filePaths[0], 'utf-8')
+        const data = JSON.parse(raw) as { version?: number; settings?: Record<string, string>; feeds?: Array<{ type: string; name: string; url: string; schedule_min?: number }> }
+        if (!data.settings || typeof data.settings !== 'object') return { ok: false, error: '无效的配置格式：缺少 settings 对象' }
+        let imported = 0
+        for (const [key, value] of Object.entries(data.settings)) {
+          if (typeof value !== 'string') continue
+          setSetting(key, value)
+          imported++
+        }
+        if (Array.isArray(data.feeds)) {
+          for (const f of data.feeds) {
+            if (!f.url) continue
+            try { addFeed({ type: f.type || 'rss', name: f.name || f.url, url: f.url, schedule_min: f.schedule_min || 120 }) } catch {}
+          }
+        }
+        return { ok: true, imported }
+      } catch (e) { return { ok: false, error: (e as Error).message } }
+    }) as never,
     // 开发者模式：立即开关 DevTools（store 同时持久化 developer_mode 设置）
     'devtools:toggle': (() => {
       if (!mainWindow) return

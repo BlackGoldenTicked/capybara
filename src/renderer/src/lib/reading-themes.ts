@@ -160,5 +160,40 @@ export const DEFAULT_READING_THEME_ID = 'dark-plus'
 export const FOLLOW_UI_ID = '__follow_ui__'
 
 export function getReadingThemeById(id: string): ReadingTheme | undefined {
-  return READING_THEMES.find((t) => t.id === id)
+  return READING_THEMES.find((t) => t.id === id) ?? getCustomReadingThemes().find((t) => t.id === id)
+}
+
+/** 获取所有可用的阅读主题（内置 + 自定义） */
+export function getAllReadingThemes(): ReadingTheme[] {
+  return [...READING_THEMES, ...getCustomReadingThemes()]
+}
+
+const CUSTOM_RT_KEY = 'readflow:custom-reading-themes'
+
+/** 从 localStorage 加载自定义阅读主题 */
+export function getCustomReadingThemes(): ReadingTheme[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_RT_KEY)
+    if (!raw) return []
+    return JSON.parse(raw) as ReadingTheme[]
+  } catch { return [] }
+}
+
+/** 保存自定义阅读主题到 localStorage */
+export function saveCustomReadingThemes(themes: ReadingTheme[]): void {
+  localStorage.setItem(CUSTOM_RT_KEY, JSON.stringify(themes))
+}
+
+/** 添加或更新自定义阅读主题 */
+export function upsertCustomReadingTheme(theme: ReadingTheme): void {
+  const themes = getCustomReadingThemes()
+  const idx = themes.findIndex((t) => t.id === theme.id)
+  if (idx >= 0) themes[idx] = theme
+  else themes.push(theme)
+  saveCustomReadingThemes(themes)
+}
+
+/** 删除自定义阅读主题 */
+export function deleteCustomReadingTheme(id: string): void {
+  saveCustomReadingThemes(getCustomReadingThemes().filter((t) => t.id !== id))
 }

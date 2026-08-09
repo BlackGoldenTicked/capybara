@@ -10,7 +10,8 @@ import {
   THEME_OPTIONS, CARD_STYLES,
   type ThemeMode, type CardStyleKey, type FontWeight
 } from '../lib/appearance'
-import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme } from '../lib/reading-themes'
+import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme } from '../lib/reading-themes'
+import { ThemeEditor } from './ThemeEditor'
 import {
   SHORTCUT_GROUPS, DEFAULT_SHORTCUTS, formatCombo, eventToCombo,
   type ShortcutAction
@@ -69,6 +70,8 @@ function AppearanceTab() {
   const setCardStyle = (cardStyle: CardStyleKey | 'none') => updateAppearance({ cardStyle })
   const setFontWeight = (w: FontWeight) => updateAppearance({ fontWeight: w })
   const setReadingTheme = (id: string) => updateAppearance({ readingTheme: id })
+  const [themeEdit, setThemeEdit] = useState<ReadingTheme | undefined>(undefined)
+  const [, themeTick] = useState(0)
 
   // Feature1：选中卡片风格后，把焦点与可视区域移到该卡片上
   useEffect(() => {
@@ -146,7 +149,7 @@ function AppearanceTab() {
         </div>
         <p className="src-hint">选择后仅改变正文阅读区域的配色，不影响左侧列表和设置等界面。</p>
         <div className="reading-theme-grid">
-          {renderReadingThemes(appearance.readingTheme, (id) => setReadingTheme(id))}
+          {renderReadingThemes(appearance.readingTheme, (id) => setReadingTheme(id), (t) => setThemeEdit(t))}
         </div>
       </div>
 
@@ -165,8 +168,20 @@ function AppearanceTab() {
         <button onClick={() => { setSoundEnabled(true); playSound('complete') }}><Icon name="music" size={14} /> 试听音效</button>
         <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
       </div>
+      {themeEdit && (
+        <ThemeEditor source={themeEdit?.id ? themeEdit : undefined}
+          onClose={() => setThemeEdit(undefined)}
+          onSaved={() => { setThemeEdit(undefined); setTick((t: number) => t + 1) }} />
+      )}
     </div>
   )
+}
+
+// force re-render key for custom theme list refresh
+let _rtTick = 0
+function useRtTick() {
+  const [, s] = useState(0)
+  return [() => { _rtTick++; s(_rtTick) }, _rtTick] as const
 }
 
 /* ===================== 快捷键 ===================== */
@@ -309,6 +324,27 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
       </div>
 
       <div className="set-card">
+        <p className="src-label">配置导入/导出（JSON）</p>
+        <p className="src-hint">导出所有设置项（外观、配色、订阅源列表等）为 JSON 文件，可在另一台电脑或重装后恢复。导入时自动跳过已存在的订阅源。</p>
+        <div className="src-actions">
+          <button onClick={async () => {
+            const ok = await window.readflow.invoke('settings:export')
+            showToast(ok ? '配置已导出' : '已取消导出')
+          }}><Icon name="upload" size={14} /> 导出配置</button>
+          <button onClick={async () => {
+            const r = await window.readflow.invoke('settings:import') as { ok: boolean; error?: string; imported?: number }
+            if (r.ok) {
+              showToast(`已导入 ${r.imported ?? 0} 项设置，请重启应用生效`)
+              // 重新加载外观以应用导入的配色
+              void useStore.getState().initAppearance()
+            } else {
+              showToast('导入失败：' + (r.error || '未知错误'))
+            }
+          }}><Icon name="bookmark" size={14} /> 导入配置</button>
+        </div>
+      </div>
+
+      <div className="set-card">
         <p className="src-label">性能 · 保留策略</p>
         <p className="src-hint">仅清理「已归档」且抓取时间早于阈值的条目，以及单库总量超出上限时最旧的归档；RSS / 稍后读 / 收藏永不被自动清理。</p>
         <div className="src-grid-2">
@@ -333,9 +369,11 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
 }
 
 /* ===================== 阅读配色色块渲染 ===================== */
-function renderReadingThemes(activeId: string, onSelect: (id: string) => void) {
-  const darkThemes = READING_THEMES.filter((t) => t.mode === 'dark')
-  const lightThemes = READING_THEMES.filter((t) => t.mode === 'light')
+function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _onEdit?: (theme?: ReadingTheme) => void) {
+  const all = getAllReadingThemes()
+  const darkThemes = all.filter((t) => t.mode === 'dark')
+  const lightThemes = all.filter((t) => t.mode === 'light')
+  const isCustom = (id: string) => READING_THEMES.every((bt) => bt.id !== id) && id !== FOLLOW_UI_ID
 
   const renderGroup = (label: string, themes: readonly ReadingTheme[], showFollow: boolean) => (
     <div key={label} className="rt-group">
@@ -352,15 +390,23 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void) {
           </button>
         )}
         {themes.map((t) => (
-          <button
-            key={t.id}
-            className={`rt-chip ${activeId === t.id ? 'active' : ''}`}
-            onClick={() => onSelect(t.id)}
-            title={t.name}
-          >
-            <span className="rt-swatch" style={{ background: t.colors['--rt-bg'] }} />
-            <span className="rt-name">{t.name.replace(/\(.*\)/, '').trim()}</span>
-          </button>
+          <div key={t.id} className="rt-chip-wrap">
+            <button
+              className={`rt-chip ${activeId === t.id ? 'active' : ''}`}
+              onClick={() => onSelect(t.id)}
+              title={t.name}
+            >
+              <span className="rt-swatch" style={{ background: t.colors['--rt-bg'] }} />
+              <span className="rt-name">{t.name.replace(/\(.*\)/, '').trim()}</span>
+            </button>
+            <span className="rt-chip-actions">
+              <button title="编辑" onClick={(e) => { e.stopPropagation(); _onEdit?.(t) }}><Icon name="edit" size={10} /></button>
+              <button title="创建副本" onClick={(e) => { e.stopPropagation(); _onEdit?.({ ...t, id: '', name: t.name + ' 副本' } as ReadingTheme) }}><Icon name="plus" size={10} /></button>
+              {isCustom(t.id) && (
+                <button title="删除" onClick={(e) => { e.stopPropagation(); deleteCustomReadingTheme(t.id); onSelect(FOLLOW_UI_ID) }}><Icon name="trash" size={10} /></button>
+              )}
+            </span>
+          </div>
         ))}
       </div>
     </div>
