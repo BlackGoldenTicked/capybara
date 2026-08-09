@@ -710,6 +710,17 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
   width: 14px; height: 14px; border-radius: 50%; background: var(--accent-info);
   border: 2px solid var(--color-background-primary); cursor: crosshair; display: block; z-index: 4;
 }
+/* 卡片四边中点连线手柄 */
+.card-link-dot {
+  position: absolute; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent-info); border: 2px solid var(--color-background-primary);
+  cursor: crosshair; z-index: 5; display: block;
+  transform: translate(-50%, -50%); pointer-events: auto;
+}
+.card-link-top { left: 50%; top: 0; }
+.card-link-right { right: 0; top: 50%; }
+.card-link-bottom { left: 50%; bottom: 0; }
+.card-link-left { left: 0; top: 50%; }
 
 /* ===== 白板：顶部添加卡片面板 ===== */
 .board-center-palette {

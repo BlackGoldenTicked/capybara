@@ -22,7 +22,7 @@ function fmtSize(n?: number): string {
 function safeParse(p: string): CardPayload { try { return p ? JSON.parse(p) : {} } catch { return {} } }
 
 /** 这些元素上的按下不应触发画布平移 / 也不应被画布吞掉点击 */
-const NO_PAN = 'button, a, input, textarea, .board-toolbar, .board-center-palette, .card-edit, .card-del, .card-link-handle'
+const NO_PAN = 'button, a, input, textarea, .board-toolbar, .board-center-palette, .card-edit, .card-del, .card-link-dot'
 
 export function BoardView() {
   const { cards, links, activeBoardId, boards, createBoard, addRefCard, addCard, moveCard, deleteCard, showToast, addLink, deleteLink, updateLink, renameBoard, deleteBoard, autoPos } = useStore()
@@ -30,9 +30,9 @@ export function BoardView() {
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [linkMode, setLinkMode] = useState(false)
   const [linking, setLinking] = useState<number | null>(null)
   const [linkCursor, setLinkCursor] = useState<{ x: number; y: number } | null>(null)
+  const [hoveredId, setHoveredId] = useState<number | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerItems, setPickerItems] = useState<ItemRow[]>([])
   const [pickerQ, setPickerQ] = useState('')
@@ -113,14 +113,13 @@ export function BoardView() {
 
   const startNodeDrag = (e: React.PointerEvent, card: Card) => {
     const t = e.target as HTMLElement
-    if (t.closest('a,button,input,textarea,.card-del,.card-edit,.card-link-handle')) return
+    if (t.closest('a,button,input,textarea,.card-del,.card-edit,.card-link-dot')) return
     e.stopPropagation()
     dragRef.current = { mode: 'node', id: card.id, sx: e.clientX, sy: e.clientY, ox: card.x, oy: card.y, moved: false }
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }
 
   const startLink = (e: React.PointerEvent, card: Card) => {
-    if (!linkMode) return
     e.stopPropagation()
     linkRef.current = { fromId: card.id }
     setLinking(card.id)
@@ -240,7 +239,6 @@ export function BoardView() {
           <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={16} /></button>
           <button title="还原视图" onClick={fit} style={{ minWidth: 52, fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
           <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={16} /></button>
-          <button className={linkMode ? 'primary' : ''} title="连线模式：开启后可从卡片右侧圆点拖到另一张卡片建立关系" onClick={() => setLinkMode((m) => !m)}><Icon name="link" size={15} /> 连线</button>
           <button title="重命名白板" onClick={beginRename}><Icon name="edit" size={15} /> 重命名</button>
           <button className="danger" title="删除白板" onClick={() => {
             if (activeBoardId == null) return
@@ -248,8 +246,6 @@ export function BoardView() {
           }}><Icon name="trash" size={15} /> 删除</button>
         </span>
       </div>
-
-      {linkMode && <div className="board-link-hint">连线模式：按住卡片右侧圆点拖到另一张卡片即可建立关系 · 点连线中点的 × 删除，点文字改说明</div>}
 
       <input ref={fileRef} type="file" hidden onChange={onFileChosen} />
       <div className="board-canvas" ref={canvasRef}
@@ -297,10 +293,19 @@ export function BoardView() {
             return (
               <div key={card.id} data-card-id={card.id} className={`board-card kind-${card.kind}`}
                 style={{ left: pos.x, top: pos.y, width: card.w }}
-                onPointerDown={(e) => startNodeDrag(e, card)} onDoubleClick={() => setEditingId(card.id)}>
+                onPointerDown={(e) => startNodeDrag(e, card)} onDoubleClick={() => setEditingId(card.id)}
+                onMouseEnter={() => setHoveredId(card.id)} onMouseLeave={() => setHoveredId((prev) => prev === card.id ? null : prev)}>
                 <span className="card-edit" title="编辑" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditingId(card.id) }}><Icon name="edit" size={13} /></span>
                 <span className="card-del" title="删除" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); void deleteCard(card.id) }}><Icon name="close" size={13} /></span>
-                {linkMode && <span className="card-link-handle" title="拖到另一张卡片建立关系" onPointerDown={(e) => startLink(e, card)} />}
+                {/* 连线手柄：四边中点，hover 或被作为连线目标时显示 */}
+                {(hoveredId === card.id || linking != null) && (
+                  <>
+                    <span className="card-link-dot card-link-top" title="从上边连线" onPointerDown={(e) => startLink(e, card)} />
+                    <span className="card-link-dot card-link-right" title="从右边连线" onPointerDown={(e) => startLink(e, card)} />
+                    <span className="card-link-dot card-link-bottom" title="从下边连线" onPointerDown={(e) => startLink(e, card)} />
+                    <span className="card-link-dot card-link-left" title="从左边连线" onPointerDown={(e) => startLink(e, card)} />
+                  </>
+                )}
                 {card.kind === 'ref' && (
                   it ? (<>
                     <p className="bc-kind"><Icon name="ref" size={12} /> 引用 · {it.source_name}</p>
