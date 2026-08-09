@@ -89,7 +89,7 @@ function AppearanceTab() {
 
       <div className="set-card">
         <div className="src-head-row">
-          <p className="src-label">卡片风格（整面配色 · 共 12 种，选其一即确定全站配色）</p>
+          <p className="src-label">UI 配色</p>
           <span className="cur-chip"><span className="cur-swatch" style={{ background: currentStyle.preview }} />{currentStyle.label}</span>
         </div>
         <div className="style-grid" ref={styleGridRef}>
@@ -136,7 +136,7 @@ function AppearanceTab() {
 
       <div className="set-card">
         <div className="src-head-row">
-          <p className="src-label">正文阅读配色（独立于界面风格 · Top 30 VSCode 热门主题）</p>
+          <p className="src-label">阅读配色</p>
         </div>
         <p className="src-hint">选择后仅改变正文阅读区域的配色，不影响左侧列表和设置等界面。</p>
         <div className="reading-theme-grid">
