@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore, type SettingsTab } from '../store'
 import { Icon, type IconName } from './icons'
-import { SourceManager } from './SourceManager'
+import { RssManager } from './RssManager'
+import { GithubStarManager } from './GithubStarManager'
+import { TwitterBookmarkManager } from './TwitterBookmarkManager'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
 import {
@@ -17,7 +19,9 @@ import { playSound } from '../lib/sound'
 
 const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'appearance', label: '外观', icon: 'palette' },
-  { key: 'sources', label: '来源管理', icon: 'book' },
+  { key: 'rss', label: 'RSS 订阅', icon: 'rss' },
+  { key: 'github', label: 'GitHub Star', icon: 'github' },
+  { key: 'twitter', label: 'X 书签', icon: 'twitter' },
   { key: 'actions', label: '操作', icon: 'refresh' },
   { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
   { key: 'data', label: '数据查看', icon: 'book' },
@@ -39,7 +43,9 @@ export function SettingsView() {
       </nav>
       <div className="settings-panel">
         {settingsTab === 'appearance' && <AppearanceTab />}
-        {settingsTab === 'sources' && <SourceManager />}
+        {settingsTab === 'rss' && <RssManager />}
+        {settingsTab === 'github' && <GithubStarManager />}
+        {settingsTab === 'twitter' && <TwitterBookmarkManager />}
         {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
         {settingsTab === 'shortcuts' && <ShortcutsTab />}
         {settingsTab === 'data' && <DbView />}

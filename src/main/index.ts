@@ -5,7 +5,7 @@ import os from 'node:os'
 import {
   initDb, listItems, listItemsPage, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
   View, ItemStatus,
-  listFeeds, addFeed, addFeeds, deleteFeed, upsertItem,
+  listFeeds, listFeedsPage, countFeeds, addFeed, addFeeds, deleteFeed, upsertItem,
   listBoards, createBoard, deleteBoard,
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
   listLinks, addLink, deleteLink, updateLink,
@@ -17,6 +17,7 @@ import {
 import { startIngestServer } from './ingest'
 import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
 import { extractArticle } from './sources/readability'
+import { validateRssUrl } from './sources/rss'
 import { backupWebDAV } from './sync'
 import { netLog, setNetLogWindow } from './netlog'
 import { diagSnapshot, diagTestPurge, diagRefreshFeed, diagRefreshAll, forceRefreshFeed, forceRefreshAll } from './diag'
@@ -359,6 +360,9 @@ function registerIpc() {
     'items:clearInbox': (() => { clearInbox(); return counts() }) as never,
 
     'feeds:list': (() => listFeeds()) as never,
+    'feeds:listPage': ((page: number, pageSize: number) => listFeedsPage(page, pageSize)) as never,
+    'feeds:count': (() => countFeeds()) as never,
+    'feeds:validate': (async (url: string) => validateRssUrl(url)) as never,
     'feeds:add': ((type: string, name: string, url: string, scheduleMin: number) => addFeed({ type, name, url, schedule_min: scheduleMin })) as never,
     'feeds:addMany': ((list: Array<{ type: string; name: string; url: string; schedule_min?: number }>) => addFeeds(list)) as never,
     'feeds:delete': ((id: number) => deleteFeed(id)) as never,

@@ -193,3 +193,17 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
   diagFetchEnd(feed, status, Date.now() - start, added, respEtag, respLm, '')
   return added
 }
+
+/** 验证 RSS URL 是否有效：尝试抓取并解析，返回 { valid, title, error } */
+export async function validateRssUrl(url: string): Promise<{ valid: boolean; title?: string; error?: string }> {
+  try {
+    const res = await fetch(url, { headers: FETCH_HEADERS, redirect: 'follow', signal: AbortSignal.timeout(10_000) })
+    if (!res.ok) return { valid: false, error: `HTTP ${res.status}` }
+    const body = await res.text()
+    const parsed = await parseFeed(body, res.headers.get('content-type') ?? '')
+    if (!parsed.items || parsed.items.length === 0) return { valid: false, error: '未找到任何条目' }
+    return { valid: true, title: parsed.title || url }
+  } catch (e) {
+    return { valid: false, error: (e as Error).message }
+  }
+}

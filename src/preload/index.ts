@@ -18,6 +18,7 @@ const validChannels = [
   'boards:links', 'boards:addLink', 'boards:deleteLink', 'boards:updateLink',
   'github:fetchStars', 'twitter:importBookmarks', 'items:sourceCounts',
   'feeds:importOpml',
+  'feeds:listPage', 'feeds:count', 'feeds:validate',
   'sync:backup', 'devtools:toggle',
   'db:tables', 'db:rows',
   'diag:snapshot', 'diag:testPurge', 'diag:testRefreshOne', 'diag:testRefreshAll', 'diag:testForceOne', 'diag:testForceAll'

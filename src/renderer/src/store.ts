@@ -5,7 +5,7 @@ import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/sh
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
 
 /** 设置页标签（含新增的「快捷键」）。 */
-export type SettingsTab = 'general' | 'appearance' | 'sources' | 'actions' | 'shortcuts' | 'data' | 'diag'
+export type SettingsTab = 'appearance' | 'rss' | 'github' | 'twitter' | 'actions' | 'shortcuts' | 'data' | 'diag'
 
 interface State {
   screen: Screen

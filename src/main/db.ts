@@ -591,6 +591,16 @@ export function setSetting(key: string, value: string) {
 export function listFeeds(): Feed[] {
   return db.prepare('SELECT * FROM feeds ORDER BY created_at DESC').all() as unknown as Feed[]
 }
+
+/** 分页列出已订阅源（RSS 管理页用） */
+export function listFeedsPage(page: number, pageSize: number): Feed[] {
+  return db.prepare('SELECT * FROM feeds ORDER BY created_at DESC LIMIT ? OFFSET ?').all(pageSize, page * pageSize) as unknown as Feed[]
+}
+
+/** 已订阅源总数 */
+export function countFeeds(): number {
+  return (db.prepare('SELECT COUNT(*) as c FROM feeds').get() as unknown as { c: number }).c
+}
 export function addFeed(f: { type: string; name: string; url: string; schedule_min?: number; config_json?: string }): Feed {
   // 幂等：相同 url 已存在时返回已有源，避免 UNIQUE(url) 约束抛错（手动添加与 Discover 批量行为一致）
   if (feedExists(f.url)) {
