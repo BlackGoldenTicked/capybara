@@ -11,14 +11,13 @@ import {
   listLinks, addLink, deleteLink, updateLink,
   getSetting, setSetting, sourceCounts, getDbFile,
   setCustomDbPath, getCustomDbPath,
-  storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint, stopWalCheckpoint,
+  storeCover, enforceRetention, markAllRead, clearInbox, purgeOldItems, checkpoint, stopWalCheckpoint,
   dbTables, dbRows
 } from './db'
 import { startIngestServer } from './ingest'
 import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
 import { extractArticle } from './sources/readability'
 import { backupWebDAV } from './sync'
-import { searchRssRepos, extractFeeds } from './sources/githubDiscover'
 import { netLog, setNetLogWindow } from './netlog'
 import { diagSnapshot, diagTestPurge, diagRefreshFeed, diagRefreshAll, forceRefreshFeed, forceRefreshAll } from './diag'
 
@@ -419,15 +418,6 @@ function registerIpc() {
     'boards:addLink': ((boardId: number, fromId: number, toId: number) => addLink(boardId, fromId, toId)) as never,
     'boards:deleteLink': ((id: number) => deleteLink(id)) as never,
     'boards:updateLink': ((id: number, label: string) => updateLink(id, label)) as never,
-
-    'discover:repos': ((query: string) => searchRssRepos(query)) as never,
-    'discover:feeds': (async (fullName: string, branch: string) => {
-      const cached = getDiscoverCache(fullName)
-      if (cached) return JSON.parse(cached) as Array<{ url: string; title: string }>
-      const feeds = await extractFeeds(fullName, branch)
-      setDiscoverCache(fullName, JSON.stringify(feeds))
-      return feeds
-    }) as never,
 
     'feeds:importOpml': (async () => {
       const res = await dialog.showOpenDialog(mainWindow!, {

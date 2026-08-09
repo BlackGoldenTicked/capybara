@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore, type SettingsTab } from '../store'
 import { Icon, type IconName } from './icons'
 import { SourceManager } from './SourceManager'
-import { DiscoverView } from './DiscoverView'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
 import {
@@ -19,7 +18,6 @@ import { playSound } from '../lib/sound'
 const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'appearance', label: '外观', icon: 'palette' },
   { key: 'sources', label: '来源管理', icon: 'book' },
-  { key: 'discover', label: '发现 RSS', icon: 'search' },
   { key: 'actions', label: '操作', icon: 'refresh' },
   { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
   { key: 'data', label: '数据查看', icon: 'book' },
@@ -41,8 +39,7 @@ export function SettingsView() {
       </nav>
       <div className="settings-panel">
         {settingsTab === 'appearance' && <AppearanceTab />}
-        {settingsTab === 'sources' && <SourceManager onOpenDiscover={() => setSettingsTab('discover')} />}
-        {settingsTab === 'discover' && <DiscoverView />}
+        {settingsTab === 'sources' && <SourceManager />}
         {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
         {settingsTab === 'shortcuts' && <ShortcutsTab />}
         {settingsTab === 'data' && <DbView />}

@@ -5,7 +5,7 @@ import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/sh
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
 
 /** 设置页标签（含新增的「快捷键」）。 */
-export type SettingsTab = 'general' | 'appearance' | 'sources' | 'discover' | 'actions' | 'shortcuts' | 'data' | 'diag'
+export type SettingsTab = 'general' | 'appearance' | 'sources' | 'actions' | 'shortcuts' | 'data' | 'diag'
 
 interface State {
   screen: Screen
@@ -43,11 +43,6 @@ interface State {
   settingsTab: SettingsTab
   shortcuts: Record<ShortcutAction, string>
 
-  discoverRepos: RepoInfo[]
-  discoverFeeds: Record<string, DiscoveredFeed[]>
-  discoverLoading: boolean
-  discoverFeedsLoading: string | null
-
   setScreen: (s: Screen) => void
   setView: (v: View) => void
   setSourceType: (t: string | null) => void
@@ -84,10 +79,6 @@ interface State {
   renameBoard: (id: number, name: string) => Promise<void>
   deleteBoard: (id: number) => Promise<void>
   loadLinks: (boardId: number) => Promise<void>
-  discoverSearch: (query: string) => Promise<void>
-  loadRepoFeeds: (repo: RepoInfo) => Promise<void>
-  addDiscoveredFeed: (url: string, title: string) => Promise<void>
-  addAllDiscovered: (repoFullName: string) => Promise<void>
   addLink: (fromId: number, toId: number) => Promise<void>
   deleteLink: (id: number) => Promise<void>
   updateLink: (id: number, label: string) => Promise<void>
@@ -117,7 +108,6 @@ export const useStore = create<State>((set, get) => ({
   items: [], itemsPage: 0, itemsDone: false, itemsLoadingMore: false, counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
   selectedId: null, pendingReadId: null, search: '', quickAddOpen: false,
   activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '',
-  discoverRepos: [], discoverFeeds: {}, discoverLoading: false, discoverFeedsLoading: null,
 
   appearance: DEFAULT_APPEARANCE,
   soundEnabled: false,
@@ -412,40 +402,6 @@ export const useStore = create<State>((set, get) => ({
       cards: wasActive ? [] : get().cards,
       links: wasActive ? [] : get().links
     })
-  },
-
-  discoverSearch: async (query) => {
-    set({ discoverLoading: true })
-    try {
-      const repos = await window.readflow.invoke('discover:repos', query) as RepoInfo[]
-      set({ discoverRepos: repos, discoverLoading: false })
-    } catch (e) {
-      set({ discoverLoading: false })
-      get().showToast('发现失败：' + (e as Error).message)
-    }
-  },
-  loadRepoFeeds: async (repo) => {
-    set({ discoverFeedsLoading: repo.full_name })
-    try {
-      const feeds = await window.readflow.invoke('discover:feeds', repo.full_name, repo.default_branch) as DiscoveredFeed[]
-      set({ discoverFeeds: { ...get().discoverFeeds, [repo.full_name]: feeds }, discoverFeedsLoading: null })
-    } catch (e) {
-      set({ discoverFeedsLoading: null })
-      get().showToast('解析失败：' + (e as Error).message)
-    }
-  },
-  addDiscoveredFeed: async (url, title) => {
-    if (get().feeds.some((f) => f.url === url)) { get().showToast('该源已添加'); return }
-    await get().addFeed('rss', title, url, 60)
-    get().showToast('已添加：' + title)
-  },
-  addAllDiscovered: async (repoFullName) => {
-    const feeds = get().discoverFeeds[repoFullName] || []
-    const have = new Set(get().feeds.map((f) => f.url))
-    const toAdd = feeds.filter((f) => !have.has(f.url)).map((f) => ({ type: 'rss', name: f.title, url: f.url, schedule_min: 60 }))
-    if (!toAdd.length) { get().showToast('已全部添加，无新增'); return }
-    const added = await get().addManyFeeds(toAdd)
-    get().showToast(`已批量添加 ${added} 个订阅源`)
   },
 
   fetchGithubStars: async (username) => {

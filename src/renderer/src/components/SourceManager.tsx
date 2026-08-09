@@ -2,16 +2,15 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { Icon } from './icons'
 
-type RssMethod = 'add' | 'discover' | 'import'
+type RssMethod = 'add' | 'import'
 
 /**
- * 来源管理 — 整合为 4 类分区卡片：
- *   1) RSS：三个平级操作（添加 / 选择 RSS 源 / 导入）+ 已订阅列表紧跟其后
+ * 来源管理 — 3 类分区卡片：
+ *   1) RSS：手动添加 / OPML 导入 + 已订阅列表
  *   2) GitHub Star：用户名 + Token + 拉取
  *   3) Twitter 收藏：导入书签文件
- *   4) 已订阅（跨 RSS / 热榜）
  */
-export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void }) {
+export function SourceManager() {
   const { feeds, addFeed, deleteFeed, refreshFeed, fetchGithubStars, importTwitterBookmarks, showToast } = useStore()
   // ===== RSS =====
   const [rssMethod, setRssMethod] = useState<RssMethod>('add')
@@ -27,7 +26,6 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
   // ===== Twitter 收藏 =====
   const [twMsg, setTwMsg] = useState('')
 
-  // 读取设置
   useEffect(() => {
     void (window.readflow.invoke('settings:get', 'github_stars_user') as Promise<string>).then((r) => setGhUser(r || ''))
     void (window.readflow.invoke('settings:get', 'github_token') as Promise<string>).then((r) => setTokenSaved(r ? '1' : ''))
@@ -36,7 +34,6 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
   // ===== RSS =====
   const submit = async () => {
     if (!url.trim()) { showToast('请填写 RSS 地址'); return }
-    // 名称允许留空：默认用地址占位，抓取后由 feed 标题回填，避免「只填 URL 被静默 return」导致加源无反应
     const finalName = name.trim() || url.trim()
     try {
       await addFeed('rss', finalName, url.trim(), schedule)
@@ -83,8 +80,6 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
   }
 
   const rssCount = feeds.filter((f) => f.type === 'rss' || f.type === 'tophub').length
-
-  // 错误详情气泡：记录抓取失败信息，点击小图标查看（开发者排查用）
   const [errId, setErrId] = useState<number | null>(null)
 
   return (
@@ -92,19 +87,13 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
       <div className="feed-header"><span className="title">来源管理</span><span className="keys">RSS / GitHub Star / Twitter 收藏</span></div>
       <div className="sources-body">
 
-        {/* ===== RSS 分区：三个平级操作 + 已订阅紧随 ===== */}
         <div className="set-card">
           <p className="src-label">RSS 订阅</p>
-          <p className="src-hint">三种方式添加 RSS 源：手动粘贴 URL、从发现页挑选热门仓库分享的源、或从 OPML 批量导入。</p>
 
-          {/* 三个平级操作（用 seg 切换；当前面板的内容随方法切换） */}
           <div className="src-3way">
-            <div className="seg seg-3way">
+            <div className="seg seg-2way">
               <button className={`seg-btn ${rssMethod === 'add' ? 'active' : ''}`} onClick={() => setRssMethod('add')}>
                 <Icon name="plus" size={13} /> 手动添加
-              </button>
-              <button className={`seg-btn ${rssMethod === 'discover' ? 'active' : ''}`} onClick={() => { setRssMethod('discover'); onOpenDiscover?.() }}>
-                <Icon name="search" size={13} /> 选择 RSS 源
               </button>
               <button className={`seg-btn ${rssMethod === 'import' ? 'active' : ''}`} onClick={() => setRssMethod('import')}>
                 <Icon name="upload" size={13} /> 导入 OPML
@@ -139,15 +128,6 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
             </div>
           )}
 
-          {rssMethod === 'discover' && (
-            <div className="src-form">
-              <p className="src-hint">从 GitHub 高星仓库的 README 抓取分享的 RSS 源，可逐条挑选添加。</p>
-              <div className="src-actions">
-                <button onClick={() => onOpenDiscover?.()}><Icon name="search" size={13} /> 打开 RSS 发现</button>
-              </div>
-            </div>
-          )}
-
           {rssMethod === 'import' && (
             <div className="src-form">
               <p className="src-hint">支持 OPML / XML 格式；按 url 去重，不会重复添加已有源。</p>
@@ -159,10 +139,10 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
           )}
         </div>
 
-        {/* ===== 已订阅（紧跟 RSS 区块） ===== */}
+        {/* ===== 已订阅 ===== */}
         <div className="set-card">
           <p className="src-label">已订阅（{rssCount}）</p>
-          {feeds.length === 0 && <p className="src-hint">暂无订阅源。可一键添加：名称「热榜」类型 tophub；或粘贴任意 RSS feed。</p>}
+          {feeds.length === 0 && <p className="src-hint">暂无订阅源。手动粘贴 RSS feed 地址或导入 OPML 文件开始订阅。</p>}
           {feeds.map((f) => (
             <div key={f.id} className="feed-row">
               <span className={`badge ${f.type}`}>{f.type}</span>
@@ -195,7 +175,7 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
           ))}
         </div>
 
-        {/* ===== GitHub Star 分区 ===== */}
+        {/* ===== GitHub Star ===== */}
         <div className="set-card">
           <p className="src-label">GitHub Star</p>
           <p className="src-hint">填入 GitHub 用户名，拉取你 starred 的仓库作为阅读条目（公开 API 约 60 次/小时，填入 Token 可提升额度）。</p>
@@ -219,7 +199,7 @@ export function SourceManager({ onOpenDiscover }: { onOpenDiscover?: () => void 
           </div>
         </div>
 
-        {/* ===== Twitter 收藏 分区 ===== */}
+        {/* ===== Twitter 收藏 ===== */}
         <div className="set-card">
           <p className="src-label">Twitter 收藏</p>
           <p className="src-hint">X 官方 API 读取书签需付费 OAuth 凭证，本地无法实时拉取。请从 X 导出书签文件后在此导入。支持 JSON 数组或 CSV（含 url / text / author / created_at 等字段）。</p>

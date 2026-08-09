@@ -390,11 +390,6 @@ function migrate() {
     );
     CREATE INDEX IF NOT EXISTS idx_items_status ON items(status, fetched_at DESC);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_feeds_url ON feeds(url);
-    CREATE TABLE IF NOT EXISTS discover_cache (
-      full_name TEXT PRIMARY KEY,
-      feeds_json TEXT NOT NULL,
-      cached_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
   `)
   // 增量列迁移（node:sqlite 无 ALTER IF NOT EXISTS，try/catch 容错）
   for (const col of ['content_html TEXT NOT NULL DEFAULT ""', 'cover_path TEXT NOT NULL DEFAULT ""', 'cover_url TEXT NOT NULL DEFAULT ""']) {
@@ -726,21 +721,7 @@ export function purgeOldItems(keepArchivedDays: number, maxItems: number): { pur
   return { purged: Math.max(0, before - after) }
 }
 
-/** 发现缓存：缓存仓库 README 解析出的订阅源，24h 内复用，避免重复拉取（修复 #24） */
-export function getDiscoverCache(fullName: string): string | null {
-  const r = db.prepare('SELECT feeds_json, cached_at FROM discover_cache WHERE full_name = ?').get(fullName) as
-    { feeds_json: string; cached_at: string } | undefined
-  if (!r) return null
-  const age = Date.now() - new Date((r.cached_at || '').replace(' ', 'T') + 'Z').getTime()
-  if (age > 24 * 3600 * 1000) return null
-  return r.feeds_json
-}
-export function setDiscoverCache(fullName: string, json: string) {
-  db.prepare(`INSERT INTO discover_cache (full_name, feeds_json) VALUES (?, ?)
-    ON CONFLICT(full_name) DO UPDATE SET feeds_json = excluded.feeds_json, cached_at = datetime('now')`).run(fullName, json)
-}
-
-/** 批量添加订阅源（Discover 一键全部，减少 IPC 往返，修复 #21） */
+/** 批量添加订阅源（来源管理批量导入，减少 IPC 往返） */
 export function addFeeds(list: Array<{ type: string; name: string; url: string; schedule_min?: number }>): number {
   const stmt = db.prepare('INSERT OR IGNORE INTO feeds (type, name, url, schedule_min) VALUES (?, ?, ?, ?)')
   let added = 0

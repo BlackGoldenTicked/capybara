@@ -61,19 +61,6 @@ export interface CardPayload {
 /** 白板卡片之间的连线关系 */
 export interface BoardLink { id: number; board_id: number; from_id: number; to_id: number; label: string }
 
-/** GitHub RSS 发现：高星仓库 + 其 README 中分享的订阅源 */
-export interface RepoInfo {
-  full_name: string
-  name: string
-  html_url: string
-  description: string | null
-  stargazers_count: number
-  language: string | null
-  default_branch: string
-  owner: string
-}
-export interface DiscoveredFeed { url: string; title: string }
-
 /** 网络诊断日志条目（开发者模式面板用） */
 export interface NetLogEntry {
   time: number
