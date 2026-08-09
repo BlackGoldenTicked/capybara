@@ -15,6 +15,8 @@
  * 所有配置写进主进程通用 settings 键值表（key 见 SETTING_KEYS）。
  */
 
+import { getReadingThemeById, FOLLOW_UI_ID, DEFAULT_READING_THEME_ID } from './reading-themes'
+
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type CardStyleKey =
   | 'paper' | 'glass' | 'noir' | 'aurora' | 'ocean'
@@ -36,6 +38,8 @@ export interface Appearance {
   fontScale: number
   /** 字重：细(300) / 正常(400) / 粗(700)，全局生效。 */
   fontWeight: FontWeight
+  /** 阅读正文配色主题 ID；`__follow_ui__` 表示跟随 UI 界面配色。 */
+  readingTheme: string
 }
 
 export const SETTING_KEYS = {
@@ -43,7 +47,8 @@ export const SETTING_KEYS = {
   cardStyle: 'card_style',
   fontFamily: 'font_family',
   fontScale: 'font_scale',
-  fontWeight: 'font_weight'
+  fontWeight: 'font_weight',
+  readingTheme: 'reading_theme'
 } as const
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -51,7 +56,8 @@ export const DEFAULT_APPEARANCE: Appearance = {
   cardStyle: 'none',
   fontFamily: '',
   fontScale: 1,
-  fontWeight: 'normal'
+  fontWeight: 'normal',
+  readingTheme: FOLLOW_UI_ID
 }
 
 export const THEME_OPTIONS: Array<{ key: ThemeMode; label: string }> = [
@@ -143,6 +149,26 @@ export function applyAppearance(a: Appearance): void {
 
   // 镜像到 localStorage，下次启动首帧前由 bootAppearance 同步应用
   cacheAppearance(a)
+
+  // 阅读正文配色：独立于 UI 卡片风格，注入 --rt-* CSS 变量到 :root
+  applyReadingTheme(a.readingTheme)
+}
+
+/** 注入阅读配色 CSS 变量到 :root，供 .reader-content 使用 */
+function applyReadingTheme(themeId: string): void {
+  const root = document.documentElement
+  if (themeId === FOLLOW_UI_ID || !themeId) {
+    // 跟随界面：移除阅读配色变量，让 reader-content 回退到 UI 的 CSS 变量
+    root.removeAttribute('data-reading-theme')
+    return
+  }
+  const theme = getReadingThemeById(themeId)
+  if (!theme) return
+  root.setAttribute('data-reading-theme', themeId)
+  root.setAttribute('data-reading-mode', theme.mode)
+  for (const [key, value] of Object.entries(theme.colors)) {
+    root.style.setProperty(key, value)
+  }
 }
 
 /**

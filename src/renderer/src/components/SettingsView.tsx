@@ -9,6 +9,7 @@ import {
   THEME_OPTIONS, CARD_STYLES,
   type ThemeMode, type CardStyleKey, type FontWeight
 } from '../lib/appearance'
+import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme } from '../lib/reading-themes'
 import {
   SHORTCUT_GROUPS, DEFAULT_SHORTCUTS, formatCombo, eventToCombo,
   type ShortcutAction
@@ -64,6 +65,7 @@ function AppearanceTab() {
   const setTheme = (theme: ThemeMode) => updateAppearance({ theme })
   const setCardStyle = (cardStyle: CardStyleKey | 'none') => updateAppearance({ cardStyle })
   const setFontWeight = (w: FontWeight) => updateAppearance({ fontWeight: w })
+  const setReadingTheme = (id: string) => updateAppearance({ readingTheme: id })
 
   // Feature1：选中卡片风格后，把焦点与可视区域移到该卡片上
   useEffect(() => {
@@ -133,6 +135,16 @@ function AppearanceTab() {
           </div>
         </label>
         <p className="src-hint">全局字体从系统已安装的全部字体中选择，字号为全局缩放（70%–200%），字重作用于全部文字。</p>
+      </div>
+
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">正文阅读配色（独立于界面风格 · Top 30 VSCode 热门主题）</p>
+        </div>
+        <p className="src-hint">选择后仅改变正文阅读区域的配色，不影响左侧列表和设置等界面。</p>
+        <div className="reading-theme-grid">
+          {renderReadingThemes(appearance.readingTheme, (id) => setReadingTheme(id))}
+        </div>
       </div>
 
       <div className="set-card">
@@ -314,5 +326,47 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
         </div>
       </div>
     </div>
+  )
+}
+
+/* ===================== 阅读配色色块渲染 ===================== */
+function renderReadingThemes(activeId: string, onSelect: (id: string) => void) {
+  const darkThemes = READING_THEMES.filter((t) => t.mode === 'dark')
+  const lightThemes = READING_THEMES.filter((t) => t.mode === 'light')
+
+  const renderGroup = (label: string, themes: readonly ReadingTheme[], showFollow: boolean) => (
+    <div key={label} className="rt-group">
+      <p className="rt-group-label">{label}主题（{themes.length + (showFollow ? 1 : 0)} 套）</p>
+      <div className="rt-grid">
+        {showFollow && (
+          <button
+            className={`rt-chip ${activeId === FOLLOW_UI_ID ? 'active' : ''}`}
+            onClick={() => onSelect(FOLLOW_UI_ID)}
+            title="跟随界面配色"
+          >
+            <span className="rt-swatch" style={{ background: 'var(--color-background-primary)', border: '1px solid var(--color-border-secondary)' }} />
+            <span className="rt-name">跟随界面</span>
+          </button>
+        )}
+        {themes.map((t) => (
+          <button
+            key={t.id}
+            className={`rt-chip ${activeId === t.id ? 'active' : ''}`}
+            onClick={() => onSelect(t.id)}
+            title={t.name}
+          >
+            <span className="rt-swatch" style={{ background: t.colors['--rt-bg'] }} />
+            <span className="rt-name">{t.name.replace(/\(.*\)/, '').trim()}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      {renderGroup('暗色', darkThemes, true)}
+      {renderGroup('亮色', lightThemes, false)}
+    </>
   )
 }

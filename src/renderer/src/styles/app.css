@@ -334,6 +334,34 @@ input:focus { border-color: var(--color-border-info); }
 .reader-content .embed-fallback { font-size: 0.9em; color: var(--color-text-tertiary); padding: 10px 14px; border: 0.5px dashed var(--color-border-tertiary); border-radius: 8px; margin: 1.1em 0; }
 .reader-content .embed-fallback a { color: var(--color-text-info); }
 
+/* 阅读正文独立配色（跟随界面时无 [data-reading-theme]，走上面默认 UI 变量） */
+[data-reading-theme] .reader-body { background: var(--rt-bg); }
+[data-reading-theme] .reader-content { color: var(--rt-fg); }
+[data-reading-theme] .reader-content h1,
+[data-reading-theme] .reader-content h2,
+[data-reading-theme] .reader-content h3,
+[data-reading-theme] .reader-content h4 { color: var(--rt-heading); }
+[data-reading-theme] .reader-content a { color: var(--rt-link); }
+[data-reading-theme] .reader-content small,
+[data-reading-theme] .reader-content figcaption { color: var(--rt-meta); }
+[data-reading-theme] .reader-content blockquote {
+  background: var(--rt-blockquote-bg); border-left-color: var(--rt-blockquote-border); color: var(--rt-blockquote-fg);
+}
+[data-reading-theme] .reader-content code,
+[data-reading-theme] .reader-content pre { background: var(--rt-code-bg); color: var(--rt-code-fg); }
+[data-reading-theme] .reader-content pre code { background: none; }
+[data-reading-theme] .reader-content table,
+[data-reading-theme] .reader-content th,
+[data-reading-theme] .reader-content td { border-color: var(--rt-table-border); }
+[data-reading-theme] .reader-content th { background: var(--rt-th-bg); }
+[data-reading-theme] .reader-content hr { border-color: var(--rt-hr); }
+[data-reading-theme] .reader-content img { background: var(--rt-img-bg); }
+[data-reading-theme] .reader-content .embed-fallback { border-color: var(--rt-table-border); color: var(--rt-meta); }
+[data-reading-theme] .reader-content .embed-fallback a { color: var(--rt-link); }
+[data-reading-theme] .reader-title { color: var(--rt-heading); }
+[data-reading-theme] .reader-meta { color: var(--rt-meta); }
+[data-reading-theme] .reader-meta a { color: var(--rt-link); }
+
 /* 图片灯箱 */
 .lightbox {
   position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
@@ -885,6 +913,22 @@ button:focus-visible,
 }
 .style-name { font-size: 11px; font-weight: 500; text-align: center; color: var(--color-text-secondary); }
 .style-opt.active .style-name { color: var(--color-text-info); }
+
+/* 阅读配色色块网格（设置 → 外观 → 正文阅读配色） */
+.reading-theme-grid { display: flex; flex-direction: column; gap: 14px; }
+.rt-group {}
+.rt-group-label { font-size: 12px; font-weight: 500; color: var(--color-text-tertiary); margin-bottom: 8px; }
+.rt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; }
+.rt-chip {
+  display: flex; flex-direction: column; gap: 4px; padding: 0; border: 1.5px solid transparent;
+  border-radius: 8px; background: transparent; cursor: pointer; text-align: center; transition: border-color .12s var(--ease-out);
+}
+.rt-chip:hover { border-color: var(--color-border-secondary); }
+.rt-chip.active { border-color: var(--card-accent); }
+.rt-chip:focus-visible { outline: 2px solid var(--card-accent); outline-offset: 2px; }
+.rt-swatch { display: block; height: 24px; border-radius: 5px 5px 0 0; background-size: cover; }
+.rt-name { font-size: 10px; line-height: 1.2; padding: 0 4px 5px; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-chip.active .rt-name { color: var(--color-text-primary); font-weight: 500; }
 
 /* 卡片头部行（标签 + 当前选择 / 操作按钮） */
 .src-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
