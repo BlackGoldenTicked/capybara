@@ -258,11 +258,11 @@ export function BoardView() {
           <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={16} /></button>
           <button title="还原视图" onClick={fit} style={{ minWidth: 52, fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
           <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={16} /></button>
-          <button title="重命名白板" onClick={beginRename}><Icon name="edit" size={15} /> 重命名</button>
           <button className="danger" title="删除白板" onClick={() => {
             if (activeBoardId == null) return
+            if (!confirm('确定要删除「' + (board?.name ?? '白板') + '」吗？此操作不可撤销。')) return
             void deleteBoard(activeBoardId)
-          }}><Icon name="trash" size={15} /> 删除</button>
+          }}><Icon name="trash" size={15} /></button>
         </span>
       </div>
 
