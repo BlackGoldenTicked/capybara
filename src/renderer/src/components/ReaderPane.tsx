@@ -3,9 +3,10 @@ import { useStore } from '../store'
 import type { Item } from '../env'
 import { Icon } from './icons'
 import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml } from '../lib/reader'
+import { READING_THEMES, FOLLOW_UI_ID } from '../lib/reading-themes'
 
 export function ReaderPane() {
-  const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser } = useStore()
+  const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser, appearance, updateAppearance } = useStore()
   const [item, setItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(false)
   const [noImg, setNoImg] = useState(false)
@@ -70,13 +71,33 @@ export function ReaderPane() {
   }
 
   const contentClass = `reader-content ${noImg ? 'no-img' : ''}`
-  // 优先用 Worker 清洗结果，未就绪时同步回退
   const html = cleanHtml || (item.content_html ? renderArticleHtml(item.content_html) : '')
+
+  const darkThemes = READING_THEMES.filter((t) => t.mode === 'dark')
+  const lightThemes = READING_THEMES.filter((t) => t.mode === 'light')
 
   return (
     <section className="reader">
       <div className="reader-bar">
         <button className={`rb-toggle ${noImg ? 'on' : ''}`} onClick={toggleNoImg} title="隐藏正文中的图片 / 视频，纯文字阅读"><Icon name={noImg ? 'eye' : 'eyeOff'} size={14} /> 无图模式</button>
+        <div className="rb-spacer" />
+        <select
+          className="rb-theme-select"
+          value={appearance.readingTheme || FOLLOW_UI_ID}
+          onChange={(e) => updateAppearance({ readingTheme: e.target.value })}
+        >
+          <option value={FOLLOW_UI_ID}>🎨 跟随界面</option>
+          <optgroup label="── 暗色主题 ──">
+            {darkThemes.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </optgroup>
+          <optgroup label="── 亮色主题 ──">
+            {lightThemes.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </optgroup>
+        </select>
       </div>
       <div className="reader-body">
         <p className="reader-title">{item.title}</p>

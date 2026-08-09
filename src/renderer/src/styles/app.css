@@ -748,6 +748,14 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .rb-label { font-size: 11px; color: var(--color-text-tertiary); }
 .rb-toggle { font-size: 12px; padding: 3px 10px; border-radius: 999px; }
 .rb-toggle.on { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); }
+.rb-spacer { flex: 1; }
+.rb-theme-select {
+  font-size: 11px; padding: 3px 8px; border-radius: 6px;
+  border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary);
+  color: var(--color-text-secondary); cursor: pointer; max-width: 160px;
+  text-overflow: ellipsis; outline: none;
+}
+.rb-theme-select:focus { border-color: var(--card-accent); }
 
 /* 阅读模式：舒适衬线排版（参考主流阅读器：~68ch 行宽、1.9 行高、链接与引用克制）。
    左对齐（两端对齐在中文下会产生难看的行尾大空隙，故不用 justify）。 */
