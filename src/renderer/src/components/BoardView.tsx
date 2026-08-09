@@ -51,6 +51,8 @@ export function BoardView() {
   const canvasRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const pendingKind = useRef<CardKind | null>(null)
+  // 卡片实际渲染高度（DOM 测量）—— card.h 字段是 140 默认值不可靠，长卡片会超出
+  const [cardHeights, setCardHeights] = useState<Record<number, number>>({})
 
   useEffect(() => {
     window.readflow.invoke('items:list', 'all', '').then((r) => {
@@ -190,18 +192,35 @@ export function BoardView() {
   // 卡片 payload 只解析一次（性能 #20）
   const cardsView = useMemo(() => cards.map((c) => ({ card: c, p: safeParse(c.payload) })), [cards])
   const cardMap = new Map(cardsView.map((cv) => [cv.card.id, cv]))
-  const center = (c: Card) => { const p = posOf(c); return { x: p.x + c.w / 2, y: p.y + c.h / 2 } }
+  const center = (c: Card) => { const p = posOf(c); const h = cardHeights[c.id] || c.h; return { x: p.x + c.w / 2, y: p.y + h / 2 } }
   const linkMid = (a: Card, b: Card) => { const ca = center(a), cb = center(b); return { x: (ca.x + cb.x) / 2, y: (ca.y + cb.y) / 2 } }
-  // 矩形→矩形连线：从 from 中心朝 to 中心方向，与 from 矩形边的最近交点（连线不再穿过卡片内部）
-  const edgePoint = (from: Card, to: Card) => {
-    const cx = from.x + from.w / 2, cy = from.y + from.h / 2
-    const tx = to.x + to.w / 2, ty = to.y + to.h / 2
-    const dx = tx - cx, dy = ty - cy
-    if (dx === 0 && dy === 0) return { x: cx, y: cy }
-    const sx = dx === 0 ? Infinity : Math.abs((from.w / 2) / dx)
-    const sy = dy === 0 ? Infinity : Math.abs((from.h / 2) / dy)
-    const s = Math.min(sx, sy)
-    return { x: cx + dx * s, y: cy + dy * s }
+  /**
+   * 取连线锚点：根据两卡相对方向，取较远方向的边中点；返回边类型供曲线选切线。
+   * 使用 DOM 实测高度（card.h 字段是 140 默认值，长卡片不可靠）。
+   */
+  const edgeAnchor = (from: Card, to: Card): { x: number; y: number; side: 'top'|'right'|'bottom'|'left' } => {
+    const fp = posOf(from)
+    const tp = posOf(to)
+    const fh = cardHeights[from.id] || from.h
+    const th = cardHeights[to.id] || to.h
+    const fcx = fp.x + from.w / 2, fcy = fp.y + fh / 2
+    const tcx = tp.x + to.w / 2, tcy = tp.y + th / 2
+    const dx = tcx - fcx, dy = tcy - fcy
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      const side = dx >= 0 ? 'right' : 'left'
+      return { x: dx >= 0 ? fp.x + from.w : fp.x, y: fcy, side }
+    }
+    const side = dy >= 0 ? 'bottom' : 'top'
+    return { x: fcx, y: dy >= 0 ? fp.y + fh : fp.y, side }
+  }
+  /** 端点切线方向：曲线从锚点出发远离卡片的方向 */
+  const tangentOut = (a: { side: 'top'|'right'|'bottom'|'left' }) => {
+    switch (a.side) {
+      case 'right': return { x: 1, y: 0 }
+      case 'left':  return { x: -1, y: 0 }
+      case 'bottom': return { x: 0, y: 1 }
+      case 'top':   return { x: 0, y: -1 }
+    }
   }
 
   if (!activeBoardId) {
@@ -263,11 +282,16 @@ export function BoardView() {
             {links.map((lk: BoardLink) => {
               const a = cardMap.get(lk.from_id)?.card, b = cardMap.get(lk.to_id)?.card
               if (!a || !b) return null
-              const sa = edgePoint(a, b), sb = edgePoint(b, a)
+              const sa = edgeAnchor(a, b), sb = edgeAnchor(b, a)
+              const ta = tangentOut(sa), tb = tangentOut(sb)
+              // 控制点：沿切线方向走 max(40, 距离×0.4)，让曲线自然垂直出发 / 垂直到达
+              const dist = Math.hypot(sb.x - sa.x, sb.y - sa.y)
+              const reach = Math.max(40, dist * 0.4)
+              const cp1 = { x: sa.x + ta.x * reach, y: sa.y + ta.y * reach }
+              const cp2 = { x: sb.x + tb.x * reach, y: sb.y + tb.y * reach }
               const mid = { x: (sa.x + sb.x) / 2, y: (sa.y + sb.y) / 2 }
               const isEditing = editingLinkId === lk.id
-              // 贝塞尔曲线：控制点用对端 y / 本端 x，形成平滑 S 弧，不再穿过卡片
-              const d = `M ${sa.x} ${sa.y} C ${sb.x} ${sa.y}, ${sa.x} ${sb.y}, ${sb.x} ${sb.y}`
+              const d = `M ${sa.x} ${sa.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${sb.x} ${sb.y}`
               return (
                 <g key={lk.id} className="edge">
                   <path d={d} className="edge-hit" fill="none" />
@@ -281,8 +305,10 @@ export function BoardView() {
               )
             })}
             {linkingFrom && linkCursor && (() => {
-              const c = center(linkingFrom)
-              return <line x1={c.x} y1={c.y} x2={linkCursor.x} y2={linkCursor.y} className="edge-temp" />
+              // 拖拽中的临时线：从源卡片锚点（edgeAnchor 沿另一卡方向）指向光标
+              const anyOther = cardsView.find((cv) => cv.card.id !== linkingFrom.id)
+              const sa = anyOther ? edgeAnchor(linkingFrom, anyOther.card) : center(linkingFrom)
+              return <path d={`M ${sa.x} ${sa.y} L ${linkCursor.x} ${linkCursor.y}`} className="edge-temp" />
             })()}
           </svg>
 
@@ -293,6 +319,15 @@ export function BoardView() {
             return (
               <div key={card.id} data-card-id={card.id} className={`board-card kind-${card.kind}`}
                 style={{ left: pos.x, top: pos.y, width: card.w }}
+                ref={(el) => {
+                  // 实测卡片渲染高度（card.h 字段是 140 默认值不可靠），存 state 里供 edgeAnchor 使用
+                  if (el) {
+                    const h = el.offsetHeight
+                    setCardHeights((prev) => prev[card.id] === h ? prev : { ...prev, [card.id]: h })
+                  } else {
+                    setCardHeights((prev) => { if (!(card.id in prev)) return prev; const n = { ...prev }; delete n[card.id]; return n })
+                  }
+                }}
                 onPointerDown={(e) => startNodeDrag(e, card)} onDoubleClick={() => setEditingId(card.id)}
                 onMouseEnter={() => setHoveredId(card.id)} onMouseLeave={() => setHoveredId((prev) => prev === card.id ? null : prev)}>
                 <span className="card-edit" title="编辑" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditingId(card.id) }}><Icon name="edit" size={13} /></span>
