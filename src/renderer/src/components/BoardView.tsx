@@ -22,7 +22,7 @@ function fmtSize(n?: number): string {
 function safeParse(p: string): CardPayload { try { return p ? JSON.parse(p) : {} } catch { return {} } }
 
 /** 这些元素上的按下不应触发画布平移 / 也不应被画布吞掉点击 */
-const NO_PAN = 'button, a, input, textarea, .board-toolbar, .board-center-palette, .board-add-fab, .card-edit, .card-del, .card-link-handle'
+const NO_PAN = 'button, a, input, textarea, .board-toolbar, .board-center-palette, .card-edit, .card-del, .card-link-handle'
 
 export function BoardView() {
   const { cards, links, activeBoardId, boards, createBoard, addRefCard, addCard, moveCard, deleteCard, showToast, addLink, deleteLink, updateLink, renameBoard, deleteBoard, autoPos } = useStore()
@@ -30,7 +30,6 @@ export function BoardView() {
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [paletteOpen, setPaletteOpen] = useState(false)
   const [linkMode, setLinkMode] = useState(false)
   const [linking, setLinking] = useState<number | null>(null)
   const [linkCursor, setLinkCursor] = useState<{ x: number; y: number } | null>(null)
@@ -149,7 +148,6 @@ export function BoardView() {
   }
 
   const onPickType = (kind: CardKind) => {
-    setPaletteOpen(false)
     const pos = autoPos()
     if (kind === 'ref') { void openPicker(); return }
     if (kind === 'image' || kind === 'video' || kind === 'file') { pendingKind.current = kind; fileRef.current?.click(); return }
@@ -231,6 +229,13 @@ export function BoardView() {
         ) : (
           <span className="title" onDoubleClick={beginRename} title="双击重命名">{board?.name ?? '白板'}</span>
         )}
+        <span className="board-card-btns">
+          {CARD_TYPES.map((t) => (
+            <button key={t.kind} title={t.desc} onClick={() => onPickType(t.kind)}>
+              <Icon name={t.icon} size={15} /> {t.label}
+            </button>
+          ))}
+        </span>
         <span className="board-tools">
           <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={16} /></button>
           <button title="还原视图" onClick={fit} style={{ minWidth: 52, fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
@@ -377,25 +382,6 @@ export function BoardView() {
                 ))}
               </div>
               <p className="bcp-foot">也可以把左侧信息流或本地文件直接拖进画布</p>
-            </div>
-          </div>
-        )}
-        {cards.length > 0 && !paletteOpen && (
-          <button className="board-add-fab" title="添加卡片" onPointerDown={(e) => e.stopPropagation()} onClick={() => setPaletteOpen(true)}><Icon name="plus" size={20} /></button>
-        )}
-        {cards.length > 0 && paletteOpen && (
-          <div className="board-center-palette" onPointerDown={(e) => e.stopPropagation()}>
-            <div className="bcp-card popover">
-              <p className="bcp-title">添加卡片</p>
-              <div className="bcp-grid">
-                {CARD_TYPES.map((t) => (
-                  <button key={t.kind} className="bcp-btn" onClick={() => onPickType(t.kind)}>
-                    <span className="bcp-icon"><Icon name={t.icon} size={20} strokeWidth={1.6} /></span>
-                    <span className="bcp-label">{t.label}</span>
-                  </button>
-                ))}
-              </div>
-              <button className="bcp-close" onClick={() => setPaletteOpen(false)}>关闭</button>
             </div>
           </div>
         )}

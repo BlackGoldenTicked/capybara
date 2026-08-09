@@ -459,6 +459,13 @@ input:focus { border-color: var(--color-border-info); }
 .board-tools button { padding: 3px 9px; font-size: 12px; }
 .board-tools button.danger { color: var(--accent-coral); }
 .board-tools button.danger:hover { background: rgba(216,90,48,0.16); }
+.board-card-btns { display: flex; gap: 3px; margin-left: 16px; }
+.board-card-btns button {
+  padding: 3px 8px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+  border: 0.5px solid var(--color-border-tertiary); border-radius: 6px;
+  background: var(--color-background-secondary); color: var(--color-text-secondary);
+}
+.board-card-btns button:hover { border-color: var(--color-border-info); color: var(--color-text-primary); }
 .board-drop-hint {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
   color: var(--color-text-tertiary); font-size: 13px; pointer-events: none; text-align: center;
