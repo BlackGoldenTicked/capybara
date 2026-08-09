@@ -704,25 +704,27 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
   border: 2px solid var(--color-background-primary); cursor: crosshair; display: block; z-index: 4;
 }
 
-/* ===== 白板：中央添加卡片面板 ===== */
+/* ===== 白板：顶部添加卡片面板 ===== */
 .board-center-palette {
-  position: absolute; inset: 0; z-index: 10;
-  display: flex; align-items: center; justify-content: center;
+  position: absolute; top: 12px; left: 0; right: 0; z-index: 10;
+  display: flex; justify-content: center;
+  pointer-events: none;
 }
-.board-center-palette.overlay { background: rgba(0, 0, 0, 0.14); backdrop-filter: blur(1.5px); }
+.board-center-palette.overlay { background: rgba(0, 0, 0, 0.10); backdrop-filter: blur(1.5px); align-items: center; pointer-events: auto; }
 .bcp-card {
+  pointer-events: auto;
   background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary);
-  border-radius: var(--border-radius-lg); padding: 22px 26px; text-align: center;
+  border-radius: var(--border-radius-lg); padding: 14px 18px; text-align: center;
   box-shadow: 0 12px 44px color-mix(in srgb, var(--color-text-primary) 22%, transparent); display: flex; flex-direction: column; align-items: center;
   animation: popIn .18s var(--ease-out) both; max-width: 92vw;
 }
-.bcp-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: var(--color-text-primary); }
+.bcp-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--color-text-primary); }
 .bcp-sub { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 16px; }
 .bcp-foot { font-size: 11px; color: var(--color-text-tertiary); margin-top: 16px; }
 .bcp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .bcp-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  padding: 16px 12px; min-width: 104px; font-size: 13px; color: var(--color-text-secondary);
+  padding: 12px 10px; min-width: 96px; font-size: 13px; color: var(--color-text-secondary);
   border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md);
   background: var(--color-background-primary); cursor: pointer;
   transition: transform .12s var(--ease-out), border-color .15s, background .15s, color .15s;
@@ -732,6 +734,7 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .bcp-icon { display: inline-flex; color: var(--accent-info); }
 .bcp-label { font-weight: 500; }
 .bcp-desc { font-size: 11px; color: var(--color-text-tertiary); }
+.bcp-close { margin-top: 10px; }
 .bcp-close { margin-top: 14px; }
 .board-add-fab {
   position: absolute; right: 18px; bottom: 18px; z-index: 10;

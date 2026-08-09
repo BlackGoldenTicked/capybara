@@ -384,7 +384,7 @@ export function BoardView() {
           <button className="board-add-fab" title="添加卡片" onPointerDown={(e) => e.stopPropagation()} onClick={() => setPaletteOpen(true)}><Icon name="plus" size={20} /></button>
         )}
         {cards.length > 0 && paletteOpen && (
-          <div className="board-center-palette overlay" onPointerDown={(e) => e.stopPropagation()}>
+          <div className="board-center-palette" onPointerDown={(e) => e.stopPropagation()}>
             <div className="bcp-card popover">
               <p className="bcp-title">添加卡片</p>
               <div className="bcp-grid">
