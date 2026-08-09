@@ -323,15 +323,13 @@ export function BoardView() {
                 style={{ left: pos.x, top: pos.y, width: card.w }}
                 ref={(el) => {
                   // 实测卡片渲染高度（card.h 字段是 140 默认值不可靠）
-                  // 仅写入 ref，不在此处 setState，避免无限渲染循环
-                  if (el) {
-                    const h = el.offsetHeight
-                    if (cardHeightsRef.current[card.id] !== h) {
-                      cardHeightsRef.current[card.id] = h
-                      heightTick((t) => (t + 1) & 0xffff)
-                    }
-                  } else {
-                    delete cardHeightsRef.current[card.id]
+                  // 仅在挂载时记录；不要在 cleanup 时 delete（StrictMode 每次渲染都会
+                  // 触发 cleanup→attach 循环，delete 会让 attach 误以为高度变了再触发 setState）
+                  if (!el) return
+                  const h = el.offsetHeight
+                  if (cardHeightsRef.current[card.id] !== h) {
+                    cardHeightsRef.current[card.id] = h
+                    heightTick((t) => (t + 1) & 0xffff)
                   }
                 }}
                 onPointerDown={(e) => startNodeDrag(e, card)} onDoubleClick={() => setEditingId(card.id)}
