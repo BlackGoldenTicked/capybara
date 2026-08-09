@@ -60,6 +60,72 @@ let db: DatabaseSync
 let assetsDir = ''
 let imagesDir = ''
 
+// ============ 数据库路径配置 ============
+
+/** db-config.json 的固定位置（始终在 userData 根） */
+function getDbConfigPath(): string {
+  return path.join(app.getPath('userData'), 'db-config.json')
+}
+
+/** 读取自定义数据库路径配置，未设置则返回空字符串 */
+function readDbConfig(): string | null {
+  try {
+    const raw = fs.readFileSync(getDbConfigPath(), 'utf-8')
+    const cfg = JSON.parse(raw) as { dbPath?: string }
+    if (cfg.dbPath && typeof cfg.dbPath === 'string' && cfg.dbPath.trim()) {
+      const p = cfg.dbPath.trim()
+      // 如果是目录，自动补全文件名
+      try {
+        if (fs.statSync(p).isDirectory()) return path.join(p, 'readflow.db')
+      } catch { /* 文件还不存在，直接当文件路径使用 */ }
+      return p
+    }
+  } catch { /* 配置文件不存在或格式错误，使用默认路径 */ }
+  return null
+}
+
+/** 写入自定义数据库路径，传空字符串则清空配置（恢复默认） */
+function writeDbConfig(dbPathValue: string): void {
+  const p = getDbConfigPath()
+  if (!dbPathValue.trim()) {
+    try { fs.unlinkSync(p) } catch { /* 文件本来就不存在 */ }
+  } else {
+    fs.writeFileSync(p, JSON.stringify({ dbPath: dbPathValue.trim() }, null, 2), 'utf-8')
+  }
+}
+
+/** 设置自定义数据库路径（由设置页调用，验证路径合法性） */
+export function setCustomDbPath(newPath: string): { ok: boolean; error?: string } {
+  if (!newPath.trim()) {
+    writeDbConfig('')
+    return { ok: true }
+  }
+  const resolved = path.resolve(newPath.trim())
+  // 验证父目录存在
+  const parent = path.dirname(resolved)
+  if (!fs.existsSync(parent)) {
+    return { ok: false, error: `目录不存在：${parent}` }
+  }
+  // 验证父目录可写
+  try {
+    fs.accessSync(parent, fs.constants.W_OK)
+  } catch {
+    return { ok: false, error: `目录不可写：${parent}` }
+  }
+  writeDbConfig(resolved)
+  return { ok: true }
+}
+
+/** 获取当前已配置的自定义路径（用于 UI 显示），无则返回空 */
+export function getCustomDbPath(): string {
+  return readDbConfig() ?? ''
+}
+
+/** 获取当前使用的数据库文件绝对路径 */
+export function canonicalDbPath(): string {
+  return dbPath
+}
+
 export function getAssetsDir(): string { return assetsDir }
 export function getImagesDir(): string { return imagesDir }
 /** 诊断/内部用途：暴露 DatabaseSync 实例（仅限主进程内使用，绝不给渲染进程） */
@@ -78,8 +144,7 @@ export function clearAllFeedCache() {
 // 库文件固定为 userData/readflow/readflow.db。
 // 历史上曾经改过路径（扁平的 userData/readflow.db），导致「替换 app 后旧数据被孤立、开空库」的事故。
 // 因此：本路径今后绝不能再改；若迫不得已要改，必须把旧路径加入 legacyDbCandidates() 以便自动迁移。
-function canonicalDbPath(): string {
-  // 单层：应用数据直接放在 Electron userData 根目录（不再多套一层 readflow 子目录）
+function defaultDbPath(): string {
   return path.join(app.getPath('userData'), 'readflow.db')
 }
 // 历史上曾用过的旧库路径：v0.7.33 的嵌套位置 userData/readflow/readflow.db。
@@ -92,7 +157,7 @@ export function getDbFile(): string {
   // 惰性兜底：即便 initDb 因异常（如数据库被占用）未跑完，也能算出本应使用的库路径，
   // 避免设置页「数据库位置」永远显示「加载中」而给不出任何诊断信息。
   if (!dbPath) {
-    try { dbPath = canonicalDbPath() } catch { /* app 未就绪，返回空 */ }
+    try { dbPath = defaultDbPath() } catch { /* app 未就绪，返回空 */ }
   }
   return dbPath
 }
@@ -205,20 +270,36 @@ function relocateLegacyDataDir(userData: string) {
 }
 
 export function initDb() {
-  const dir = app.getPath('userData') // 单层：应用数据直接放在 userData 根（readflow.db / images / backups / board-assets）
-  fs.mkdirSync(path.join(dir, 'images'), { recursive: true })
-  fs.mkdirSync(path.join(dir, 'backups'), { recursive: true })
-  dbPath = path.join(dir, 'readflow.db')
-  // 1) 迁移历史嵌套旧库 -> 单层（修复「替换 app 后数据丢失」）
-  try { migrateLegacyDatabase(dbPath) } catch (e) { console.error('[initDb] 迁移旧库失败：', (e as Error).message) }
-  // 2) 上移遗留的嵌套数据子目录
-  try { relocateLegacyDataDir(dir) } catch (e) { console.error('[initDb] 迁移数据子目录失败：', (e as Error).message) }
-  assetsDir = path.join(dir, 'board-assets')
+  // 读取自定义数据库路径（db-config.json），未设置则使用默认 userData 根
+  const customPath = readDbConfig()
+  const defaultDir = app.getPath('userData')
+  let baseDir: string
+
+  if (customPath) {
+    dbPath = customPath
+    // 数据目录（images/backups/board-assets）跟随数据库文件所在目录
+    baseDir = path.dirname(customPath)
+    console.log('[initDb] 使用自定义数据库路径：', dbPath)
+  } else {
+    baseDir = defaultDir
+    dbPath = path.join(baseDir, 'readflow.db')
+    console.log('[initDb] 使用默认数据库路径：', dbPath)
+  }
+
+  fs.mkdirSync(path.join(baseDir, 'images'), { recursive: true })
+  fs.mkdirSync(path.join(baseDir, 'backups'), { recursive: true })
+  // 仅在默认路径下做旧库迁移（自定义路径无需迁移）
+  if (!customPath) {
+    try { migrateLegacyDatabase(dbPath) } catch (e) { console.error('[initDb] 迁移旧库失败：', (e as Error).message) }
+    try { relocateLegacyDataDir(defaultDir) } catch (e) { console.error('[initDb] 迁移数据子目录失败：', (e as Error).message) }
+  }
+  assetsDir = path.join(baseDir, 'board-assets')
   fs.mkdirSync(assetsDir, { recursive: true })
-  imagesDir = path.join(dir, 'images')
+  imagesDir = path.join(baseDir, 'images')
   db = new DatabaseSync(dbPath)
   db.exec('PRAGMA journal_mode = WAL')
-  console.log('[initDb] 数据库：', dbPath)
+  console.log('[initDb] 数据库文件：', dbPath)
+  console.log('[initDb] 数据目录：', baseDir)
   migrate()
   // 定期 WAL checkpoint，防止长时间运行后 WAL 文件膨胀
   startWalCheckpoint()

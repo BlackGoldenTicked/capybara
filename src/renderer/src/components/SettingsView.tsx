@@ -228,10 +228,12 @@ function ShortcutsTab() {
 
 /* ===================== 操作 / 性能 ===================== */
 function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
-  const { clearInbox, purge, showToast, developerMode, setDeveloperMode } = useStore()
+  const { clearInbox, purge, showToast, developerMode, setDeveloperMode, dbPath, setDbPath } = useStore()
   const [msg, setMsg] = useState('')
   const [keepDays, setKeepDays] = useState(90)
   const [maxItems, setMaxItems] = useState(2000)
+  const [dbPathInput, setDbPathInput] = useState(dbPath)
+  const [dbPathMsg, setDbPathMsg] = useState('')
 
   const refresh = async () => { setMsg('刷新中…'); await onRefresh(); setMsg('已触发全部源刷新'); showToast('已开始刷新') }
   const clear = async () => {
@@ -252,6 +254,34 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
           <span>启用开发者模式（含网络诊断）</span>
           <button className={`switch ${developerMode ? 'on' : ''}`} onClick={() => setDeveloperMode(!developerMode)}><span className="knob" /></button>
         </div>
+      </div>
+
+      <div className="set-card">
+        <p className="src-label">数据库文件路径</p>
+        <p className="src-hint">
+          设置自定义数据库文件路径（例如 .db 文件路径或目录）。设置后<b>需重启应用</b>生效。
+          可用于导入/导出数据库分享给他人，或从备份恢复。
+        </p>
+        <div className="src-row" style={{ gap: 8 }}>
+          <input
+            type="text"
+            value={dbPathInput ?? ''}
+            placeholder={dbPath || '使用默认路径 (~/Library/Application Support/readflow/readflow.db)'}
+            onChange={(e) => setDbPathInput(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <button onClick={async () => {
+            const r = await setDbPath(dbPathInput ?? '')
+            if (r.ok) {
+              setDbPathMsg(dbPathInput ? '已保存，重启后生效' : '已恢复默认路径，重启后生效')
+              setDbPathInput(dbPathInput)
+            } else {
+              setDbPathMsg('失败：' + (r.error ?? '未知错误'))
+            }
+          }}>保存</button>
+        </div>
+        {dbPathMsg && <p className={`src-hint ${dbPathMsg.includes('失败') ? 'src-warn' : ''}`} style={{ marginTop: 6 }}>{dbPathMsg}</p>}
+        {dbPath ? <p className="src-hint" style={{ marginTop: 4 }}>当前自定义路径：{dbPath}</p> : null}
       </div>
 
       <div className="set-card">

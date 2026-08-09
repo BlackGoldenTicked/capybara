@@ -10,6 +10,7 @@ import {
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
   listLinks, addLink, deleteLink, updateLink,
   getSetting, setSetting, sourceCounts, getDbFile,
+  setCustomDbPath, getCustomDbPath,
   storeCover, enforceRetention, getDiscoverCache, setDiscoverCache, markAllRead, clearInbox, purgeOldItems, checkpoint, stopWalCheckpoint,
   dbTables, dbRows
 } from './db'
@@ -381,6 +382,8 @@ function registerIpc() {
 
     'settings:get': ((key: string) => getSetting(key) ?? '') as never,
     'settings:set': ((key: string, value: string) => setSetting(key, value)) as never,
+    'settings:setDbPath': ((newPath: string) => setCustomDbPath(newPath)) as never,
+    'settings:getDbPath': (() => getCustomDbPath()) as never,
     // 开发者模式：立即开关 DevTools（store 同时持久化 developer_mode 设置）
     'devtools:toggle': (() => {
       if (!mainWindow) return

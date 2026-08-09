@@ -37,6 +37,9 @@ interface State {
   netLog: NetLogEntry[]
   setDeveloperMode: (v: boolean) => void
 
+  dbPath: string
+  setDbPath: (path: string) => Promise<{ ok: boolean; error?: string }>
+
   settingsTab: SettingsTab
   shortcuts: Record<ShortcutAction, string>
 
@@ -122,6 +125,7 @@ export const useStore = create<State>((set, get) => ({
 
   developerMode: false,
   netLog: [],
+  dbPath: '',
 
   settingsTab: 'appearance',
   shortcuts: { ...DEFAULT_SHORTCUTS },
@@ -469,6 +473,8 @@ export const useStore = create<State>((set, get) => ({
     audioSetEnabled(boot.soundEnabled)
     audioSetVolume(boot.soundVolume)
     set({ appearance: a, soundEnabled: boot.soundEnabled, soundVolume: boot.soundVolume, shortcuts: parseShortcuts(boot.shortcuts), developerMode: boot.developerMode })
+    // 加载当前数据库路径配置
+    void window.readflow.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
     // 网络诊断日志：开发者模式下持续追加，供应用内浮动面板显示（最多保留 300 条）
     window.readflow.onNetLog((entry) => {
       if (!get().developerMode) return
@@ -481,6 +487,11 @@ export const useStore = create<State>((set, get) => ({
     void window.readflow.invoke('settings:set', 'developer_mode', v ? '1' : '0')
     void window.readflow.invoke('devtools:toggle')
     set({ developerMode: v })
+  },
+  setDbPath: async (pathVal) => {
+    const r = await window.readflow.invoke('settings:setDbPath', pathVal) as { ok: boolean; error?: string }
+    if (r.ok) set({ dbPath: pathVal })
+    return r
   },
   updateAppearance: (patch) => {
     const next = { ...get().appearance, ...patch }
