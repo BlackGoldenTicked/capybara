@@ -407,10 +407,9 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _
               <span className="rt-name">{t.name.replace(/\(.*\)/, '').trim()}</span>
             </button>
             <span className="rt-chip-actions">
-              <button title="编辑" onClick={(e) => { e.stopPropagation(); _onEdit?.(t) }}><Icon name="edit" size={10} /></button>
-              <button title="创建副本" onClick={(e) => { e.stopPropagation(); _onEdit?.({ ...t, id: '', name: t.name + ' 副本' } as ReadingTheme) }}><Icon name="plus" size={10} /></button>
+              <button className="rt-beam-btn" title="创建副本并编辑" onClick={(e) => { e.stopPropagation(); _onEdit?.({ ...t, id: '', name: t.name + ' 副本' } as ReadingTheme) }}><Icon name="plus" size={12} /></button>
               {isCustom(t.id) && (
-                <button title="删除" onClick={(e) => { e.stopPropagation(); deleteCustomReadingTheme(t.id); onSelect(FOLLOW_UI_ID) }}><Icon name="trash" size={10} /></button>
+                <button title="删除" onClick={(e) => { e.stopPropagation(); deleteCustomReadingTheme(t.id); onSelect(FOLLOW_UI_ID) }}><Icon name="trash" size={12} /></button>
               )}
             </span>
           </div>
