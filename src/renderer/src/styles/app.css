@@ -1162,9 +1162,9 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 .rt-chip-wrap { position: relative; display: flex; flex-direction: column; }
 .rt-chip-actions { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); display: none; gap: 4px; padding: 4px 6px; border-radius: 9px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); box-shadow: 0 4px 12px rgba(0,0,0,.18); white-space: nowrap; z-index: 2; }
 .rt-chip-wrap:hover .rt-chip-actions { display: inline-flex; }
-.rt-chip-actions button { width: 22px; height: 22px; padding: 0; border-radius: 50%; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 0; flex-shrink: 0; transition: background .12s var(--ease-out), border-color .12s; }
+.rt-chip-actions button { box-sizing: border-box; flex: 0 0 22px; width: 22px; height: 22px; padding: 0; border-radius: 50%; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 0; transition: background .12s var(--ease-out), border-color .12s; }
 .rt-chip-actions button:hover { background: var(--color-background-info); border-color: var(--color-border-info); }
-.rt-chip-actions svg { display: block; }
+.rt-chip-actions svg { display: block; width: 11px; height: 11px; flex-shrink: 0; }
 .rt-new-btn-row { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .rt-new-btn-row .new-rt-btn {
   display: inline-flex; align-items: center; gap: 4px;
