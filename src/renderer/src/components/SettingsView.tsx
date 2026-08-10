@@ -421,11 +421,6 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _
 
   return (
     <>
-      <div className="rt-new-btn-row">
-        <button className="new-rt-btn" onClick={() => _onEdit?.()} title="从空白新建一套阅读配色">
-          <Icon name="plus" size={12} /> 新建阅读配色
-        </button>
-      </div>
       {renderGroup('暗色', darkThemes, true)}
       {renderGroup('亮色', lightThemes, false)}
     </>

@@ -152,6 +152,7 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
     const { id, changed } = upsertItem({
       source_type: 'rss',
       source_name: feed.name,
+      feed_id: feed.id,
       url,
       title: entry.title ?? url,
       author: entry.creator ?? feedTitle ?? '',
@@ -169,7 +170,7 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
           if (art) {
             const cover = art.image || entry.mediaCover || undefined
             upsertItem({
-              source_type: 'rss', source_name: feed.name, url,
+              source_type: 'rss', source_name: feed.name, feed_id: feed.id, url,
               title: art.title || entry.title || url, author: art.byline || entry.creator || '',
               summary: art.summary, content_text: art.text, content_html: art.html, cover_url: cover,
               published_at: entry.isoDate ?? new Date().toISOString()

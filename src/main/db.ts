@@ -22,6 +22,7 @@ export interface Item {
   status: ItemStatus
   is_read: number
   published_at: string
+  feed_id: number
   fetched_at: string
 }
 
@@ -397,6 +398,10 @@ function migrate() {
   for (const col of ['content_html TEXT NOT NULL DEFAULT ""', 'cover_path TEXT NOT NULL DEFAULT ""', 'cover_url TEXT NOT NULL DEFAULT ""']) {
     try { db.exec(`ALTER TABLE items ADD COLUMN ${col}`) } catch { /* 列已存在 */ }
   }
+  // 增加 feed_id 列（cascade delete 用）+ 给已有 RSS items 按 source_name 回填
+  try { db.exec(`ALTER TABLE items ADD COLUMN feed_id INTEGER NOT NULL DEFAULT 0`) } catch { /* 列已存在 */ }
+  // 一次性回填：把已有的 rss items 按 source_name 关联到 feeds
+  db.exec(`UPDATE items SET feed_id = (SELECT id FROM feeds WHERE feeds.name = items.source_name LIMIT 1) WHERE source_type = 'rss' AND feed_id = 0`)
   // 来源抓取失败的真实原因（排查「无法获取数据」用），老库补列
   try { db.exec(`ALTER TABLE feeds ADD COLUMN last_error TEXT NOT NULL DEFAULT ''`) } catch { /* 列已存在 */ }
   // 条件请求缓存头（ETag / Last-Modified），支持 304 增量跳过下载
@@ -614,10 +619,12 @@ export function addFeed(f: { type: string; name: string; url: string; schedule_m
   return { id: Number(r.lastInsertRowid), type: f.type, name: f.name, url: f.url, config_json: f.config_json ?? '', schedule_min: f.schedule_min ?? 120, last_fetched_at: '', error_count: 0, last_error: '', enabled: 1, etag: '', last_modified: '' }
 }
 export function deleteFeed(id: number) {
-  // 级联删除该订阅源已下载的待阅读内容（按 source_name 匹配）
+  // 级联删除该订阅源已下载的待阅读内容
+  // 优先按 feed_id 删（新数据）；同时按 source_name 兜底（兼容旧数据/重命名前已下载的条目）
   const f = db.prepare('SELECT name FROM feeds WHERE id = ?').get(id) as { name: string } | undefined
   if (f) {
-    db.prepare(`DELETE FROM items WHERE source_type = 'rss' AND source_name = ?`).run(f.name)
+    db.prepare(`DELETE FROM items WHERE source_type = 'rss' AND feed_id = ?`).run(id)
+    if (f.name) db.prepare(`DELETE FROM items WHERE source_type = 'rss' AND feed_id = 0 AND source_name = ?`).run(f.name)
   }
   db.prepare('DELETE FROM feeds WHERE id = ?').run(id)
 }
@@ -652,15 +659,17 @@ export function upsertItem(input: Partial<Item>): { id: number; changed: boolean
       existing.cover_url === (input.cover_url ?? '')
     if (same) return { id: existing.id, changed: false }
   }
-  const r = db.prepare(`INSERT INTO items (source_type, source_name, url, title, author, summary, content_text, content_html, cover_url, status, published_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?)
+  const r = db.prepare(`INSERT INTO items (source_type, source_name, url, title, author, summary, content_text, content_html, cover_url, status, published_at, feed_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, ?)
     ON CONFLICT(url, source_type) DO UPDATE SET
       title = excluded.title, summary = excluded.summary,
       content_text = excluded.content_text, content_html = excluded.content_html,
-      cover_url = excluded.cover_url, published_at = excluded.published_at`)
+      cover_url = excluded.cover_url, published_at = excluded.published_at,
+      feed_id = excluded.feed_id`)
     .run(st, input.source_name ?? '', url,
       input.title ?? '', input.author ?? '', input.summary ?? '', input.content_text ?? '',
-      input.content_html ?? '', input.cover_url ?? '', input.published_at ?? new Date().toISOString())
+      input.content_html ?? '', input.cover_url ?? '', input.published_at ?? new Date().toISOString(),
+      input.feed_id ?? 0)
   const id = Number(r.lastInsertRowid) || existing?.id || 0
   // 手动同步 items_fts：先删该 rowid 再重插（覆盖 ON CONFLICT UPDATE 路径触发器可能失效的情况，确保 FTS 索引与 items 一致）
   if (id) {
