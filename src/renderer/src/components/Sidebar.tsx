@@ -106,7 +106,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
     <aside className={`sidebar ${dragging ? 'dragging' : ''}`} style={style}>
       <div className="sidebar-search">
         <input ref={searchRef} className="sidebar-search-input"
-          placeholder="搜索标题、摘要、正文…（ / 聚焦）"
+          placeholder="搜索标题、摘要、正文…"
           value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
