@@ -47,7 +47,7 @@ const MAP: Record<IconName, React.ComponentType<LucideProps>> = {
   minus: Minus, close: X, edit: Pencil, eyeOff: EyeOff, eye: Eye, bookmark: Bookmark, send: Send,
   tag: Tag, trash: Trash2, check: Check, external: ExternalLink, chevronDown: ChevronDown, chevronRight: ChevronRight,
   upload: Upload, book: BookOpen, github: BrandGithub, twitter: BrandTwitter,
-  palette: Palette, music: Music, keyboard: Keyboard, undo: Undo2, info: Info, activity: Activity
+  palette: Palette, music: Music, keyboard: Keyboard, undo: Undo2, info: Info, activity: Activity, maximize: Maximize
 }
 
 export function Icon({ name, size = 16, strokeWidth = 1.75, className, style, ...rest }: {
