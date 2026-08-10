@@ -18,12 +18,12 @@ interface Props {
 }
 
 export function ThemeEditor({ source, onClose, onSaved }: Props) {
-  const isNew = !source
-  const base: ReadingTheme = source ?? {
+  const isNew = !source?.id
+  const base: ReadingTheme = source?.id ? source : {
     id: `custom-${Date.now()}`,
-    name: '未命名主题',
-    mode: 'dark',
-    colors: { '--rt-bg': '#1e1e1e', '--rt-fg': '#d4d4d4', '--rt-heading': '#e0e0e0', '--rt-link': '#569cd6',
+    name: source?.name || '未命名主题',
+    mode: source?.mode || 'dark',
+    colors: source?.colors || { '--rt-bg': '#1e1e1e', '--rt-fg': '#d4d4d4', '--rt-heading': '#e0e0e0', '--rt-link': '#569cd6',
       '--rt-meta': '#808080', '--rt-blockquote-bg': '#2a2a2a', '--rt-blockquote-border': '#569cd6',
       '--rt-blockquote-fg': '#a0a0a0', '--rt-code-bg': '#2d2d2d', '--rt-code-fg': '#d4d4d4',
       '--rt-table-border': '#3e3e3e', '--rt-th-bg': '#2a2a2a', '--rt-hr': '#3e3e3e', '--rt-img-bg': '#2a2a2a' }

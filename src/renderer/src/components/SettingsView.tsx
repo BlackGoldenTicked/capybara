@@ -168,7 +168,7 @@ function AppearanceTab() {
         <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
       </div>
       {themeEdit && (
-        <ThemeEditor source={themeEdit?.id ? themeEdit : undefined}
+        <ThemeEditor source={themeEdit}
           onClose={() => setThemeEdit(undefined)}
           onSaved={() => { setThemeEdit(undefined); setTick((t: number) => t + 1) }} />
       )}
