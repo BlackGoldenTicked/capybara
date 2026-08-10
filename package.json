@@ -1,6 +1,6 @@
 {
   "name": "readflow",
-  "version": "0.7.84",
+  "version": "0.7.85",
   "private": true,
   "description": "ReadFlow - personal knowledge pipeline desktop client",
   "main": "out/main/index.js",
