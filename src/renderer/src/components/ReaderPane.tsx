@@ -102,8 +102,8 @@ export function ReaderPane() {
         </select>
       </div>
       <div className="reader-body">
-        <p className="reader-title">{item.title}</p>
-        <p className="reader-meta">{item.author || item.source_name} · <a href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开">{item.url}</a></p>
+        <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
+        <p className="reader-meta">{item.author || item.source_name}</p>
         {html
           ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />
           : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>}
