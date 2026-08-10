@@ -1,8 +1,8 @@
 # 阅流 ReadFlow
 
 > 个人知识流桌面客户端 —— 收集 → 速读 → 分类 → 组织 → 沉淀。
-> 本地优先 · 键盘驱动 · 整面配色 · Electron + React。
-> 当前版本 **v0.7.26** · macOS（Electron 37）。
+> 本地优先 · 键盘驱动 · 整面配色 · 白板连线 · Electron + React。
+> 当前版本 **v0.7.82** · macOS（Electron 37）。
 
 ---
 
@@ -91,7 +91,7 @@ SQLite 核心表（见 `src/main/db.ts`）：
 
 | 表 | 作用 |
 |---|---|
-| `items` | 统一内容卡片：`source_type`、`source_name`、`url`(UNIQUE+source_type)、`title`、`author`、`summary`、`content_text`、`content_html`、`cover_url`、`cover_path`、`status`(inbox/later/favorite/archived)、`is_read`、`published_at`、`fetched_at` |
+| `items` | 统一内容卡片：`source_type`、`source_name`、`url`(UNIQUE+source_type)、`title`、`author`、`summary`、`content_text`、`content_html`、`cover_url`、`cover_path`、`status`(inbox/later/favorite/archived)、`is_read`、`published_at`、`fetched_at`、`feed_id`（关联 feeds 级联删除） |
 | `items_fts` | FTS5 虚表（title+summary+content_text），触发器随增删改自动维护；不可用时降级 LIKE |
 | `feeds` | 订阅源：`type`、`name`、`url`(UNIQUE)、`schedule_min`、`last_fetched_at`、`error_count`、`last_error`、`etag`、`last_modified`、`enabled`、`config_json` |
 | `highlights` | 划线笔记（item_id 级联删除） |
@@ -131,8 +131,9 @@ SQLite 核心表（见 `src/main/db.ts`）：
 ### 6.1 色彩与主题
 
 - **三级背景 / 文本 / 边框** 语义色板，亮暗双主题（默认跟随系统）。
-- **整面配色（卡片风格）**：11 种风格（纸感 / 玻璃 / 暗夜 / 极光 / 海洋 / 落日 / 薰衣草 / 森林 / 玫瑰 / 石板 / 琥珀）+「默认」，每个风格定义 light + dark 两套色板（共 22 套），通过 `[data-card-style=X][data-theme=dark]` 组合选择器生效。
-- **主强调色从签名色派生**：每个卡片风格自带 `--card-accent`，UI 主强调色（按钮/开关/聚焦环/选中态）直接用它本身，链接/信息色用 `color-mix` 推导以保证亮暗对比度。**无独立「强调色」控件** —— 选了卡片风格，整站配色即随之确定。
+- **整面配色（卡片风格，12 套）**：纸感 / 玻璃 / 暗夜 / 极光 / 海洋 / 落日 / 薰衣草 / 森林 / 玫瑰 / 石板 / 琥珀 / 暗金。每套定义 light + dark 两套色板（共 24 套），通过 `[data-card-style=X][data-theme=dark]` 组合选择器生效。
+- **主强调色从签名色派生**：每个卡片风格自带 `--card-accent`，UI 主强调色直接用它本身。
+- **阅读配色（30 套内置 + 自定义）**：独立于 UI 配色，为阅读面板提供 30 套 VSCode 主题风格的正文渲染配色（暗色 15 套 + 亮色 15 套），通过 CSS 变量 `--rt-*` 注入阅读面板。支持「跟随界面」模式（不注入变量，直接使用 UI 配色）。用户可对任意主题创建副本、编辑 15 个颜色值后保存为自定义主题（localStorage 存储），也可删除自定义主题。
 
 ### 6.2 动效令牌（对齐高水准工艺）
 
@@ -179,17 +180,17 @@ SQLite 核心表（见 `src/main/db.ts`）：
 ### 7.3 白板（知识组织）
 
 - 自研 Canvas（`BoardView.tsx`）：空白处拖拽平移、滚轮缩放、拖拽卡片；从信息流按 `B` 或按钮把条目「送白板」（无白板时自动新建）。
-- 卡片类型：`ref`（引用条目，自带标题/摘要副本）/ `text` / `link` / `image` / `file` / `video`；本地附件经 `board-asset://` 安全加载。
-- 卡片边缘连线 + 关系标签（支持/反驳/延伸），形成领域结构化认知。
+- 卡片类型（6 种）：`ref`（引用条目）/ `text` / `link` / `image` / `file` / `video`；本地附件经 `board-asset://` 安全加载。6 种类型以快捷按钮组形式内嵌于白板工具栏中，无需弹窗选择。
+- **卡片连线**：hover 卡片显示四边中点拖拽手柄，按住任意手柄拖到另一张卡片即建立连线。连线自动选择卡间相对方向锚点 + 切线对齐贝塞尔曲线。连线中点可删除或编辑标签。无需切换模式，始终可用。
 
 ### 7.4 系统配置（5 个 Tab）
 
 | Tab | 内容 |
 |---|---|
-| 外观 | 主题（跟随/亮/暗）、卡片风格（12 选一，整面配色）、阅读字体探测下拉、字号 70%–200%、字重、音效开关+音量、实时预览 |
-| 来源管理 | RSS/GitHub★/Twitter 书签 分类管理；增删源、立即刷新、OPML 导入、GitHub 用户名拉取、Twitter 书签导入；失败源显示「无法获取数据」+ 真实原因 |
+| 外观 | 主题（跟随/亮/暗）、卡片风格（12 选一，整面配色）、阅读配色（30 套内置 + 自定义复制编辑）、阅读字体探测下拉、字号 70%–200%、字重、音效开关+音量 |
+| 来源管理 | RSS 订阅分页管理（含源地址展示、错误详情）；GitHub★/Twitter 书签 分类管理；增删源、立即刷新、OPML 导入；删除订阅级联清除已下载内容 |
 | 发现 RSS | 搜 GitHub 仓库 → 解析其 README/订阅源 → 一键/批量导入（discover_cache 24h 复用） |
-| 操作 | 刷新全部源、保留策略（keepDays / maxItems / 立即清理）、开发者模式开关 |
+| 数据管理 | JSON 配置导出/导入（含全部设置+订阅源）；数据库路径设置（支持文件选择器浏览）；刷新全部源；保留策略（keepDays/maxItems/立即清理）；开发者模式开关 |
 | 快捷键 | 录制/重置每项快捷键、全部重置、冲突检测；遵循主流约定（⌘ 类全局生效，单键类输入时不触发） |
 
 ### 7.5 快速添加
@@ -239,11 +240,14 @@ npm install
 npm run dev                      # electron-vite 热重载
 
 # 构建 + 打包（固定流水线）
-electron-vite build             # 编译 main / preload / renderer → out/
-./node_modules/.bin/electron-builder --mac --dir   # 产出 release/ReadFlow.app
-python3 build/make-dmg.py       # 自定义背景 DMG（icvp backgroundType=2）
+npx electron-vite build                             # 编译 main / preload / renderer → out/
+npx electron-builder --mac --dir                    # 产出 release/mac/ReadFlow.app
+python3 build/make-dmg.py                           # 自定义 DMG
 
-# 或一键
+# 一键（推荐）
+bash scripts/bump.sh "提交信息"                      # 自动 +semver patch / git commit / 构建 / 安装 / 打开
+
+# 或
 npm run dist                    # electron-vite build && electron-builder（产出 dmg）
 ```
 
@@ -271,8 +275,8 @@ readflow/
 │       ├── store.ts               # Zustand 单一 store
 │       ├── env.d.ts               # 类型（Item/Feed/View/NetLogEntry…）
 │       ├── components/             # Sidebar / FeedsPanel / ItemList / ReaderPane /
-│       │                           #   BoardView / SettingsView / SourceManager /
-│       │                           #   DiscoverView / QuickAdd / CardEditor / icons
+│       │                           #   BoardView / SettingsView / SourceManager / RssManager /
+│       │                           #   DiscoverView / QuickAdd / CardEditor / ThemeEditor / icons
 │       ├── lib/                   # appearance / shortcuts / sound / beam /
 │       │                           #   reader / feedColor / monospace
 │       └── styles/                # tokens.css（设计令牌）/ app.css
@@ -311,6 +315,11 @@ readflow/
 - **v0.7.31** 修复「数据库位置」卡片**永远显示"加载中"**：根因是该 `useEffect` 仅 `invoke('app:dbFile').then(...)`，**没有 `.catch`**——一旦主进程未就绪 / 主进程是旧版（无此 handler，常见于 dev 模式 HMR 只热更了渲染层、或旧二进制）/ IPC 被 reject，promise 永不 resolve，`dbFile` 卡在初始空串 → 一直"加载中"。现改为：① `getDbFile()` **惰性兜底**——即便 `initDb` 因异常未跑完，也按 `userData/readflow/readflow.db` 算出本应使用路径，绝不返回空；② 渲染层 `invoke` 加 `.catch` + **最多 3 次 400ms 重试**，失败则显示明确红色错误「⚠ 读取数据库路径失败：…（主进程可能未就绪，请彻底退出后重开应用）」而非无限加载；③ 新增 `.db-err` 样式。从"静默卡死"升级为"可读诊断"。
 - **v0.7.33** 根治「替换 app 后数据丢失 / 出现两个库文件」：① 把数据库路径**锁死为唯一权威位置** `~/Library/Application Support/readflow/readflow/readflow.db`（所有应用数据集中在该 `readflow/` 子目录），并把旧路径 `…/readflow/readflow.db`（扁平）登记为历史遗留；② 新增 `migrateLegacyDatabase()`：每次启动若权威库为空/缺失、而历史旧路径有数据，则**自动整体复制**旧库（含 `-wal`/`-shm`）到权威位置并改名 `.migrated` 备份，**绝不覆盖已有数据的权威库**（经 10 条独立单测验证：迁移/不覆盖/空库填充/无操作四场景全过）；③ 澄清根因——此前「没数据」并非 dev 模式所致，而是**不同版本 app 改过数据库路径**，替换 `.app` 后新二进制去新位置找、旧数据被孤立成空库；dev 模式的 `userData` 重定向仅作用于项目目录 `.readflow-userData`，与用户 `~/Library` 真实数据完全隔离。今后若再改路径，只需把旧路径追加进 `legacyDbCandidates()` 即可自动兼容。
 - **v0.7.34** 数据库改为**单层**结构：应用数据 `readflow.db` / `images/` / `backups/` / `board-assets/` 直接放在 Electron `userData` 根目录（`~/Library/Application Support/readflow/`），**不再多套一层 `readflow/` 子目录**（消除「两个 readflow 文件夹」的视觉冗余）。v0.7.33 的嵌套位置 `…/readflow/readflow.db` 登记为新版的历史遗留路径，`migrateLegacyDatabase()` 仍会在启动时自动把其中的数据迁到单层位置；嵌套数据子目录（images/backups/board-assets）也会上移到根目录后删除空壳。
+- **v0.7.40+** 白板交互重构：卡片 6 类型快捷按钮移至工具栏（Excalidraw 风格），删除弹窗模式；连线改为 hover 卡片四边中点拖拽（无需切换模式）；贝塞尔曲线切线对齐；删除白板二次确认；移除重命名按钮；RSS 删除级联清理（`feed_id` 列 + 启动回填）；书签/白板分区分隔线；白板标题字号统一。
+- **v0.7.65+** JSON 配置导入/导出：设置页增加「导出配置」和「导入配置」按钮，所有设置项 + 订阅源列表序列化为 `readflow-config.json`，跨机迁移一键恢复。
+- **v0.7.73+** 阅读配色系统：30 套 VSCode 主题风格阅读配色（暗色 15 + 亮色 15），支持「跟随界面」模式。自定义主题编辑器：hover 色块显示「创建副本」按钮，弹窗编辑 15 个颜色值后保存到 localStorage。阅读面板 dropdown 与外观设置页同步展示内置 + 自定义主题。
+- **v0.7.75** RSS 分页删除修复（删除后不再跳回首页）+ 订阅列表去重（`addFeeds` 入参去重 + DB 启动去重迁移）；已订阅列表展示源地址（标题下方小号 mono 字体 URL）；数据库路径支持文件选择器浏览。
+- **v0.7.76** items 表增加 `feed_id` 列：新建 RSS 条目自动关联到 feeds；启动时按 `source_name` 回填已有条目；`deleteFeed` 按 `feed_id` 级联清理。配色操作按钮重构：删除「新建阅读配色」按钮，16px 正圆 hover 按钮，beam-border 静态描边效果，右上角贴合卡片。
 
 ---
 
@@ -319,5 +328,5 @@ readflow/
 - **写作输出（TipTap 文档）UI 暂未接入**：`documents` 表与依赖保留，写作视图待后续版本回归。
 - **X 书签**走本地文件导入（X 官方读 Bookmark 需付费 API）；浏览器扩展（`extension/`）本体已打包但未联调。
 - **WebDAV 备份** `sync.ts` 结构就绪，需在「系统配置」补充入口并实测。
-- **国际源**（CNBC/Bloomberg/Investing）在大陆常需 VPN，失败会如实显示在「无法获取数据」与开发者网络面板。
-- 参考：`DESIGN.md` 为早期蓝图，本文档以 v0.7.29 实际代码为准；后续里程碑（白板性能、写作闭环、云同步、自动更新）按计划推进。
+- **UI 风格自定义编辑**（12 套卡片风格）基于 CSS 变量体系，当前仅可切换，后续支持复制编辑保存。
+- 参考：`DESIGN.md` 为早期蓝图，本文档以 v0.7.82 实际代码为准。
