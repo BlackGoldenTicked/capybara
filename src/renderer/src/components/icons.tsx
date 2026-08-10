@@ -7,7 +7,7 @@ import {
   Inbox, Clock, Star, Archive, Library, Rss, MailOpen,
   Settings, Search, Image, LayoutGrid, FileText,
   Plus, RefreshCw, Type, Link2, Video, Paperclip, Quote,
-  Minus, X, Pencil, EyeOff, Eye, Bookmark, Send,
+  Minus, X, Pencil, EyeOff, Eye, Bookmark, Send, Maximize,
   Tag, Trash2, Check, ExternalLink, ChevronDown, ChevronRight,
   Upload, BookOpen, Palette, Music, Keyboard, Undo2, Info, Activity, type LucideProps
 } from 'lucide-react'

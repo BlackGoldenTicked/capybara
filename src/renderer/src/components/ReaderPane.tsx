@@ -6,7 +6,7 @@ import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml } from '../lib/r
 import { getAllReadingThemes, FOLLOW_UI_ID } from '../lib/reading-themes'
 
 export function ReaderPane() {
-  const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser, appearance, updateAppearance } = useStore()
+  const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser, appearance, updateAppearance, toggleZenMode } = useStore()
   const [item, setItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(false)
   const [noImg, setNoImg] = useState(false)
@@ -80,6 +80,7 @@ export function ReaderPane() {
   return (
     <section className="reader">
       <div className="reader-bar">
+        <button className="rb-toggle" onClick={toggleZenMode} title="专注模式：隐藏侧栏与列表，全屏阅读"><Icon name="maximize" size={14} /> 专注</button>
         <button className={`rb-toggle ${noImg ? 'on' : ''}`} onClick={toggleNoImg} title="隐藏正文中的图片 / 视频，纯文字阅读"><Icon name={noImg ? 'eye' : 'eyeOff'} size={14} /> 无图模式</button>
         <div className="rb-spacer" />
         <select

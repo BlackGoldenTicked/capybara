@@ -28,6 +28,7 @@ interface State {
   cards: Card[]
   links: BoardLink[]
   toast: string
+  zenMode: boolean
 
   appearance: Appearance
   soundEnabled: boolean
@@ -50,6 +51,8 @@ interface State {
   setQuickAddOpen: (open: boolean) => void
   setActiveFeed: (name: string | null) => void
   showToast: (msg: string) => void
+  toggleZenMode: () => void
+  exitZenMode: () => void
   load: () => Promise<void>
   loadMoreItems: () => Promise<void>
   loadFeeds: () => Promise<void>
@@ -107,7 +110,7 @@ export const useStore = create<State>((set, get) => ({
   view: 'rss',
   items: [], itemsPage: 0, itemsDone: false, itemsLoadingMore: false, counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
   selectedId: null, pendingReadId: null, search: '', quickAddOpen: false,
-  activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '',
+  activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '', zenMode: false,
 
   appearance: DEFAULT_APPEARANCE,
   soundEnabled: false,
@@ -144,6 +147,9 @@ export const useStore = create<State>((set, get) => ({
     set({ toast: msg })
     setTimeout(() => { if (get().toast === msg) set({ toast: '' }) }, 1800)
   },
+
+  toggleZenMode: () => set((s) => ({ zenMode: !s.zenMode })),
+  exitZenMode: () => set({ zenMode: false }),
 
   load: async () => {
     const { view, search, activeSourceType, activeFeed } = get()

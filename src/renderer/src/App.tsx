@@ -28,7 +28,7 @@ type DividerWhich = 'side' | 'feed' | 'list'
 interface DragState { which: DividerWhich; startX: number; startW: number }
 
 export default function App() {
-  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, toast: toastMsg, view, activeSourceType, developerMode } = useStore()
+  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, toast: toastMsg, view, activeSourceType, developerMode, zenMode, exitZenMode } = useStore()
   const searchRef = useRef<HTMLInputElement>(null)
   const dragRef = useRef<DragState | null>(null)
 
@@ -109,10 +109,11 @@ export default function App() {
       const target = e.target as HTMLElement
       const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
 
-      // Esc：无论如何先让输入框失焦，并关闭设置 / 快速添加弹层
+      // Esc：优先退出 Zen 模式，其次失焦/关闭弹层
       if (e.key === 'Escape') {
         ;(target as HTMLElement).blur?.()
         const st = useStore.getState()
+        if (st.zenMode) { st.exitZenMode(); e.preventDefault(); return }
         if (st.screen === 'settings') st.setScreen('library')
         if (st.quickAddOpen) st.setQuickAddOpen(false)
         e.preventDefault()
@@ -174,24 +175,27 @@ export default function App() {
   // 在 GitHub★ / Twitter 书签（按来源筛选）与「归档」中隐藏。
   const showFeeds = activeSourceType == null && view !== 'archived'
 
+  // Zen 模式下隐藏全部左侧列
+  const isZen = zenMode && screen === 'library'
+
   return (
     <div className="app">
       <div className="titlebar">
         <span className="hint">{version || 'v0.7.6'}</span>
       </div>
       <div className="main">
-        <Sidebar collapsed={sideCollapsed} style={sidebarStyle} dragging={dragging} searchRef={searchRef} />
-        <div className="divider v" onPointerDown={onDividerDown('side')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />
+        {!isZen && <Sidebar collapsed={sideCollapsed} style={sidebarStyle} dragging={dragging} searchRef={searchRef} />}
+        {!isZen && <div className="divider v" onPointerDown={onDividerDown('side')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />}
         <div className="content">
           <ErrorBoundary>
             {screen === 'library' && (
               <>
-                {showFeeds && <FeedsPanel width={feedW} />}
-                {showFeeds && <div className="divider v" onPointerDown={onDividerDown('feed')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />}
-                <div className="list-pane" style={{ width: listW }}>
+                {!isZen && showFeeds && <FeedsPanel width={feedW} />}
+                {!isZen && showFeeds && <div className="divider v" onPointerDown={onDividerDown('feed')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />}
+                {!isZen && <div className="list-pane" style={{ width: listW }}>
                   <ItemList />
-                </div>
-                <div className="divider v" onPointerDown={onDividerDown('list')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />
+                </div>}
+                {!isZen && <div className="divider v" onPointerDown={onDividerDown('list')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />}
                 <ReaderPane />
               </>
             )}
