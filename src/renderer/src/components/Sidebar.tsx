@@ -155,6 +155,8 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
         <span className="count">{sourceCounts['x_bookmark'] || ''}</span>
       </div>
 
+      <div className="nav-sep" />
+
       {/* 白板（可折叠，无分隔线） */}
       <Section
         id="board"

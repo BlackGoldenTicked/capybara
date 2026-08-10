@@ -391,6 +391,8 @@ function migrate() {
     CREATE INDEX IF NOT EXISTS idx_items_status ON items(status, fetched_at DESC);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_feeds_url ON feeds(url);
   `)
+  // 去重迁移：删除已存在的重复 feeds（保留最低 id）；UNIQUE INDEX 后续会兜底
+  db.exec(`DELETE FROM feeds WHERE id NOT IN (SELECT MIN(id) FROM feeds GROUP BY url)`)
   // 增量列迁移（node:sqlite 无 ALTER IF NOT EXISTS，try/catch 容错）
   for (const col of ['content_html TEXT NOT NULL DEFAULT ""', 'cover_path TEXT NOT NULL DEFAULT ""', 'cover_url TEXT NOT NULL DEFAULT ""']) {
     try { db.exec(`ALTER TABLE items ADD COLUMN ${col}`) } catch { /* 列已存在 */ }
@@ -611,7 +613,14 @@ export function addFeed(f: { type: string; name: string; url: string; schedule_m
     .run(f.type, f.name, f.url, f.schedule_min ?? 120, f.config_json ?? '')
   return { id: Number(r.lastInsertRowid), type: f.type, name: f.name, url: f.url, config_json: f.config_json ?? '', schedule_min: f.schedule_min ?? 120, last_fetched_at: '', error_count: 0, last_error: '', enabled: 1, etag: '', last_modified: '' }
 }
-export function deleteFeed(id: number) { db.prepare('DELETE FROM feeds WHERE id = ?').run(id) }
+export function deleteFeed(id: number) {
+  // 级联删除该订阅源已下载的待阅读内容（按 source_name 匹配）
+  const f = db.prepare('SELECT name FROM feeds WHERE id = ?').get(id) as { name: string } | undefined
+  if (f) {
+    db.prepare(`DELETE FROM items WHERE source_type = 'rss' AND source_name = ?`).run(f.name)
+  }
+  db.prepare('DELETE FROM feeds WHERE id = ?').run(id)
+}
 export function feedExists(url: string): boolean {
   return !!db.prepare('SELECT 1 FROM feeds WHERE url = ?').get(url)
 }
@@ -733,9 +742,15 @@ export function purgeOldItems(keepArchivedDays: number, maxItems: number): { pur
 
 /** 批量添加订阅源（来源管理批量导入，减少 IPC 往返） */
 export function addFeeds(list: Array<{ type: string; name: string; url: string; schedule_min?: number }>): number {
+  // 先去重入参，再 INSERT OR IGNORE 兜底（DB 有 UNIQUE INDEX）
+  const seen = new Set<string>()
   const stmt = db.prepare('INSERT OR IGNORE INTO feeds (type, name, url, schedule_min) VALUES (?, ?, ?, ?)')
   let added = 0
-  for (const f of list) { const r = stmt.run(f.type, f.name, f.url, f.schedule_min ?? 120); if (r.changes) added++ }
+  for (const f of list) {
+    if (seen.has(f.url)) continue
+    seen.add(f.url)
+    const r = stmt.run(f.type, f.name, f.url, f.schedule_min ?? 120); if (r.changes) added++
+  }
   return added
 }
 

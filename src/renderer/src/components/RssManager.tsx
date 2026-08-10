@@ -29,7 +29,7 @@ export function RssManager() {
     setTotalFeeds(count)
   }
 
-  useEffect(() => { void loadPage(0) }, [feeds.length])
+  useEffect(() => { void loadPage(0) }, [])
 
   const submit = async () => {
     if (!url.trim()) { showToast('请填写 RSS 地址'); return }
@@ -119,7 +119,10 @@ export function RssManager() {
         {pagedFeeds.map((f) => (
           <div key={f.id} className="feed-row">
             <span className={`badge ${f.type}`}>{f.type}</span>
-            <span className="fr-name">{f.name || f.url}</span>
+            <div className="fr-info">
+              <span className="fr-name">{f.name || f.url}</span>
+              <span className="fr-url">{f.url}</span>
+            </div>
             <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '错误') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
             {f.error_count > 0 && (
               <span className="feed-err-wrap">
@@ -138,7 +141,15 @@ export function RssManager() {
               </span>
             )}
             <button onClick={() => void refreshFeed(f.id)}>刷新</button>
-            <button onClick={() => { void deleteFeed(f.id); void loadPage(page) }}>删除</button>
+            <button onClick={async () => {
+              await deleteFeed(f.id)
+              // 删除后重载当前页；若当前页已空则回退一页
+              const newCount = await window.readflow.invoke('feeds:count') as number
+              const newTotalPages = Math.max(1, Math.ceil(newCount / PAGE_SIZE))
+              const nextPage = page >= newTotalPages ? Math.max(0, newTotalPages - 1) : page
+              setPage(nextPage)
+              void loadPage(nextPage)
+            }}>删除</button>
           </div>
         ))}
         {totalPages > 1 && (

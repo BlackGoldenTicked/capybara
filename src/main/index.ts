@@ -388,6 +388,11 @@ function registerIpc() {
     'settings:set': ((key: string, value: string) => setSetting(key, value)) as never,
     'settings:setDbPath': ((newPath: string) => setCustomDbPath(newPath)) as never,
     'settings:getDbPath': (() => getCustomDbPath()) as never,
+    'settings:pickDbPath': (async () => {
+      const r = await dialog.showOpenDialog(mainWindow!, { title: '选择数据库文件', properties: ['openFile', 'createDirectory'], filters: [{ name: 'SQLite 数据库', extensions: ['db', 'sqlite', 'sqlite3'] }] })
+      if (r.canceled || r.filePaths.length === 0) return ''
+      return r.filePaths[0]
+    }) as never,
 
     // ===== JSON 配置导出/导入 =====
     'settings:export': (async () => {

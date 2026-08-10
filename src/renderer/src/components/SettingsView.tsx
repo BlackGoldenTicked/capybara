@@ -165,7 +165,6 @@ function AppearanceTab() {
           <input type="range" min={0} max={100} value={Math.round(soundVolume * 100)}
             disabled={!soundEnabled} onChange={(e) => setSoundVolume(Number(e.target.value) / 100)} />
         </label>
-        <button onClick={() => { setSoundEnabled(true); playSound('complete') }}><Icon name="music" size={14} /> 试听音效</button>
         <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
       </div>
       {themeEdit && (
@@ -309,6 +308,10 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
               setDbPathMsg('失败：' + (r.error ?? '未知错误'))
             }
           }}>保存</button>
+          <button title="浏览选择数据库文件" onClick={async () => {
+            const p = await window.readflow.invoke('settings:pickDbPath') as string
+            if (p) setDbPathInput(p)
+          }}>浏览…</button>
         </div>
         {dbPathMsg && <p className={`src-hint ${dbPathMsg.includes('失败') ? 'src-warn' : ''}`} style={{ marginTop: 6 }}>{dbPathMsg}</p>}
         {dbPath ? <p className="src-hint" style={{ marginTop: 4 }}>当前自定义路径：{dbPath}</p> : null}
@@ -396,7 +399,11 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _
               onClick={() => onSelect(t.id)}
               title={t.name}
             >
-              <span className="rt-swatch" style={{ background: t.colors['--rt-bg'] }} />
+              <span className="rt-swatch multi">
+                <span style={{ background: t.colors['--rt-bg'] }} />
+                <span style={{ background: t.colors['--rt-heading'] }} />
+                <span style={{ background: t.colors['--rt-link'] }} />
+              </span>
               <span className="rt-name">{t.name.replace(/\(.*\)/, '').trim()}</span>
             </button>
             <span className="rt-chip-actions">
@@ -414,6 +421,11 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _
 
   return (
     <>
+      <div className="rt-new-btn-row">
+        <button className="new-rt-btn" onClick={() => _onEdit?.()} title="从空白新建一套阅读配色">
+          <Icon name="plus" size={12} /> 新建阅读配色
+        </button>
+      </div>
       {renderGroup('暗色', darkThemes, true)}
       {renderGroup('亮色', lightThemes, false)}
     </>
