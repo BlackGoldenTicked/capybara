@@ -1051,11 +1051,13 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
   mask-composite: exclude;
   pointer-events: none;
   z-index: 0;
-  opacity: var(--beam-opacity, 0.1);
-  animation: beam-breathe 2.8s ease-in-out infinite;
+  /* 默认完全不可见：未选中卡片不该有彩色边框背景。
+     仅 hover 时作为交互反馈短暂呼吸，selected 由 box-shadow 自带的双层强调负责。 */
+  opacity: 0;
+  animation: none;
 }
 /* 悬停加亮 */
-.beam-border:hover::before { animation: beam-breathe-hover 2.4s ease-in-out infinite; }
+.beam-border:hover::before { opacity: var(--beam-opacity, 0.18); animation: beam-breathe-hover 2.4s ease-in-out infinite; }
 
 @keyframes beam-breathe {
   0%, 100% { opacity: 0.1; }
