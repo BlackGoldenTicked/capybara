@@ -291,6 +291,9 @@ input:focus { border-color: var(--color-border-info); }
    关键修复：移除 white-space: pre-wrap（会保留源站空白、破坏换行与对齐），
    统一由 CSS 控制所有子元素；源站内联 style/class 已在 reader.ts 清洗。 */
 .reader-content {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
   font-size: calc(15px * var(--font-scale));
   line-height: 1.8;
   color: var(--color-text-primary);
