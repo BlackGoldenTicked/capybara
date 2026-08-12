@@ -94,6 +94,7 @@ export function ItemList() {
     : '当前视图没有条目。'
 
   const wrapRef = useRef<HTMLDivElement>(null)
+  const scrollTimerRef = useRef<number>(0)
   const [height, setHeight] = useState(400)
   useEffect(() => {
     const el = wrapRef.current
@@ -109,6 +110,13 @@ export function ItemList() {
 
   // 滚动到底部阈值内即触发加载下一页（FOUC 无关，纯翻页）
   const onListScroll = ({ scrollOffset }: { scrollOffset: number }) => {
+    // 滚动期间显示滚动条 thumb（配合 CSS 自动隐藏，停止 900ms 后淡出）
+    const el = wrapRef.current
+    if (el) {
+      el.classList.add('is-scrolling')
+      window.clearTimeout(scrollTimerRef.current)
+      scrollTimerRef.current = window.setTimeout(() => el.classList.remove('is-scrolling'), 900)
+    }
     if (itemsDone || itemsLoadingMore || items.length === 0) return
     const total = items.length * ITEM_SIZE
     if (scrollOffset + listHeight >= total - ITEM_SIZE * 0.8) void loadMoreItems()

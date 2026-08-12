@@ -150,7 +150,7 @@ input:focus { border-color: var(--color-border-info); }
 .feed-actions { margin-left: auto; display: flex; gap: 6px; }
 .feed-actions .mini { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer; }
 .feed-actions .mini:hover { border-color: var(--color-border-info); color: var(--color-text-info); }
-.feed-list { flex: 1; min-height: 0; overflow: hidden; padding: 10px 12px; }
+.feed-list { flex: 1; min-height: 0; overflow: hidden; padding: 10px 6px 10px 12px; }
 /* 信息流底部翻页状态栏：始终可见，提示已加载条数与「滚动加载更多」 */
 .feed-footer { height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
   gap: 8px; font-size: 12px; color: var(--color-text-tertiary);
@@ -1207,9 +1207,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 .rt-new-btn-row .new-rt-btn:hover { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); border-style: solid; }
 .rt-custom-section { margin-top: 8px; padding-top: 8px; border-top: 0.5px dashed var(--color-border-tertiary); }
 
-/* ====== 滚动条 ======
-   8px 宽，track 透明，thumb 半透明圆角，hover 渐显。
-   暗色模式下 thumb 自动提亮保证可见。 */
+/* ====== 滚动条（macOS 式自动隐藏） ======
+   8px 宽，track 透明；thumb 静止时完全透明，
+   仅在悬浮滚动容器（*:hover）或列表滚动中（.is-scrolling）淡入。
+   这样栏缝静止时只剩 1px 分隔线，不与滚动条形成"双线"。 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -1218,17 +1219,19 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--color-text-primary) 16%, transparent);
+  background: transparent;
   border: 2px solid transparent;
   background-clip: content-box;
   border-radius: 999px;
   min-height: 36px;
-  transition: background .15s var(--ease-out);
+  transition: background .2s var(--ease-out);
+}
+*:hover::-webkit-scrollbar-thumb,
+.feed-list.is-scrolling > div::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-text-primary) 16%, transparent);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--color-text-primary) 32%, transparent);
-  border: 2px solid transparent;
-  background-clip: content-box;
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
