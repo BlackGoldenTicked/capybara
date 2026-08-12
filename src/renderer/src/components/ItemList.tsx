@@ -20,8 +20,8 @@ function relTime(iso: string) {
   return `${Math.floor(h / 24)} 天前`
 }
 
-// 信息流卡片高度（约普通两倍，留出标题/摘要/操作三行空间，参考 WorkBuddy 卡片密度）
-const ITEM_SIZE = 196
+// 信息流卡片高度（紧凑密度，标题 + 摘要 + 留白 ≈ 156px 可视区域）
+const ITEM_SIZE = 164
 
 interface RowData {
   items: ItemRow[]
