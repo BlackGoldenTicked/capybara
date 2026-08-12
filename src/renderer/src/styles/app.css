@@ -63,7 +63,6 @@ input:focus { border-color: var(--color-border-info); }
 .sidebar {
   width: 196px; flex-shrink: 0;
   background: var(--color-background-secondary);
-  border-right: 0.5px solid var(--color-border-tertiary);
   padding: 12px 10px;
   overflow-y: auto;
   transition: width .16s var(--ease-out);
@@ -139,10 +138,10 @@ input:focus { border-color: var(--color-border-info); }
 .side-item .count { margin-left: auto; font-size: 12px; color: var(--color-text-tertiary); flex: none; }
 
 /* ===== 中栏：信息流 ===== */
-.feed { flex: 1.2; min-width: 0; display: flex; flex-direction: column; border-right: 0.5px solid var(--color-border-tertiary); background: var(--color-background-tertiary); }
+.feed { flex: 1.2; min-width: 0; display: flex; flex-direction: column; background: var(--color-background-tertiary); }
 .feed-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; border-bottom: 0.5px solid var(--color-border-tertiary);
+  padding: 10px 14px;
   background: var(--color-background-secondary);
 }
 .feed-header .title { font-size: 14px; font-weight: 500; }
@@ -155,7 +154,7 @@ input:focus { border-color: var(--color-border-info); }
 /* 信息流底部翻页状态栏：始终可见，提示已加载条数与「滚动加载更多」 */
 .feed-footer { height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
   gap: 8px; font-size: 12px; color: var(--color-text-tertiary);
-  border-top: 0.5px solid color-mix(in srgb, var(--card-accent) 14%, var(--color-border-tertiary)); }
+  border-top: 0.5px solid var(--color-border-tertiary); }
 .feed-footer .spin { width: 13px; height: 13px; border-radius: 50%;
   border: 2px solid color-mix(in srgb, var(--color-text-tertiary) 35%, transparent);
   border-top-color: var(--card-accent); animation: feed-spin 0.7s linear infinite; }
@@ -171,24 +170,24 @@ input:focus { border-color: var(--color-border-info); }
 /* 虚拟列表内的卡片：撑满行高（ITEM_SIZE 决定外层 row 高度），避免内容挤压；保留行高统一 */
 .feed-list .card { height: calc(100% - 8px); overflow: hidden; display: flex; flex-direction: column; gap: 6px; }
 .card:hover { border-color: var(--color-border-secondary); }
-.card.selected { border-color: var(--card-accent); box-shadow: 0 0 0 2px var(--card-accent), 0 0 0 4px color-mix(in srgb, var(--card-accent) 18%, transparent); }
+.card.selected { border-color: var(--card-accent); box-shadow: 0 0 0 1.5px var(--card-accent), 0 0 0 4px color-mix(in srgb, var(--card-accent) 12%, transparent); }
 /* 未读强化：卡片左侧 accent 竖条（inset，不挤占布局），与已读一眼区分；标题不再前置圆点，避免已读/未读标题错位 */
-.card.unread:not(.selected) { box-shadow: inset 3px 0 0 var(--accent-info); }
+.card.unread:not(.selected) { box-shadow: inset 2px 0 0 var(--color-border-info); }
 .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
 .badge { font-size: 11px; border-radius: 4px; padding: 1px 6px; white-space: nowrap; background: var(--color-background-tertiary); color: var(--color-text-secondary); border: 0.5px solid var(--color-border-tertiary); }
 /* 来源徽标前的订阅源配色圆点（与第四栏圆点同源，作为该源唯一稳定色标识，避免徽标底色与圆点双重配色语义冲突） */
-.src-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 0.5px; flex: none; box-shadow: 0 0 0 0.5px rgba(0,0,0,.18) inset; }
+.src-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0.5px; flex: none; box-shadow: 0 0 0 0.5px rgba(0,0,0,.18) inset; }
 
 /* ===== 第四栏：订阅源分类 ===== */
 .feeds-panel {
   display: flex; flex-direction: column; min-width: 0;
   background: var(--color-background-secondary);
-  border-right: 0.5px solid var(--color-border-tertiary);
   overflow-y: auto;
 }
 .feeds-head {
   font-size: 11px; color: var(--color-text-tertiary); letter-spacing: 0.3px; text-transform: uppercase;
-  padding: 12px 12px 6px; display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+  background: var(--color-background-secondary);
 }
 .feeds-head .feed-refresh-all {
   border: none; background: transparent; padding: 2px; border-radius: 5px;
@@ -206,7 +205,7 @@ input:focus { border-color: var(--color-border-info); }
 .feed-item:hover { background: var(--color-background-tertiary); }
 .feed-item.active { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; }
 .feed-item.err .feed-name { color: var(--color-text-warning); }
-.feed-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; box-shadow: 0 0 0 0.5px rgba(0,0,0,.18) inset; }
+.feed-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; box-shadow: 0 0 0 0.5px rgba(0,0,0,.18) inset; }
 .feed-dot.all { background: var(--color-text-tertiary); }
 .feed-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .feed-err-dot {
@@ -688,7 +687,7 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .divider { flex-shrink: 0; }
 .divider.v { width: 9px; cursor: col-resize; background: transparent; position: relative; touch-action: none; transition: background 0.15s; }
 /* 扩大命中区：中间一条可见细线，两侧透明区也可抓取（修复 #18） */
-.divider.v::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); background: var(--color-border-secondary); }
+.divider.v::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); background: var(--color-border-tertiary); }
 .divider.v:hover { background: color-mix(in srgb, var(--card-accent) 18%, transparent); }
 .divider.v:hover::after { background: var(--color-border-info); width: 2px; }
 
@@ -1208,25 +1207,28 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 .rt-new-btn-row .new-rt-btn:hover { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); border-style: solid; }
 .rt-custom-section { margin-top: 8px; padding-top: 8px; border-top: 0.5px dashed var(--color-border-tertiary); }
 
-/* ====== 精致滚动条（替代系统默认 8px+ 粗滚动条） ======
-   6px 宽，track 透明，thumb 圆角半透明，hover 加深。
+/* ====== 滚动条 ======
+   8px 宽，track 透明，thumb 半透明圆角，hover 渐显。
    暗色模式下 thumb 自动提亮保证可见。 */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border-secondary);
-  border-radius: 999px;
-  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--color-text-primary) 16%, transparent);
+  border: 2px solid transparent;
   background-clip: content-box;
+  border-radius: 999px;
   min-height: 36px;
+  transition: background .15s var(--ease-out);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
+  background: color-mix(in srgb, var(--color-text-primary) 32%, transparent);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
