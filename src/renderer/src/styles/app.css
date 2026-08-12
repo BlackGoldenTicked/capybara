@@ -1208,3 +1208,27 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 .rt-new-btn-row .new-rt-btn:hover { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); border-style: solid; }
 .rt-custom-section { margin-top: 8px; padding-top: 8px; border-top: 0.5px dashed var(--color-border-tertiary); }
 
+/* ====== 精致滚动条（替代系统默认 8px+ 粗滚动条） ======
+   6px 宽，track 透明，thumb 圆角半透明，hover 加深。
+   暗色模式下 thumb 自动提亮保证可见。 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-secondary);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+  min-height: 36px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
