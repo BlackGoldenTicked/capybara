@@ -22,10 +22,13 @@ function relTime(iso: string) {
 
 // 信息流卡片高度（紧凑密度，标题 + 摘要 + 留白 ≈ 156px 可视区域）
 const ITEM_SIZE = 164
+// 列表视图行高（单行：标签 + 标题 + 时间）
+const LIST_ITEM_SIZE = 44
 
 interface RowData {
   items: ItemRow[]
   selectedId: number | null
+  mode: 'card' | 'list'
   onSelect: (id: number) => void
   onOpen: (url: string) => void
   onToggleRead: (id: number) => void
@@ -50,12 +53,39 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
     data.onDelete(item.id)
   }
 
+  const dragProps = {
+    draggable: true,
+    onDragStart: (e: React.DragEvent) => { e.dataTransfer.setData('application/x-item-id', String(item.id)); e.dataTransfer.effectAllowed = 'copy' }
+  }
+
+  // 列表视图：单行紧凑展示，只显示 标签 / 标题 / 时间，不显示描述
+  if (data.mode === 'list') {
+    return (
+      <div style={style}>
+        <div
+          className={`list-row ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
+          {...dragProps}
+          onClick={() => data.onSelect(item.id)}>
+          <span className={`list-badge ${item.source_type}`}>{SOURCE_LABEL[item.source_type]}</span>
+          <span className="list-title">{item.title}</span>
+          <span className="list-time">{relTime(item.published_at || item.fetched_at)}</span>
+          <div className="list-actions" onClick={stop} onDragStart={stop}>
+            <button className="act" title="用系统默认浏览器打开" onClick={open}><Icon name="external" size={14} /></button>
+            <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onClick={toggleRead}><Icon name="check" size={14} /></button>
+            <button className={`act ${later ? 'on' : ''}`} title="稍后读" onClick={laterFn}><Icon name="later" size={14} /></button>
+            <button className={`act ${fav ? 'on' : ''}`} title="收藏" onClick={favFn}><Icon name="favorite" size={14} fill={fav ? 'currentColor' : 'none'} /></button>
+            <button className="act danger" title="删除" onClick={del}><Icon name="trash" size={14} /></button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={style}>
       <div
         className={`card beam-border ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
-        draggable
-        onDragStart={(e) => { e.dataTransfer.setData('application/x-item-id', String(item.id)); e.dataTransfer.effectAllowed = 'copy' }}
+        {...dragProps}
         onClick={() => data.onSelect(item.id)}>
         <div className="card-meta">
           <span className={`badge ${item.source_type}`}>
@@ -96,6 +126,15 @@ export function ItemList() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const scrollTimerRef = useRef<number>(0)
   const [height, setHeight] = useState(400)
+  const [listMode, setListMode] = useState<'card' | 'list'>('card')
+  useEffect(() => {
+    // 读取持久化的列表视图模式（card 默认 / list 紧凑）
+    void (window.readflow.invoke('settings:get', 'list_mode') as Promise<string>).then((r) => { if (r === 'list') setListMode('list') })
+  }, [])
+  const setListModeAndPersist = (m: 'card' | 'list') => {
+    setListMode(m)
+    void window.readflow.invoke('settings:set', 'list_mode', m)
+  }
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
@@ -118,8 +157,9 @@ export function ItemList() {
       scrollTimerRef.current = window.setTimeout(() => el.classList.remove('is-scrolling'), 900)
     }
     if (itemsDone || itemsLoadingMore || items.length === 0) return
-    const total = items.length * ITEM_SIZE
-    if (scrollOffset + listHeight >= total - ITEM_SIZE * 0.8) void loadMoreItems()
+    const rowH = listMode === 'list' ? LIST_ITEM_SIZE : ITEM_SIZE
+    const total = items.length * rowH
+    if (scrollOffset + listHeight >= total - rowH * 0.8) void loadMoreItems()
   }
 
   const onClear = () => {
@@ -128,7 +168,8 @@ export function ItemList() {
   }
 
   const rowData: RowData = {
-    items, selectedId, onSelect: (id) => select(id, { click: true }),
+    items, selectedId, mode: listMode,
+    onSelect: (id) => select(id, { click: true }),
     onOpen: (url) => openInBrowser(url),
     onToggleRead: (id) => void toggleRead(id),
     onLater: (id) => void setStatus(id, 'later'),
@@ -140,14 +181,30 @@ export function ItemList() {
     <section className="feed">
       <div className="feed-header">
         <span className="title">{headerLabel}</span>
-        <span className="feed-actions">
-          {view === 'rss' && (
-            <>
-              <button className="mini" title="把 RSS 未读全部标为已读" onClick={() => void markAllRead(view)}>标为已读</button>
-              <button className="mini" title="清空 RSS（保留收藏与白板引用）" onClick={onClear}>清空</button>
-            </>
-          )}
-        </span>
+        <div className="feed-right">
+          <div className="view-toggle">
+            <button
+              className={listMode === 'card' ? 'active' : ''}
+              title="卡片视图"
+              onClick={() => setListModeAndPersist('card')}>
+              <Icon name="board" size={15} />
+            </button>
+            <button
+              className={listMode === 'list' ? 'active' : ''}
+              title="列表视图"
+              onClick={() => setListModeAndPersist('list')}>
+              <Icon name="list" size={15} />
+            </button>
+          </div>
+          <span className="feed-actions">
+            {view === 'rss' && (
+              <>
+                <button className="mini" title="把 RSS 未读全部标为已读" onClick={() => void markAllRead(view)}>标为已读</button>
+                <button className="mini" title="清空 RSS（保留收藏与白板引用）" onClick={onClear}>清空</button>
+              </>
+            )}
+          </span>
+        </div>
       </div>
       <div className="feed-list" ref={wrapRef}>
         {items.length === 0 ? (
@@ -174,7 +231,7 @@ export function ItemList() {
               height={listHeight}
               width="100%"
               itemCount={items.length}
-              itemSize={ITEM_SIZE}
+              itemSize={listMode === 'list' ? LIST_ITEM_SIZE : ITEM_SIZE}
               itemData={rowData}
               overscanCount={6}
               onScroll={onListScroll}

@@ -9,7 +9,8 @@ import {
   Plus, RefreshCw, Type, Link2, Video, Paperclip, Quote,
   Minus, X, Pencil, EyeOff, Eye, Bookmark, Send, Maximize,
   Tag, Trash2, Check, ExternalLink, ChevronDown, ChevronRight,
-  Upload, BookOpen, Palette, Music, Keyboard, Undo2, Info, Activity, type LucideProps
+  Upload, BookOpen, Palette, Music, Keyboard, Undo2, Info, Activity,
+  List, Rows3, type LucideProps
 } from 'lucide-react'
 
 // Brand icons (GitHub / X) were dropped from lucide-react; defined inline as
@@ -39,6 +40,7 @@ export type IconName =
   | 'minus' | 'close' | 'edit' | 'eyeOff' | 'eye' | 'bookmark' | 'send'
   | 'tag' | 'trash' | 'check' | 'external' | 'chevronDown' | 'chevronRight'
   | 'upload' | 'book' | 'github' | 'twitter' | 'palette' | 'music' | 'keyboard' | 'undo' | 'info' | 'activity'
+  | 'list' | 'rows'
 
 const MAP: Record<IconName, React.ComponentType<LucideProps>> = {
   rss: Rss, read: MailOpen, inbox: Inbox, later: Clock, favorite: Star, archived: Archive, all: Library,
@@ -47,7 +49,8 @@ const MAP: Record<IconName, React.ComponentType<LucideProps>> = {
   minus: Minus, close: X, edit: Pencil, eyeOff: EyeOff, eye: Eye, bookmark: Bookmark, send: Send,
   tag: Tag, trash: Trash2, check: Check, external: ExternalLink, chevronDown: ChevronDown, chevronRight: ChevronRight,
   upload: Upload, book: BookOpen, github: BrandGithub, twitter: BrandTwitter,
-  palette: Palette, music: Music, keyboard: Keyboard, undo: Undo2, info: Info, activity: Activity, maximize: Maximize
+  palette: Palette, music: Music, keyboard: Keyboard, undo: Undo2, info: Info, activity: Activity, maximize: Maximize,
+  list: List, rows: Rows3
 }
 
 export function Icon({ name, size = 16, strokeWidth = 1.75, className, style, ...rest }: {
