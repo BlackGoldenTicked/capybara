@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import type { Feed } from '../env'
+import type { Feed, MediaKind } from '../env'
 import { Icon } from './icons'
 
 const PAGE_SIZE = 100
+const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
 
 export function RssManager() {
   const { feeds, addFeed, deleteFeed, refreshFeed, showToast } = useStore()
@@ -11,6 +12,7 @@ export function RssManager() {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
   const [schedule, setSchedule] = useState(120)
+  const [kind, setKind] = useState<MediaKind>('article')
   const [opmlMsg, setOpmlMsg] = useState('')
   const [validating, setValidating] = useState(false)
 
@@ -38,9 +40,9 @@ export function RssManager() {
       const v = await window.readflow.invoke('feeds:validate', url.trim()) as { valid: boolean; title?: string; error?: string }
       if (!v.valid) { showToast('验证失败：' + (v.error || '无法解析')); return }
       const finalName = name.trim() || v.title || url.trim()
-      await addFeed('rss', finalName, url.trim(), schedule)
+      await addFeed('rss', finalName, url.trim(), schedule, kind)
       showToast('已添加「' + finalName + '」')
-      setName(''); setUrl(''); setSchedule(120); setPage(0)
+      setName(''); setUrl(''); setSchedule(120); setKind('article'); setPage(0)
       void loadPage(0)
     } catch (e) { showToast('添加失败：' + (e as Error).message) }
     finally { setValidating(false) }
@@ -85,6 +87,14 @@ export function RssManager() {
               <input id="rss-url" placeholder="RSS feed 地址" value={url} onChange={(e) => setUrl(e.target.value)} />
             </div>
             <div className="src-field">
+              <label>内容类型</label>
+              <div className="seg seg-3way">
+                <button type="button" className={`seg-btn ${kind === 'article' ? 'active' : ''}`} onClick={() => setKind('article')}>图文</button>
+                <button type="button" className={`seg-btn ${kind === 'podcast' ? 'active' : ''}`} onClick={() => setKind('podcast')}>播客</button>
+                <button type="button" className={`seg-btn ${kind === 'video' ? 'active' : ''}`} onClick={() => setKind('video')}>视频</button>
+              </div>
+            </div>
+            <div className="src-field">
               <label htmlFor="rss-schedule">刷新频率</label>
               <div className="src-field-cell">
                 <span className="src-unit">每</span>
@@ -118,7 +128,7 @@ export function RssManager() {
         {pagedFeeds.length === 0 && <p className="src-hint">暂无订阅源。手动粘贴 RSS feed 地址或导入 OPML 文件。</p>}
         {pagedFeeds.map((f) => (
           <div key={f.id} className="feed-row">
-            <span className={`badge ${f.type}`}>{f.type}</span>
+            <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
             <div className="fr-info">
               <span className="fr-name">{f.name || f.url}</span>
               <span className="fr-url">{f.url}</span>

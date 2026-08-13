@@ -13,9 +13,17 @@ const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播
  * 失败时显示该源真实的 last_error（hover 看完整）。
  */
 export function FeedsPanel({ width = 188 }: { width?: number }) {
-  const { feeds, activeFeed, setActiveFeed, refreshFeed, refreshAll } = useStore()
-  // 仅列出 RSS 订阅源：其采集器会把 feed.name 写入 item.source_name，筛选才可靠
-  const rssFeeds = feeds.filter((f) => f.type === 'rss')
+  const { feeds, view, activeFeed, setActiveFeed, refreshFeed, refreshAll } = useStore()
+  // 仅列出 RSS 订阅源（其采集器会把 feed.name 写入 item.source_name，筛选才可靠）；
+  // 并根据当前视图过滤内容形态：RSS/播客/视频 菜单只显示对应 kind 的源，其余视图显示全部
+  const rssFeeds = feeds.filter((f) => {
+    if (f.type !== 'rss') return false
+    const kind = f.kind ?? 'article'
+    if (view === 'rss') return kind === 'article'
+    if (view === 'podcast') return kind === 'podcast'
+    if (view === 'video') return kind === 'video'
+    return true
+  })
 
   const style: CSSProperties = { width, flexShrink: 0 }
   const [refreshingId, setRefreshingId] = useState<number | 'all' | null>(null)
