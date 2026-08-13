@@ -3,6 +3,7 @@ import type { Feed } from '../db'
 import { upsertItem, markFeedFetched, storeCover, fillCoverIfEmpty } from '../db'
 import { decodeHtmlEntities, htmlToSnippet } from '../lib/html'
 import { extractArticle } from './readability'
+import { extractEmbedUrl, isVideoMime, parseDuration } from './video'
 import { netLog, extractError } from '../netlog'
 import { diagFetchStart, diagFetchEnd } from '../diag'
 
@@ -13,7 +14,8 @@ const parser = new RssParser({
     item: [
       ['media:content', 'media:content', { keepArray: true }],
       ['media:thumbnail', 'media:thumbnail', { keepArray: true }],
-      ['itunes:image', 'itunes:image']
+      ['itunes:image', 'itunes:image'],
+      ['itunes:duration', 'itunes:duration']
     ]
   }
 })
@@ -29,6 +31,8 @@ interface NormEntry {
   contentSnippet?: string
   isoDate?: string
   mediaCover?: string
+  enclosure?: { url?: string; type?: string }
+  duration?: string
 }
 
 /** 从 RSS 媒体标签里取封面 URL（media:content / media:thumbnail / itunes:image） */
@@ -45,6 +49,24 @@ function rssMediaCover(entry: Record<string, unknown>): string {
   )
 }
 
+/** 按源的内容形态（article/podcast/video），把条目归一化为媒体字段 */
+function resolveMedia(feed: Feed, entry: NormEntry) {
+  const kind = feed.kind ?? 'article'
+  const encUrl = entry.enclosure?.url ?? ''
+  const encType = entry.enclosure?.type ?? ''
+  if (kind === 'podcast') {
+    return { kind, media_url: encUrl, media_type: 'audio' as const, duration: parseDuration(entry.duration) }
+  }
+  if (kind === 'video') {
+    // 直链视频（enclosure 为 video/*）优先；否则从 link 提取 embed 地址
+    if (isVideoMime(encType)) {
+      return { kind, media_url: encUrl, media_type: 'video' as const, duration: parseDuration(entry.duration) }
+    }
+    return { kind, media_url: extractEmbedUrl(entry.link ?? ''), media_type: 'video' as const, duration: 0 }
+  }
+  return { kind, media_url: '', media_type: '' as const, duration: 0 }
+}
+
 /**
  * 统一解析入口：JSON Feed（content-type 含 json，或正文以 { 开头）走 JSON 分支，
  * 其余走 rss-parser 的 XML(RSS/Atom) 解析。两者归一为 NormEntry[]，主流程无需区分。
@@ -58,6 +80,8 @@ async function parseFeed(body: string, contentType: string): Promise<{ items: No
       const author = typeof it.author === 'string' ? it.author : ((it.author as Record<string, unknown>)?.name as string) ?? ''
       const content = (it.content_html as string) ?? (it.content_text as string) ?? ''
       const snippet = (it.content_text as string) ?? (it.summary as string) ?? ''
+      const attachments = (it.attachments as Array<Record<string, unknown>>) ?? []
+      const firstAtt = attachments[0]
       return {
         link: (it.url as string) ?? (it.external_url as string) ?? '',
         guid: (it.id as string) ?? (it.url as string) ?? '',
@@ -66,7 +90,9 @@ async function parseFeed(body: string, contentType: string): Promise<{ items: No
         content,
         contentSnippet: snippet,
         isoDate: (it.date_published as string) ?? (it.date_modified as string) ?? '',
-        mediaCover: (it.image as string) ?? ''
+        mediaCover: (it.image as string) ?? '',
+        enclosure: firstAtt?.url ? { url: String(firstAtt.url), type: String(firstAtt.mime_type ?? '') } : undefined,
+        duration: firstAtt?.duration_in_seconds != null ? String(firstAtt.duration_in_seconds) : undefined
       } satisfies NormEntry
     })
     return { items, title: jf.title as string | undefined }
@@ -74,6 +100,7 @@ async function parseFeed(body: string, contentType: string): Promise<{ items: No
   const parsed = await parser.parseString(body)
   const items = (parsed.items ?? []).map((it) => {
     const e = it as Record<string, unknown>
+    const enc = (it as { enclosure?: { url?: string; type?: string } }).enclosure
     return {
       link: it.link,
       guid: it.guid,
@@ -82,7 +109,9 @@ async function parseFeed(body: string, contentType: string): Promise<{ items: No
       content: it.content,
       contentSnippet: it.contentSnippet,
       isoDate: it.isoDate,
-      mediaCover: rssMediaCover(e)
+      mediaCover: rssMediaCover(e),
+      enclosure: enc?.url ? { url: enc.url, type: enc.type } : undefined,
+      duration: (e['itunes:duration'] as string) ?? undefined
     } satisfies NormEntry
   })
   return { items, title: parsed.title }
@@ -149,6 +178,7 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
     const url = entry.link ?? entry.guid ?? ''
     if (!url) continue
     const rawContent = entry.content ?? entry.contentSnippet ?? ''
+    const media = resolveMedia(feed, entry)
     const { id, changed } = upsertItem({
       source_type: 'rss',
       source_name: feed.name,
@@ -159,7 +189,8 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
       summary: htmlToSnippet(rawContent),
       content_text: htmlToSnippet(rawContent),
       content_html: decodeHtmlEntities(rawContent),
-      published_at: entry.isoDate ?? new Date().toISOString()
+      published_at: entry.isoDate ?? new Date().toISOString(),
+      ...media
     })
     if (changed && id) {
       added++
@@ -173,7 +204,8 @@ export async function fetchRssFeed(feed: Feed): Promise<number> {
               source_type: 'rss', source_name: feed.name, feed_id: feed.id, url,
               title: art.title || entry.title || url, author: art.byline || entry.creator || '',
               summary: art.summary, content_text: art.text, content_html: art.html, cover_url: cover,
-              published_at: entry.isoDate ?? new Date().toISOString()
+              published_at: entry.isoDate ?? new Date().toISOString(),
+              ...media
             })
             if (cover) void storeCover(id, cover) // 封面本地化（修复 #8）
           } else if (entry.mediaCover) {
