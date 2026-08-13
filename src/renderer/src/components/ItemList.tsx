@@ -63,7 +63,7 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
     return (
       <div style={style}>
         <div
-          className={`list-row ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
+          className={`list-row beam-border ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
           {...dragProps}
           onClick={() => data.onSelect(item.id)}>
           <div className="list-top">
