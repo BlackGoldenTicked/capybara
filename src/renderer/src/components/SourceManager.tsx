@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { Icon } from './icons'
+import type { MediaKind } from '../env'
 
 type RssMethod = 'add' | 'import'
+
+const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
 
 /**
  * 来源管理 — 3 类分区卡片：
@@ -17,6 +20,7 @@ export function SourceManager() {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
   const [schedule, setSchedule] = useState(120)
+  const [kind, setKind] = useState<MediaKind>('article')
   const [opmlMsg, setOpmlMsg] = useState('')
   // ===== GitHub Star =====
   const [tokenInput, setTokenInput] = useState('')
@@ -36,10 +40,10 @@ export function SourceManager() {
     if (!url.trim()) { showToast('请填写 RSS 地址'); return }
     const finalName = name.trim() || url.trim()
     try {
-      await addFeed('rss', finalName, url.trim(), schedule)
+      await addFeed('rss', finalName, url.trim(), schedule, kind)
       showToast('已添加「' + finalName + '」，正在抓取…')
     } catch (e) { showToast('添加失败：' + (e as Error).message) }
-    setName(''); setUrl(''); setSchedule(120)
+    setName(''); setUrl(''); setSchedule(120); setKind('article')
   }
   const importOpml = async () => {
     setOpmlMsg('选择文件中…')
@@ -112,6 +116,14 @@ export function SourceManager() {
                 <input id="rss-url" placeholder="RSS feed 地址" value={url} onChange={(e) => setUrl(e.target.value)} />
               </div>
               <div className="src-field">
+                <label>内容类型</label>
+                <div className="seg seg-3way">
+                  <button type="button" className={`seg-btn ${kind === 'article' ? 'active' : ''}`} onClick={() => setKind('article')}>图文</button>
+                  <button type="button" className={`seg-btn ${kind === 'podcast' ? 'active' : ''}`} onClick={() => setKind('podcast')}>播客</button>
+                  <button type="button" className={`seg-btn ${kind === 'video' ? 'active' : ''}`} onClick={() => setKind('video')}>视频</button>
+                </div>
+              </div>
+              <div className="src-field">
                 <label htmlFor="rss-schedule">刷新频率</label>
                 <div className="src-field-cell">
                   <span className="src-unit">每</span>
@@ -145,7 +157,7 @@ export function SourceManager() {
           {feeds.length === 0 && <p className="src-hint">暂无订阅源。手动粘贴 RSS feed 地址或导入 OPML 文件开始订阅。</p>}
           {feeds.map((f) => (
             <div key={f.id} className="feed-row">
-              <span className={`badge ${f.type}`}>{f.type}</span>
+              <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
               <span className="fr-name">{f.name || f.url}</span>
               <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '无法获取数据') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
               {f.error_count > 0 && (

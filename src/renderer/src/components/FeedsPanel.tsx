@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useStore } from '../store'
 import { feedColor } from '../lib/feedColor'
 import { Icon } from './icons'
 import type { CSSProperties } from 'react'
+import type { MediaKind } from '../env'
+
+const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
 
 /**
  * 订阅源分类栏（第二栏）：按 RSS 订阅源筛选信息流。
@@ -43,24 +46,33 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
           <span className="feed-dot all" />
           <span className="feed-name">全部</span>
         </button>
-        {rssFeeds.map((f) => {
-          const err = f.error_count > 0
+        {(['article', 'podcast', 'video'] as MediaKind[]).map((kind) => {
+          const group = rssFeeds.filter((f) => (f.kind ?? 'article') === kind)
+          if (group.length === 0) return null
           return (
-            <div
-              key={f.id}
-              className={`feed-item ${activeFeed === f.name ? 'active' : ''} ${err ? 'err' : ''}`}
-              title={err ? `${f.name}\n${f.last_error || '未知错误'}` : f.name}
-              onClick={() => setActiveFeed(activeFeed === f.name ? null : f.name)}>
-              <span className="feed-dot" style={{ background: feedColor(f.name) }} />
-              <span className="feed-name">{f.name}</span>
-              {err && <span className="feed-err-dot" aria-label="抓取失败" />}
-              <button
-                className={`feed-refresh ${refreshingId === f.id ? 'spinning' : ''}`}
-                title="只刷新此源"
-                onClick={(e) => { e.stopPropagation(); void refreshOne(f.id) }}>
-                <Icon name="refresh" size={12} />
-              </button>
-            </div>
+            <Fragment key={kind}>
+              <div className="feeds-group-label">{KIND_LABEL[kind]}</div>
+              {group.map((f) => {
+                const err = f.error_count > 0
+                return (
+                  <div
+                    key={f.id}
+                    className={`feed-item ${activeFeed === f.name ? 'active' : ''} ${err ? 'err' : ''}`}
+                    title={err ? `${f.name}\n${f.last_error || '未知错误'}` : f.name}
+                    onClick={() => setActiveFeed(activeFeed === f.name ? null : f.name)}>
+                    <span className="feed-dot" style={{ background: feedColor(f.name) }} />
+                    <span className="feed-name">{f.name}</span>
+                    {err && <span className="feed-err-dot" aria-label="抓取失败" />}
+                    <button
+                      className={`feed-refresh ${refreshingId === f.id ? 'spinning' : ''}`}
+                      title="只刷新此源"
+                      onClick={(e) => { e.stopPropagation(); void refreshOne(f.id) }}>
+                      <Icon name="refresh" size={12} />
+                    </button>
+                  </div>
+                )
+              })}
+            </Fragment>
           )
         })}
         {rssFeeds.length === 0 && <p className="feeds-empty">暂无 RSS 订阅源</p>}

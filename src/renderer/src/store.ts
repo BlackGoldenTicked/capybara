@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, RepoInfo, DiscoveredFeed, NetLogEntry } from './env'
+import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, RepoInfo, DiscoveredFeed, NetLogEntry, MediaKind } from './env'
 import { applyAppearance, persistAppearance, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
 import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/shortcuts'
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
@@ -61,7 +61,7 @@ interface State {
   setStatus: (id: number, status: Item['status']) => Promise<void>
   quickAdd: (url: string) => Promise<void>
   refreshAll: () => Promise<void>
-  addFeed: (type: string, name: string, url: string, scheduleMin: number) => Promise<void>
+  addFeed: (type: string, name: string, url: string, scheduleMin: number, kind?: MediaKind) => Promise<void>
   addManyFeeds: (list: Array<{ type: string; name: string; url: string; schedule_min?: number }>) => Promise<number>
   deleteFeed: (id: number) => Promise<void>
   refreshFeed: (id: number) => Promise<void>
@@ -221,10 +221,10 @@ export const useStore = create<State>((set, get) => ({
     if (bad) get().showToast('无法获取数据：' + (bad.last_error || '未知错误'))
   },
 
-  addFeed: async (type, name, url, scheduleMin) => {
+  addFeed: async (type, name, url, scheduleMin, kind) => {
     const existed = get().feeds.some((f) => f.url === url)
     try {
-      const feed = await window.readflow.invoke('feeds:add', type, name, url, scheduleMin) as Feed
+      const feed = await window.readflow.invoke('feeds:add', type, name, url, scheduleMin, kind ?? 'article') as Feed
       await get().loadFeeds()
       if (existed) { get().showToast('该 RSS 源已存在，已跳过'); return }
       // 新增即抓取：用户添加后立刻拉取，无需等待 ≤60s 调度（修复 RSS 逻辑：新增即刷新）
