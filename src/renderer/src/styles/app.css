@@ -148,21 +148,26 @@ input:focus { border-color: var(--color-border-info); }
 .feed-header .keys { font-size: 11px; color: var(--color-text-tertiary); font-family: var(--font-mono); }
 .feed-header .tag-filter-chip { font-size: 12px; color: var(--color-text-info); background: var(--color-background-info); border: 0.5px solid var(--color-border-info); border-radius: 999px; padding: 1px 8px; cursor: pointer; }
 .feed-actions { margin-left: auto; display: flex; gap: 6px; }
-.feed-actions .mini { font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer; }
+.feed-actions .mini {
+  font-size: 11px; height: 20px; line-height: 20px;
+  padding: 0 8px; border-radius: 6px;
+  border: 0.5px solid var(--color-border-tertiary);
+  background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer;
+}
 .feed-actions .mini:hover { border-color: var(--color-border-info); color: var(--color-text-info); }
 /* 右侧：视图切换 + 操作按钮 组合区 */
 .feed-right { display: flex; align-items: center; gap: 8px; }
 .feed-right .feed-actions { margin-left: 0; }
-/* 卡片 / 列表 视图切换 */
+/* 卡片 / 列表 视图切换（高度与右侧 .mini 文字按钮对齐） */
 .view-toggle {
   display: inline-flex; align-items: center; gap: 1px;
-  padding: 2px; border-radius: 6px;
+  padding: 0; border-radius: 6px;
   background: var(--color-background-tertiary);
   border: 0.5px solid var(--color-border-tertiary);
 }
 .view-toggle button {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px;
+  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px;
   background: transparent; color: var(--color-text-tertiary); cursor: pointer;
   transition: background .12s var(--ease-out), color .12s var(--ease-out);
 }
