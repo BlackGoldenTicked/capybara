@@ -6,6 +6,8 @@ import { decodeHtmlEntities, htmlToSnippet } from './lib/html'
 
 export type ItemStatus = 'inbox' | 'later' | 'favorite' | 'archived'
 export type SourceType = 'rss' | 'x' | 'wechat' | 'tophub' | 'github' | 'x_bookmark' | 'manual'
+/** 内容形态：图文 / 播客 / 视频（正交于 source_type 来源协议，两者都通过 RSS 抓取） */
+export type MediaKind = 'article' | 'podcast' | 'video'
 
 export interface Item {
   id: number
@@ -24,6 +26,11 @@ export interface Item {
   published_at: string
   feed_id: number
   fetched_at: string
+  kind: MediaKind
+  media_url: string
+  media_type: '' | 'audio' | 'video'
+  duration: number
+  transcript: string
 }
 
 export interface Feed {
@@ -39,6 +46,7 @@ export interface Feed {
   enabled: number
   etag: string
   last_modified: string
+  kind: MediaKind
 }
 
 export interface Board {
@@ -407,6 +415,17 @@ function migrate() {
   // 条件请求缓存头（ETag / Last-Modified），支持 304 增量跳过下载
   try { db.exec(`ALTER TABLE feeds ADD COLUMN etag TEXT NOT NULL DEFAULT ''`) } catch { /* 列已存在 */ }
   try { db.exec(`ALTER TABLE feeds ADD COLUMN last_modified TEXT NOT NULL DEFAULT ''`) } catch { /* 列已存在 */ }
+  // 媒体类型（article/podcast/video）与媒体字段：播客/视频从 RSS 抽离的地基
+  try { db.exec(`ALTER TABLE feeds ADD COLUMN kind TEXT NOT NULL DEFAULT 'article'`) } catch { /* 列已存在 */ }
+  for (const col of [
+    'kind TEXT NOT NULL DEFAULT "article"',
+    'media_url TEXT NOT NULL DEFAULT ""',
+    'media_type TEXT NOT NULL DEFAULT ""',
+    'duration INTEGER NOT NULL DEFAULT 0',
+    'transcript TEXT NOT NULL DEFAULT ""'
+  ]) {
+    try { db.exec(`ALTER TABLE items ADD COLUMN ${col}`) } catch { /* 列已存在 */ }
+  }
   // FTS5 全文索引（不可用则降级 LIKE）
   try {
     db.exec(`
@@ -475,7 +494,7 @@ export interface ItemRow {
   fetched_at: string
 }
 
-const LIST_COLS = 'i.id,i.source_type,i.source_name,i.url,i.title,i.author,i.summary,i.cover_url,i.cover_path,i.status,i.is_read,i.published_at,i.fetched_at'
+const LIST_COLS = 'i.id,i.source_type,i.source_name,i.url,i.title,i.author,i.summary,i.cover_url,i.cover_path,i.status,i.is_read,i.published_at,i.fetched_at,i.kind,i.media_url,i.media_type,i.duration'
 
 function hasFts(): boolean {
   return !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='items_fts'").get()
@@ -606,15 +625,15 @@ export function listFeedsPage(page: number, pageSize: number): Feed[] {
 export function countFeeds(): number {
   return (db.prepare('SELECT COUNT(*) as c FROM feeds').get() as unknown as { c: number }).c
 }
-export function addFeed(f: { type: string; name: string; url: string; schedule_min?: number; config_json?: string }): Feed {
+export function addFeed(f: { type: string; name: string; url: string; schedule_min?: number; config_json?: string; kind?: MediaKind }): Feed {
   // 幂等：相同 url 已存在时返回已有源，避免 UNIQUE(url) 约束抛错（手动添加与 Discover 批量行为一致）
   if (feedExists(f.url)) {
     const existing = listFeeds().find((x) => x.url === f.url)
     if (existing) return existing
   }
-  const r = db.prepare('INSERT OR IGNORE INTO feeds (type, name, url, schedule_min, config_json) VALUES (?, ?, ?, ?, ?)')
-    .run(f.type, f.name, f.url, f.schedule_min ?? 120, f.config_json ?? '')
-  return { id: Number(r.lastInsertRowid), type: f.type, name: f.name, url: f.url, config_json: f.config_json ?? '', schedule_min: f.schedule_min ?? 120, last_fetched_at: '', error_count: 0, last_error: '', enabled: 1, etag: '', last_modified: '' }
+  const r = db.prepare('INSERT OR IGNORE INTO feeds (type, name, url, schedule_min, config_json, kind) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(f.type, f.name, f.url, f.schedule_min ?? 120, f.config_json ?? '', f.kind ?? 'article')
+  return { id: Number(r.lastInsertRowid), type: f.type, name: f.name, url: f.url, config_json: f.config_json ?? '', schedule_min: f.schedule_min ?? 120, last_fetched_at: '', error_count: 0, last_error: '', enabled: 1, etag: '', last_modified: '', kind: f.kind ?? 'article' }
 }
 export function deleteFeed(id: number) {
   // 级联删除该订阅源已下载的待阅读内容
@@ -645,8 +664,8 @@ export function markFeedFetched(id: number, error: boolean, errMsg?: string, eta
 export function upsertItem(input: Partial<Item>): { id: number; changed: boolean } {
   const url = input.url ?? ''
   const st = input.source_type ?? 'manual'
-  const existing = db.prepare('SELECT id, title, summary, content_text, content_html, cover_url FROM items WHERE url = ? AND source_type = ?').get(url, st) as
-    { id: number; title: string; summary: string; content_text: string; content_html: string; cover_url: string } | undefined
+  const existing = db.prepare('SELECT id, title, summary, content_text, content_html, cover_url, kind, media_url, media_type, duration FROM items WHERE url = ? AND source_type = ?').get(url, st) as
+    { id: number; title: string; summary: string; content_text: string; content_html: string; cover_url: string; kind: string; media_url: string; media_type: string; duration: number } | undefined
   if (existing) {
     // 内容完全相同则跳过（避免每次抓取都触发表上的 FTS5 触发器重建索引，写放大修复 #10）
     const same =
@@ -654,20 +673,25 @@ export function upsertItem(input: Partial<Item>): { id: number; changed: boolean
       existing.summary === (input.summary ?? '') &&
       existing.content_text === (input.content_text ?? '') &&
       existing.content_html === (input.content_html ?? '') &&
-      existing.cover_url === (input.cover_url ?? '')
+      existing.cover_url === (input.cover_url ?? '') &&
+      existing.kind === (input.kind ?? 'article') &&
+      existing.media_url === (input.media_url ?? '') &&
+      existing.media_type === (input.media_type ?? '') &&
+      existing.duration === (input.duration ?? 0)
     if (same) return { id: existing.id, changed: false }
   }
-  const r = db.prepare(`INSERT INTO items (source_type, source_name, url, title, author, summary, content_text, content_html, cover_url, status, published_at, feed_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, ?)
+  const r = db.prepare(`INSERT INTO items (source_type, source_name, url, title, author, summary, content_text, content_html, cover_url, status, published_at, feed_id, kind, media_url, media_type, duration)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, ?, ?, ?, ?, ?)
     ON CONFLICT(url, source_type) DO UPDATE SET
       title = excluded.title, summary = excluded.summary,
       content_text = excluded.content_text, content_html = excluded.content_html,
       cover_url = excluded.cover_url, published_at = excluded.published_at,
-      feed_id = excluded.feed_id`)
+      feed_id = excluded.feed_id, kind = excluded.kind,
+      media_url = excluded.media_url, media_type = excluded.media_type, duration = excluded.duration`)
     .run(st, input.source_name ?? '', url,
       input.title ?? '', input.author ?? '', input.summary ?? '', input.content_text ?? '',
       input.content_html ?? '', input.cover_url ?? '', input.published_at ?? new Date().toISOString(),
-      input.feed_id ?? 0)
+      input.feed_id ?? 0, input.kind ?? 'article', input.media_url ?? '', input.media_type ?? '', input.duration ?? 0)
   const id = Number(r.lastInsertRowid) || existing?.id || 0
   // 手动同步 items_fts：先删该 rowid 再重插（覆盖 ON CONFLICT UPDATE 路径触发器可能失效的情况，确保 FTS 索引与 items 一致）
   if (id) {

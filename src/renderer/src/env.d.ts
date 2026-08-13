@@ -1,3 +1,5 @@
+export type MediaKind = 'article' | 'podcast' | 'video'
+
 export interface Item {
   id: number
   source_type: 'rss' | 'x' | 'wechat' | 'tophub' | 'github' | 'x_bookmark' | 'manual'
@@ -13,6 +15,11 @@ export interface Item {
   is_read: number
   published_at: string
   fetched_at: string
+  kind: MediaKind
+  media_url: string
+  media_type: '' | 'audio' | 'video'
+  duration: number
+  transcript: string
 }
 
 /** 列表投影行：列表/卡片只用到这些列（不含 content_text / content_html，按需通过 items:get 取详情） */
@@ -30,12 +37,16 @@ export interface ItemRow {
   is_read: number
   published_at: string
   fetched_at: string
+  kind: MediaKind
+  media_url: string
+  media_type: '' | 'audio' | 'video'
+  duration: number
 }
 
 export type View = 'rss' | 'later' | 'favorite' | 'archived' | 'all'
 export type Screen = 'library' | 'board' | 'settings'
 
-export interface Feed { id: number; type: string; name: string; url: string; schedule_min: number; last_fetched_at: string; error_count: number; last_error: string; enabled: number; etag: string; last_modified: string }
+export interface Feed { id: number; type: string; name: string; url: string; schedule_min: number; last_fetched_at: string; error_count: number; last_error: string; enabled: number; etag: string; last_modified: string; kind: MediaKind }
 export interface Board { id: number; name: string; updated_at: string }
 
 /** 白板卡片：独立持久化，按 board_id 归属。kind 决定内容与可承载的附件类型。 */

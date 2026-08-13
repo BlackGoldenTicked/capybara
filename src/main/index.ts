@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import {
   initDb, listItems, listItemsPage, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
-  View, ItemStatus,
+  View, ItemStatus, MediaKind,
   listFeeds, listFeedsPage, countFeeds, addFeed, addFeeds, deleteFeed, upsertItem,
   listBoards, createBoard, deleteBoard,
   listCards, addCard, updateCard, moveCard, deleteCard, renameBoard, getAssetsDir, getImagesDir,
@@ -363,7 +363,7 @@ function registerIpc() {
     'feeds:listPage': ((page: number, pageSize: number) => listFeedsPage(page, pageSize)) as never,
     'feeds:count': (() => countFeeds()) as never,
     'feeds:validate': (async (url: string) => validateRssUrl(url)) as never,
-    'feeds:add': ((type: string, name: string, url: string, scheduleMin: number) => addFeed({ type, name, url, schedule_min: scheduleMin })) as never,
+    'feeds:add': ((type: string, name: string, url: string, scheduleMin: number, kind?: MediaKind) => addFeed({ type, name, url, schedule_min: scheduleMin, kind })) as never,
     'feeds:addMany': ((list: Array<{ type: string; name: string; url: string; schedule_min?: number }>) => addFeeds(list)) as never,
     'feeds:delete': ((id: number) => deleteFeed(id)) as never,
     'feeds:refresh': (async (id: number) => { const n = await refreshFeed(id); notifyRefresh(); return n }) as never,
