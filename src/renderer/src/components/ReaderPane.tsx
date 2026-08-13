@@ -5,6 +5,17 @@ import { Icon } from './icons'
 import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml } from '../lib/reader'
 import { getAllReadingThemes, FOLLOW_UI_ID } from '../lib/reading-themes'
 
+/** 秒数 → "mm:ss" / "h:mm:ss" */
+function fmtDuration(sec: number): string {
+  if (!sec || sec < 0) return ''
+  const s = Math.floor(sec % 60)
+  const m = Math.floor((sec / 60) % 60)
+  const h = Math.floor(sec / 3600)
+  const mm = String(m).padStart(2, '0')
+  const ss = String(s).padStart(2, '0')
+  return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`
+}
+
 export function ReaderPane() {
   const { selectedId, openInBrowser, appearance, updateAppearance, toggleZenMode } = useStore()
   const [item, setItem] = useState<Item | null>(null)
@@ -93,9 +104,38 @@ export function ReaderPane() {
       <div className="reader-body">
         <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
         <p className="reader-meta">{item.author || item.source_name}</p>
-        {html
-          ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />
-          : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>}
+
+        {item.kind === 'podcast' ? (
+          <div className="media-podcast">
+            {item.media_url
+              ? <audio controls src={item.media_url} className="podcast-player" preload="none" />
+              : <p className="media-empty">该期暂无音频链接</p>}
+            {item.duration > 0 && <div className="podcast-meta">时长 {fmtDuration(item.duration)}</div>}
+            {html && <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />}
+            {item.transcript && (
+              <details className="podcast-transcript">
+                <summary>转录文稿（ASR）</summary>
+                <div className="podcast-transcript-body">{item.transcript}</div>
+              </details>
+            )}
+          </div>
+        ) : item.kind === 'video' ? (
+          <div className="media-video">
+            {item.media_url ? (
+              <div className="video-frame">
+                <iframe src={item.media_url} title={item.title} allowFullScreen
+                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" referrerPolicy="no-referrer" />
+              </div>
+            ) : (
+              <a className="video-fallback" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }}>无法内嵌播放，用浏览器打开</a>
+            )}
+            {html && <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />}
+          </div>
+        ) : (
+          html
+            ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />
+            : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>
+        )}
 
         {lightbox && (
           <div className="lightbox" onClick={() => setLightbox(null)}>

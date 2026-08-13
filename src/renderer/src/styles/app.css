@@ -361,6 +361,17 @@ input:focus { border-color: var(--color-border-info); }
 .reader-title-link { display: block; color: inherit; text-decoration: none; cursor: pointer; }
 .reader-title-link:hover .reader-title { color: var(--accent-info); }
 .reader-meta { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 16px; }
+/* ===== 播客 / 视频 媒体渲染 ===== */
+.media-podcast, .media-video { max-width: 800px; margin: 0 auto; }
+.podcast-player { width: 100%; margin-bottom: 12px; }
+.podcast-meta { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 16px; }
+.podcast-transcript { margin-top: 16px; border-top: 0.5px solid var(--color-border-tertiary); padding-top: 12px; }
+.podcast-transcript summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--color-text-secondary); user-select: none; }
+.podcast-transcript-body { margin-top: 12px; font-size: 14px; line-height: 1.8; color: var(--color-text-primary); white-space: pre-wrap; overflow-wrap: anywhere; }
+.media-empty { font-size: 13px; color: var(--color-text-tertiary); padding: 16px 0; }
+.video-frame { position: relative; width: 100%; padding-top: 56.25%; margin-bottom: 16px; border-radius: var(--border-radius-md); overflow: hidden; background: #000; }
+.video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-fallback { display: inline-block; margin-bottom: 16px; font-size: 13px; color: var(--color-text-info); }
 /* 正文排版：默认（非阅读）即套用完整排版，不再只有阅读模式才有样式。
    关键修复：移除 white-space: pre-wrap（会保留源站空白、破坏换行与对齐），
    统一由 CSS 控制所有子元素；源站内联 style/class 已在 reader.ts 清洗。 */
