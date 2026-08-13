@@ -48,7 +48,7 @@ export function SourceManager() {
   const importOpml = async () => {
     setOpmlMsg('选择文件中…')
     try {
-      const r = await window.readflow.invoke('feeds:importOpml') as { added: number; skipped: number; total: number }
+      const r = await window.readflow.invoke('feeds:importOpml', kind) as { added: number; skipped: number; total: number }
       if (r.total === 0) { setOpmlMsg('已取消或未选择文件'); return }
       await useStore.getState().loadFeeds()
       setOpmlMsg(`导入完成：新增 ${r.added} 个，跳过已存在 ${r.skipped} 个（共 ${r.total}）`)
@@ -105,6 +105,15 @@ export function SourceManager() {
             </div>
           </div>
 
+          <div className="src-field">
+            <label>内容类型</label>
+            <div className="seg seg-3way">
+              <button type="button" className={`seg-btn ${kind === 'article' ? 'active' : ''}`} onClick={() => setKind('article')}>图文</button>
+              <button type="button" className={`seg-btn ${kind === 'podcast' ? 'active' : ''}`} onClick={() => setKind('podcast')}>播客</button>
+              <button type="button" className={`seg-btn ${kind === 'video' ? 'active' : ''}`} onClick={() => setKind('video')}>视频</button>
+            </div>
+          </div>
+
           {rssMethod === 'add' && (
             <div className="src-form">
               <div className="src-field">
@@ -114,14 +123,6 @@ export function SourceManager() {
               <div className="src-field">
                 <label htmlFor="rss-url">URL</label>
                 <input id="rss-url" placeholder="RSS feed 地址" value={url} onChange={(e) => setUrl(e.target.value)} />
-              </div>
-              <div className="src-field">
-                <label>内容类型</label>
-                <div className="seg seg-3way">
-                  <button type="button" className={`seg-btn ${kind === 'article' ? 'active' : ''}`} onClick={() => setKind('article')}>图文</button>
-                  <button type="button" className={`seg-btn ${kind === 'podcast' ? 'active' : ''}`} onClick={() => setKind('podcast')}>播客</button>
-                  <button type="button" className={`seg-btn ${kind === 'video' ? 'active' : ''}`} onClick={() => setKind('video')}>视频</button>
-                </div>
               </div>
               <div className="src-field">
                 <label htmlFor="rss-schedule">刷新频率</label>

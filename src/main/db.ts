@@ -779,15 +779,15 @@ export function purgeOldItems(keepArchivedDays: number, maxItems: number): { pur
 }
 
 /** 批量添加订阅源（来源管理批量导入，减少 IPC 往返） */
-export function addFeeds(list: Array<{ type: string; name: string; url: string; schedule_min?: number }>): number {
+export function addFeeds(list: Array<{ type: string; name: string; url: string; schedule_min?: number; kind?: MediaKind }>): number {
   // 先去重入参，再 INSERT OR IGNORE 兜底（DB 有 UNIQUE INDEX）
   const seen = new Set<string>()
-  const stmt = db.prepare('INSERT OR IGNORE INTO feeds (type, name, url, schedule_min) VALUES (?, ?, ?, ?)')
+  const stmt = db.prepare('INSERT OR IGNORE INTO feeds (type, name, url, schedule_min, kind) VALUES (?, ?, ?, ?, ?)')
   let added = 0
   for (const f of list) {
     if (seen.has(f.url)) continue
     seen.add(f.url)
-    const r = stmt.run(f.type, f.name, f.url, f.schedule_min ?? 120); if (r.changes) added++
+    const r = stmt.run(f.type, f.name, f.url, f.schedule_min ?? 120, f.kind ?? 'article'); if (r.changes) added++
   }
   return added
 }

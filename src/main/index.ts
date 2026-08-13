@@ -463,7 +463,7 @@ function registerIpc() {
     'boards:deleteLink': ((id: number) => deleteLink(id)) as never,
     'boards:updateLink': ((id: number, label: string) => updateLink(id, label)) as never,
 
-    'feeds:importOpml': (async () => {
+    'feeds:importOpml': (async (kind?: MediaKind) => {
       const res = await dialog.showOpenDialog(mainWindow!, {
         title: '导入 OPML 订阅源',
         properties: ['openFile'],
@@ -473,7 +473,7 @@ function registerIpc() {
       const xml = fs.readFileSync(res.filePaths[0], 'utf-8')
       const feeds = parseOpml(xml)
       const existing = new Set((listFeeds()).map((f) => f.url))
-      const toAdd = feeds.filter((f) => !existing.has(f.url)).map((f) => ({ type: 'rss', name: f.title || f.url, url: f.url, schedule_min: 60 }))
+      const toAdd = feeds.filter((f) => !existing.has(f.url)).map((f) => ({ type: 'rss', name: f.title || f.url, url: f.url, schedule_min: 60, kind: kind ?? 'article' }))
       const added = addFeeds(toAdd)
       const skipped = feeds.length - toAdd.length
       notifyRefresh()
