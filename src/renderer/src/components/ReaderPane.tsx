@@ -6,7 +6,7 @@ import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml } from '../lib/r
 import { getAllReadingThemes, FOLLOW_UI_ID } from '../lib/reading-themes'
 
 export function ReaderPane() {
-  const { selectedId, setStatus, addRefCard, activeBoardId, createBoard, showToast, openInBrowser, appearance, updateAppearance, toggleZenMode } = useStore()
+  const { selectedId, openInBrowser, appearance, updateAppearance, toggleZenMode } = useStore()
   const [item, setItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(false)
   const [noImg, setNoImg] = useState(false)
@@ -43,17 +43,6 @@ export function ReaderPane() {
   }
 
   const toggleNoImg = () => { const v = !noImg; setNoImg(v); void window.readflow.invoke('settings:set', 'reader_noimg', v ? '1' : '0') }
-
-  const sendToBoard = async () => {
-    if (!activeBoardId) {
-      await createBoard()
-      addRefCard(item.id, 120, 120)
-      showToast('已新建白板并放入')
-    } else {
-      addRefCard(item.id, 80 + Math.random() * 200, 80 + Math.random() * 200)
-      showToast('已放入白板')
-    }
-  }
 
   // 正文内点击：图片 → 灯箱；链接 → 系统默认浏览器打开（不在应用内跳转）
   const onContentClick = (e: React.MouseEvent) => {
@@ -114,12 +103,6 @@ export function ReaderPane() {
             <span className="lightbox-hint">点击任意处关闭</span>
           </div>
         )}
-      </div>
-      <div className="reader-actions">
-        <button onClick={() => void setStatus(item.id, 'favorite')}><Icon name="favorite" size={14} /> 收藏 (F)</button>
-        <button onClick={() => void setStatus(item.id, 'later')}><Icon name="later" size={14} /> 稍后读 (L)</button>
-        <button onClick={() => void setStatus(item.id, 'archived')}><Icon name="archived" size={14} /> 归档 (E)</button>
-        <button onClick={() => void sendToBoard()}><Icon name="send" size={14} /> 送到白板</button>
       </div>
     </section>
   )

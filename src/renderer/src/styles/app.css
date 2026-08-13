@@ -449,10 +449,6 @@ input:focus { border-color: var(--color-border-info); }
 }
 .lightbox img { max-width: 100%; max-height: 86vh; border-radius: 10px; box-shadow: 0 8px 40px rgba(0,0,0,0.5); cursor: default; }
 .lightbox-hint { color: rgba(255,255,255,0.7); font-size: 12px; }
-.reader-actions {
-  display: flex; gap: 8px; padding: 12px 24px;
-  border-top: 0.5px solid var(--color-border-tertiary);
-}
 
 /* ===== 空状态 ===== */
 .empty { padding: 48px 24px; text-align: center; color: var(--color-text-tertiary); }
@@ -946,7 +942,7 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 
 /* ===== 图标基线 & 全局交互打磨 ===== */
 .ic { flex: none; vertical-align: middle; }
-.rb-toggle, .reader-actions button, .tag-chip, .chip, .repo-meta a,
+.rb-toggle, .tag-chip, .chip, .repo-meta a,
 .board-tools button, .modal-foot button, .feed-actions .mini,
 .reader-tags .tag-chip, .side-add {
   display: inline-flex; align-items: center; gap: 5px;
