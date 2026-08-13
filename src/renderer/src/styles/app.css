@@ -314,9 +314,20 @@ input:focus { border-color: var(--color-border-info); }
 }
 .list-row.unread .list-title { font-weight: 600; }
 .list-row.selected .list-title { color: var(--color-text-info); }
-.list-time { flex: none; font-size: 12px; color: var(--color-text-tertiary); white-space: nowrap; }
-.list-actions { flex: none; display: flex; gap: 2px; opacity: 0; transition: opacity .12s var(--ease-out); }
-.list-row:hover .list-actions, .list-row.selected .list-actions { opacity: 1; }
+.list-time { flex: none; font-size: 12px; color: var(--color-text-tertiary); white-space: nowrap; transition: opacity .12s var(--ease-out); }
+/* 操作按钮绝对定位悬浮（不占布局宽度，避免挤压标题）；hover 时时间淡出、按钮淡入，覆盖在行右侧 */
+.list-actions {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  display: flex; gap: 2px;
+  padding: 2px; border-radius: 6px;
+  background: var(--color-background-primary);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 22%, transparent);
+  opacity: 0; pointer-events: none;
+  transition: opacity .12s var(--ease-out);
+  z-index: 2;
+}
+.list-row:hover .list-actions, .list-row.selected .list-actions { opacity: 1; pointer-events: auto; }
+.list-row:hover .list-time { opacity: 0; }
 .list-actions .act { width: 22px; height: 22px; }
 
 /* ===== 右栏：阅读面板 ===== */
