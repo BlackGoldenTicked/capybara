@@ -19,7 +19,6 @@ interface State {
   feeds: Feed[]
   boards: Board[]
   selectedId: number | null
-  pendingReadId: number | null
   search: string
   quickAddOpen: boolean
   activeBoardId: number | null
@@ -58,7 +57,6 @@ interface State {
   loadFeeds: () => Promise<void>
   loadBoards: () => Promise<void>
   select: (id: number | null, opts?: { click?: boolean }) => void
-  flushPending: () => void
   moveSelection: (delta: number) => void
   setStatus: (id: number, status: Item['status']) => Promise<void>
   quickAdd: (url: string) => Promise<void>
@@ -103,13 +101,13 @@ interface State {
 /** 信息流每次分页加载条目数（滚动到底部翻页浏览历史） */
 const PAGE_SIZE = 15
 
-const emptyCounts: Record<View, number> = { rss: 0, read: 0, later: 0, favorite: 0, archived: 0, all: 0 }
+const emptyCounts: Record<View, number> = { rss: 0, later: 0, favorite: 0, archived: 0, all: 0 }
 
 export const useStore = create<State>((set, get) => ({
   screen: 'library',
   view: 'rss',
   items: [], itemsPage: 0, itemsDone: false, itemsLoadingMore: false, counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
-  selectedId: null, pendingReadId: null, search: '', quickAddOpen: false,
+  selectedId: null, search: '', quickAddOpen: false,
   activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '', zenMode: false,
 
   appearance: DEFAULT_APPEARANCE,
@@ -128,10 +126,9 @@ export const useStore = create<State>((set, get) => ({
     if (screen === 'board') void get().loadBoards()
     if (screen === 'settings') void get().loadFeeds()
   },
-  setView: (view) => { get().flushPending(); set({ view, selectedId: null, activeSourceType: null, activeFeed: null, screen: 'library' }); void get().load() },
+  setView: (view) => { set({ view, selectedId: null, activeSourceType: null, activeFeed: null, screen: 'library' }); void get().load() },
   setSourceType: (t) => {
     // 按来源过滤时展示该来源全部条目（view=all），不再受 inbox/later 等状态限制
-    get().flushPending()
     set({ activeSourceType: t, view: 'all', selectedId: null, activeFeed: null, screen: 'library' })
     void get().load()
   },
@@ -139,7 +136,6 @@ export const useStore = create<State>((set, get) => ({
   setQuickAddOpen: (quickAddOpen) => set({ quickAddOpen }),
   setActiveFeed: (name) => {
     const next = get().activeFeed === name ? null : name
-    get().flushPending()
     set({ activeFeed: next, selectedId: null })
     void get().load()
   },
@@ -185,47 +181,9 @@ export const useStore = create<State>((set, get) => ({
   loadFeeds: async () => { set({ feeds: await window.readflow.invoke('feeds:list') as Feed[] }) },
   loadBoards: async () => { set({ boards: await window.readflow.invoke('boards:list') as Board[] }) },
 
-  // 把上一张「待读」卡片标记已读（切走 / 关闭面板 / 切换视图时调用）。仅标记，不在此处重载列表。
-  flushPending: () => {
-    const p = get().pendingReadId
-    if (p == null) return
-    void window.readflow.invoke('items:markRead', p)
-    set({ pendingReadId: null })
-  },
-  select: (id, opts) => {
-    const pending = get().pendingReadId
-    // 取消选中 / 关闭阅读面板：把当前待读卡片标记已读，并在 RSS 视图乐观移出未读列表
-    if (id == null) {
-      if (pending != null) {
-        void window.readflow.invoke('items:markRead', pending)
-        set({ pendingReadId: null })
-        if (get().view === 'rss') {
-          set({ items: get().items.filter((i) => i.id !== pending), counts: { ...get().counts, rss: get().counts.rss - 1, read: get().counts.read + 1 } })
-        }
-      }
-      set({ selectedId: null })
-      return
-    }
-    // 切换到另一张卡片：先把上一张（pending）标为已读，乐观移出 RSS 未读列表，避免列表跳动
-    if (pending != null && pending !== id) {
-      void window.readflow.invoke('items:markRead', pending)
-      set({ pendingReadId: null })
-      if (get().view === 'rss') {
-        set({ items: get().items.filter((i) => i.id !== pending), counts: { ...get().counts, rss: get().counts.rss - 1, read: get().counts.read + 1 } })
-      }
-    }
+  // 点击条目仅选中、打开阅读面板，不再自动标记已读（已读需手动点「已读」图标或「标为已读」）
+  select: (id) => {
     set({ selectedId: id })
-    const it = get().items.find((i) => i.id === id)
-    if (get().view === 'rss' && it && it.is_read === 0) {
-      // RSS 未读视图：仅记为「待读」，等切走时再标已读，避免点一下就从列表消失、影响连续阅读
-      set({ pendingReadId: id })
-    } else if (it && it.is_read === 0) {
-      // 其它视图点击未读卡片：立即标已读，并在本地即时反映（不再重载整列）
-      void window.readflow.invoke('items:markRead', id)
-      set({ items: get().items.map((i) => i.id === id ? { ...i, is_read: 1 } : i), counts: { ...get().counts, read: get().counts.read + 1 } })
-    } else {
-      void window.readflow.invoke('items:markRead', id)
-    }
   },
   moveSelection: (delta) => {
     const { items, selectedId } = get()
@@ -235,7 +193,6 @@ export const useStore = create<State>((set, get) => ({
     get().select(items[next].id)
   },
   setStatus: async (id, status) => {
-    if (get().pendingReadId === id) set({ pendingReadId: null })
     const item = get().items.find((i) => i.id === id)
     // 若已是目标状态（如在「已收藏」视图再点收藏），则取消——退回收集箱
     const canceling = item != null && item.status === status && status !== 'inbox'
@@ -301,7 +258,6 @@ export const useStore = create<State>((set, get) => ({
     }
   },
   deleteItem: async (id) => {
-    get().flushPending()
     playSound('delete')
     await window.readflow.invoke('items:delete', id)
     // 乐观移除，随后重载以刷新计数
@@ -313,8 +269,6 @@ export const useStore = create<State>((set, get) => ({
     const next = !(it?.is_read)
     await window.readflow.invoke('items:setRead', id, next)
     set({ items: get().items.map((i) => i.id === id ? { ...i, is_read: next ? 1 : 0 } : i) })
-    // 手动切换已读态时，若该卡片正是当前待读项，清除 pending 以免重复标记
-    if (next && get().pendingReadId === id) set({ pendingReadId: null })
     // RSS（未读）视图中标记为已读后，立即重载使其离开未读列表
     if (get().view === 'rss' && next) void get().load()
   },

@@ -123,7 +123,7 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
 export function ItemList() {
   const { items, selectedId, select, view, activeSourceType, markAllRead, clearInbox, showToast,
     openInBrowser, toggleRead, setStatus, deleteItem, feeds, itemsLoadingMore, itemsDone, loadMoreItems } = useStore()
-  const viewLabel = { rss: 'RSS', later: '稍后读', favorite: '已收藏', read: '已读', archived: '归档', all: '全部条目' }[view]
+  const viewLabel = { rss: 'RSS', later: '稍后读', favorite: '已收藏', archived: '归档', all: '全部条目' }[view]
   const sourceLabelMap: Record<string, string> = { github: 'GitHub ★', x_bookmark: 'Twitter 书签' }
   const headerLabel = activeSourceType ? (sourceLabelMap[activeSourceType] || SOURCE_LABEL[activeSourceType] || '来源') : viewLabel
 

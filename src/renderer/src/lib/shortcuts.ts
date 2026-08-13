@@ -6,7 +6,7 @@
  * - Mod+F        聚焦搜索
  * - Mod+R        刷新全部源
  * - Mod+N        新建（快速添加）
- * - Mod+1~6      切换 RSS/稍后读/已收藏/已读/归档/全部
+ * - Mod+1~5      切换 RSS/稍后读/已收藏/归档/全部
  * - Mod+B        切换白板
  * - Mod+/        快捷键帮助（打开快捷键配置页）
  * - j / k        下一条 / 上一条
@@ -20,7 +20,7 @@
 
 export type ShortcutAction =
   | 'openSettings' | 'focusSearch' | 'refresh' | 'quickAdd'
-  | 'goRss' | 'goLater' | 'goFavorite' | 'goRead' | 'goArchived' | 'goAll'
+  | 'goRss' | 'goLater' | 'goFavorite' | 'goArchived' | 'goAll'
   | 'toggleBoard' | 'nextItem' | 'prevItem' | 'archiveItem'
   | 'laterItem' | 'favoriteItem' | 'openLink' | 'help' | 'close'
 
@@ -43,7 +43,6 @@ export const SHORTCUT_GROUPS: Array<{ title: string; items: Array<{ key: Shortcu
       { key: 'goRss', label: 'RSS', desc: '切到 RSS 未读' },
       { key: 'goLater', label: '稍后读', desc: '切到稍后读' },
       { key: 'goFavorite', label: '已收藏', desc: '切到已收藏' },
-      { key: 'goRead', label: '已读', desc: '切到已读列表' },
       { key: 'goArchived', label: '归档', desc: '切到归档' },
       { key: 'goAll', label: '全部条目', desc: '切到全部' },
       { key: 'toggleBoard', label: '切换白板', desc: '进入 / 退出白板' }
@@ -70,9 +69,8 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
   goRss: 'Mod+1',
   goLater: 'Mod+2',
   goFavorite: 'Mod+3',
-  goRead: 'Mod+4',
-  goArchived: 'Mod+5',
-  goAll: 'Mod+6',
+  goArchived: 'Mod+4',
+  goAll: 'Mod+5',
   toggleBoard: 'Mod+B',
   nextItem: 'j',
   prevItem: 'k',

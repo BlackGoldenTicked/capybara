@@ -32,7 +32,7 @@ export interface ItemRow {
   fetched_at: string
 }
 
-export type View = 'rss' | 'read' | 'later' | 'favorite' | 'archived' | 'all'
+export type View = 'rss' | 'later' | 'favorite' | 'archived' | 'all'
 export type Screen = 'library' | 'board' | 'settings'
 
 export interface Feed { id: number; type: string; name: string; url: string; schedule_min: number; last_fetched_at: string; error_count: number; last_error: string; enabled: number; etag: string; last_modified: string }

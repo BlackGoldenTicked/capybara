@@ -456,7 +456,7 @@ function repairHtmlEncodedItems(): number {
   return fixed
 }
 
-export type View = 'rss' | 'read' | 'later' | 'favorite' | 'archived' | 'all'
+export type View = 'rss' | 'later' | 'favorite' | 'archived' | 'all'
 
 /** 列表投影：只取列表/卡片需要的列，避免把整篇正文（content_html / content_text）跨 IPC 传来传去（性能优化 #1） */
 export interface ItemRow {
@@ -503,7 +503,6 @@ function buildListWhere(view: View, search: string, sourceType: string | null, s
     // GitHub ★ / Twitter 书签是独立侧栏集合，不混入 RSS 类视图（含「全部」/「未读」），避免主阅读流被污染
     conds.push("i.source_type NOT IN ('github','x_bookmark')")
     if (view === 'rss') { conds.push("i.status = 'inbox' AND i.is_read = 0") }
-    else if (view === 'read') { conds.push('i.is_read = 1') }
     else if (view !== 'all') { conds.push('i.status = ?'); args.push(view) }
   }
   // 按订阅源名称（source_name，即 feed.name）筛选；与上方视图条件叠加
@@ -546,7 +545,6 @@ export function counts(): Record<View, number> {
   const row = db.prepare(`
     SELECT
       COALESCE(SUM(CASE WHEN status = 'inbox' AND is_read = 0 AND source_type NOT IN ('github','x_bookmark') THEN 1 ELSE 0 END), 0) AS rss,
-      COALESCE(SUM(CASE WHEN is_read = 1 AND source_type NOT IN ('github','x_bookmark') THEN 1 ELSE 0 END), 0) AS read,
       COALESCE(SUM(CASE WHEN status = 'later' AND source_type NOT IN ('github','x_bookmark') THEN 1 ELSE 0 END), 0) AS later,
       COALESCE(SUM(CASE WHEN status = 'favorite' AND source_type NOT IN ('github','x_bookmark') THEN 1 ELSE 0 END), 0) AS favorite,
       COALESCE(SUM(CASE WHEN status = 'archived' AND source_type NOT IN ('github','x_bookmark') THEN 1 ELSE 0 END), 0) AS archived,
@@ -766,7 +764,6 @@ export function addFeeds(list: Array<{ type: string; name: string; url: string; 
 /** 批量操作（修复 #19）：按视图标记全部已读 / 清空收集箱 */
 export function markAllRead(view: View) {
   if (view === 'rss') db.prepare("UPDATE items SET is_read = 1 WHERE status = 'inbox' AND is_read = 0 AND source_type NOT IN ('github','x_bookmark')").run()
-  else if (view === 'read') return
   else if (view === 'all') db.prepare("UPDATE items SET is_read = 1 WHERE status != 'favorite' AND source_type NOT IN ('github','x_bookmark')").run()
   else db.prepare('UPDATE items SET is_read = 1 WHERE status = ?').run(view)
 }

@@ -82,7 +82,6 @@ export default function App() {
         case 'goRss': st.setView('rss'); break
         case 'goLater': st.setView('later'); break
         case 'goFavorite': st.setView('favorite'); break
-        case 'goRead': st.setView('read'); break
         case 'goArchived': st.setView('archived'); break
         case 'goAll': st.setView('all'); break
         case 'toggleBoard':
@@ -171,7 +170,7 @@ export default function App() {
   const sidebarStyle: CSSProperties = { width: sideCollapsed ? 56 : sideW }
 
   // 订阅源栏（第四栏）仅在与 RSS 订阅源相关的视图显示：
-  // RSS / 稍后读 / 已收藏 / 已读 / 全部（activeSourceType 为 null），
+  // RSS / 稍后读 / 已收藏 / 全部（activeSourceType 为 null），
   // 在 GitHub★ / Twitter 书签（按来源筛选）与「归档」中隐藏。
   const showFeeds = activeSourceType == null && view !== 'archived'
 

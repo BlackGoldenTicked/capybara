@@ -8,16 +8,14 @@ const NAV: Array<{ key: View; label: string; icon: IconName }> = [
   { key: 'rss', label: 'RSS', icon: 'rss' },
   { key: 'later', label: '稍后读', icon: 'later' },
   { key: 'favorite', label: '已收藏', icon: 'favorite' },
-  { key: 'read', label: '已读', icon: 'read' },
   { key: 'all', label: '全部条目', icon: 'all' }
 ]
 
-// 「全部」常驻分组：未读收件箱 + 三个分类（已删除「归档」项，仅显示日常分类）
+// 「全部」常驻分组：未读收件箱 + 两个分类（已删除「已读」「归档」项，仅显示日常分类）
 const COLLECT: Array<{ key: View; label: string; icon: IconName }> = [
-  { key: 'rss', label: 'RSS 未读', icon: 'rss' },
+  { key: 'rss', label: 'RSS', icon: 'rss' },
   { key: 'later', label: '稍后阅读', icon: 'later' },
-  { key: 'favorite', label: '收藏', icon: 'favorite' },
-  { key: 'read', label: '已读', icon: 'read' }
+  { key: 'favorite', label: '收藏', icon: 'favorite' }
 ]
 
 /** 可折叠分组：标题栏点击切换，正文区按需渲染。仅白板使用。 */
