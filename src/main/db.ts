@@ -401,15 +401,18 @@ function migrate() {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_feeds_url ON feeds(url);
   `)
   // 去重迁移：删除已存在的重复 feeds（保留最低 id）；UNIQUE INDEX 后续会兜底
-  db.exec(`DELETE FROM feeds WHERE id NOT IN (SELECT MIN(id) FROM feeds GROUP BY url)`)
+  try { db.exec(`DELETE FROM feeds WHERE id NOT IN (SELECT MIN(id) FROM feeds GROUP BY url)`) } catch { /* 忽略 */ }
   // 增量列迁移（node:sqlite 无 ALTER IF NOT EXISTS，try/catch 容错）
   for (const col of ['content_html TEXT NOT NULL DEFAULT ""', 'cover_path TEXT NOT NULL DEFAULT ""', 'cover_url TEXT NOT NULL DEFAULT ""']) {
     try { db.exec(`ALTER TABLE items ADD COLUMN ${col}`) } catch { /* 列已存在 */ }
   }
   // 增加 feed_id 列（cascade delete 用）+ 给已有 RSS items 按 source_name 回填
   try { db.exec(`ALTER TABLE items ADD COLUMN feed_id INTEGER NOT NULL DEFAULT 0`) } catch { /* 列已存在 */ }
-  // 一次性回填：把已有的 rss items 按 source_name 关联到 feeds
-  db.exec(`UPDATE items SET feed_id = (SELECT id FROM feeds WHERE feeds.name = items.source_name LIMIT 1) WHERE source_type = 'rss' AND feed_id = 0`)
+  // 一次性回填：把已有的 rss items 按 source_name 关联到 feeds；
+  // COALESCE 兜底孤儿条目（源已删/改名导致子查询为 NULL），避免 NOT NULL 约束失败中断后续迁移
+  try {
+    db.exec(`UPDATE items SET feed_id = COALESCE((SELECT id FROM feeds WHERE feeds.name = items.source_name LIMIT 1), 0) WHERE source_type = 'rss' AND feed_id = 0`)
+  } catch { /* 忽略 */ }
   // 来源抓取失败的真实原因（排查「无法获取数据」用），老库补列
   try { db.exec(`ALTER TABLE feeds ADD COLUMN last_error TEXT NOT NULL DEFAULT ''`) } catch { /* 列已存在 */ }
   // 条件请求缓存头（ETag / Last-Modified），支持 304 增量跳过下载
