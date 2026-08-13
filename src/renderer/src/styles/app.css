@@ -65,6 +65,7 @@ input:focus { border-color: var(--color-border-info); }
   background: var(--color-background-secondary);
   padding: 12px 10px;
   overflow-y: auto;
+  display: flex; flex-direction: column;
   transition: width .16s var(--ease-out);
 }
 .sidebar.dragging { transition: none; }
@@ -114,7 +115,13 @@ input:focus { border-color: var(--color-border-info); }
 .nav-group-title.active { color: var(--color-text-info); font-weight: 600; }
 .nav-group-title .count { margin-left: auto; font-size: 12px; color: var(--color-text-tertiary); flex: none; }
 .nav-sep { height: 0.5px; background: var(--color-border-tertiary); margin: 6px 8px; }
-.sys-item { margin-top: 8px; }
+.sys-item {
+  margin-top: auto; padding-top: 8px;
+  border-top: 0.5px solid var(--color-border-tertiary);
+  /* 内容溢出滚动时始终贴底可见；需配合父级 .sidebar 的 overflow-y */
+  position: sticky; bottom: 0;
+  background: var(--color-background-secondary);
+}
 /* 图标 + 文字始终成组靠左；计数 / 操作按钮用 margin-left:auto 推到最右，避免 space-between 把文字甩到右边 */
 .side-item {
   display: flex; justify-content: flex-start; align-items: center; gap: 8px;
