@@ -236,9 +236,15 @@ export const useStore = create<State>((set, get) => ({
   },
   setStatus: async (id, status) => {
     if (get().pendingReadId === id) set({ pendingReadId: null })
-    const label = { favorite: '已收藏', later: '已稍后读', archived: '已归档', inbox: '已退回收集箱' }[status]
+    const item = get().items.find((i) => i.id === id)
+    // 若已是目标状态（如在「已收藏」视图再点收藏），则取消——退回收集箱
+    const canceling = item != null && item.status === status && status !== 'inbox'
+    const effective = canceling ? 'inbox' : status
+    const label = canceling
+      ? ({ favorite: '已取消收藏', later: '已取消稍后读', archived: '已取消归档' } as Record<string, string>)[status]
+      : ({ favorite: '已收藏', later: '已稍后读', archived: '已归档', inbox: '已退回收集箱' } as Record<string, string>)[status]
     try {
-      const counts = await window.readflow.invoke('items:updateStatus', id, status) as Record<View, number>
+      const counts = await window.readflow.invoke('items:updateStatus', id, effective) as Record<View, number>
       set({ counts })
       const { items } = get()
       const next = items.filter((i) => i.id !== id)
