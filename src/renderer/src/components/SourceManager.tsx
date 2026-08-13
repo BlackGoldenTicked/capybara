@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { Icon } from './icons'
 import type { MediaKind } from '../env'
@@ -88,7 +88,7 @@ export function SourceManager() {
 
   return (
     <section className="sources">
-      <div className="feed-header"><span className="title">来源管理</span><span className="keys">RSS / GitHub Star / Twitter 收藏</span></div>
+      <div className="feed-header"><span className="title">来源管理</span><span className="keys">图文 / 播客 / 视频 / GitHub Star / Twitter 收藏</span></div>
       <div className="sources-body">
 
         <div className="set-card">
@@ -151,40 +151,49 @@ export function SourceManager() {
           )}
         </div>
 
-        {/* ===== 已订阅 ===== */}
+        {/* ===== 已订阅（按 图文/播客/视频 分组） ===== */}
         <div className="set-card">
           <p className="src-label">已订阅（{rssCount}）</p>
           {feeds.length === 0 && <p className="src-hint">暂无订阅源。手动粘贴 RSS feed 地址或导入 OPML 文件开始订阅。</p>}
-          {feeds.map((f) => (
-            <div key={f.id} className="feed-row">
-              <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
-              <span className="fr-name">{f.name || f.url}</span>
-              <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '无法获取数据') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
-              {f.error_count > 0 && (
-                <span className="feed-err-wrap">
-                  <button className="feed-err-info" title="查看错误详情" aria-label="查看错误详情"
-                    onClick={() => setErrId(errId === f.id ? null : f.id)}>
-                    <Icon name="info" size={14} />
-                  </button>
-                  {errId === f.id && (
-                    <div className="feed-err-pop" onClick={(e) => e.stopPropagation()}>
-                      <div className="feed-err-head">
-                        <span>抓取错误详情</span>
-                        <button className="feed-err-x" onClick={() => setErrId(null)}>×</button>
-                      </div>
-                      <div className="feed-err-row"><span className="feed-err-k">源名称</span><span className="feed-err-v">{f.name || f.url}</span></div>
-                      <div className="feed-err-row"><span className="feed-err-k">URL</span><span className="feed-err-v feed-err-url">{f.url}</span></div>
-                      <div className="feed-err-row"><span className="feed-err-k">失败次数</span><span className="feed-err-v">{f.error_count}</span></div>
-                      <div className="feed-err-row"><span className="feed-err-k">最后抓取</span><span className="feed-err-v">{f.last_fetched_at || '—'}</span></div>
-                      <div className="feed-err-msg">{f.last_error || '（无具体错误信息）'}</div>
-                    </div>
-                  )}
-                </span>
-              )}
-              <button onClick={() => void refreshFeed(f.id)}>刷新</button>
-              <button onClick={() => void deleteFeed(f.id)}>删除</button>
-            </div>
-          ))}
+          {(['article', 'podcast', 'video'] as MediaKind[]).map((k) => {
+            const group = feeds.filter((f) => (f.kind ?? 'article') === k)
+            if (group.length === 0) return null
+            return (
+              <Fragment key={k}>
+                <p className="src-group-label">{KIND_LABEL[k]}（{group.length}）</p>
+                {group.map((f) => (
+                  <div key={f.id} className="feed-row">
+                    <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
+                    <span className="fr-name">{f.name || f.url}</span>
+                    <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '无法获取数据') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
+                    {f.error_count > 0 && (
+                      <span className="feed-err-wrap">
+                        <button className="feed-err-info" title="查看错误详情" aria-label="查看错误详情"
+                          onClick={() => setErrId(errId === f.id ? null : f.id)}>
+                          <Icon name="info" size={14} />
+                        </button>
+                        {errId === f.id && (
+                          <div className="feed-err-pop" onClick={(e) => e.stopPropagation()}>
+                            <div className="feed-err-head">
+                              <span>抓取错误详情</span>
+                              <button className="feed-err-x" onClick={() => setErrId(null)}>×</button>
+                            </div>
+                            <div className="feed-err-row"><span className="feed-err-k">源名称</span><span className="feed-err-v">{f.name || f.url}</span></div>
+                            <div className="feed-err-row"><span className="feed-err-k">URL</span><span className="feed-err-v feed-err-url">{f.url}</span></div>
+                            <div className="feed-err-row"><span className="feed-err-k">失败次数</span><span className="feed-err-v">{f.error_count}</span></div>
+                            <div className="feed-err-row"><span className="feed-err-k">最后抓取</span><span className="feed-err-v">{f.last_fetched_at || '—'}</span></div>
+                            <div className="feed-err-msg">{f.last_error || '（无具体错误信息）'}</div>
+                          </div>
+                        )}
+                      </span>
+                    )}
+                    <button onClick={() => void refreshFeed(f.id)}>刷新</button>
+                    <button onClick={() => void deleteFeed(f.id)}>删除</button>
+                  </div>
+                ))}
+              </Fragment>
+            )
+          })}
         </div>
 
         {/* ===== GitHub Star ===== */}

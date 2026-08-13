@@ -3,17 +3,21 @@ import { useStore } from '../store'
 import type { View } from '../env'
 import { Icon, type IconName } from './icons'
 
-// 折叠态（图标栏）仍按原顺序展示全部收藏视图（侧栏收起时）
+// 折叠态（图标栏）仍按原顺序展示全部视图（侧栏收起时）
 const NAV: Array<{ key: View; label: string; icon: IconName }> = [
   { key: 'rss', label: 'RSS', icon: 'rss' },
+  { key: 'podcast', label: '播客', icon: 'podcast' },
+  { key: 'video', label: '视频', icon: 'video' },
   { key: 'later', label: '稍后读', icon: 'later' },
   { key: 'favorite', label: '已收藏', icon: 'favorite' },
   { key: 'all', label: '全部条目', icon: 'all' }
 ]
 
-// 「全部」常驻分组：未读收件箱 + 两个分类（已删除「已读」「归档」项，仅显示日常分类）
+// 「全部」常驻分组：RSS / 播客 / 视频 + 两个分类（已删除「已读」「归档」项）
 const COLLECT: Array<{ key: View; label: string; icon: IconName }> = [
   { key: 'rss', label: 'RSS', icon: 'rss' },
+  { key: 'podcast', label: '播客', icon: 'podcast' },
+  { key: 'video', label: '视频', icon: 'video' },
   { key: 'later', label: '稍后阅读', icon: 'later' },
   { key: 'favorite', label: '收藏', icon: 'favorite' }
 ]

@@ -101,7 +101,7 @@ interface State {
 /** 信息流每次分页加载条目数（滚动到底部翻页浏览历史） */
 const PAGE_SIZE = 15
 
-const emptyCounts: Record<View, number> = { rss: 0, later: 0, favorite: 0, archived: 0, all: 0 }
+const emptyCounts: Record<View, number> = { rss: 0, podcast: 0, video: 0, later: 0, favorite: 0, archived: 0, all: 0 }
 
 export const useStore = create<State>((set, get) => ({
   screen: 'library',

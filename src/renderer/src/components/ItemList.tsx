@@ -113,7 +113,7 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
 export function ItemList() {
   const { items, selectedId, select, view, activeSourceType, markAllRead, clearInbox, showToast,
     openInBrowser, toggleRead, setStatus, deleteItem, feeds, itemsLoadingMore, itemsDone, loadMoreItems } = useStore()
-  const viewLabel = { rss: 'RSS', later: '稍后读', favorite: '已收藏', archived: '归档', all: '全部条目' }[view]
+  const viewLabel = { rss: 'RSS', podcast: '播客', video: '视频', later: '稍后读', favorite: '已收藏', archived: '归档', all: '全部条目' }[view]
   const sourceLabelMap: Record<string, string> = { github: 'GitHub ★', x_bookmark: 'Twitter 书签' }
   const headerLabel = activeSourceType ? (sourceLabelMap[activeSourceType] || SOURCE_LABEL[activeSourceType] || '来源') : viewLabel
 
@@ -199,10 +199,10 @@ export function ItemList() {
             </button>
           </div>
           <span className="feed-actions">
-            {view === 'rss' && (
+            {(view === 'rss' || view === 'podcast' || view === 'video') && (
               <>
-                <button className="mini" title="把 RSS 未读全部标为已读" onClick={() => void markAllRead(view)}>标为已读</button>
-                <button className="mini" title="清空 RSS（保留收藏与白板引用）" onClick={onClear}>清空</button>
+                <button className="mini" title={`把${viewLabel}未读全部标为已读`} onClick={() => void markAllRead(view)}>标为已读</button>
+                {view === 'rss' && <button className="mini" title="清空 RSS（保留收藏与白板引用）" onClick={onClear}>清空</button>}
               </>
             )}
           </span>

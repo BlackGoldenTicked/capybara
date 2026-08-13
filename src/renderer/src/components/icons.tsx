@@ -10,7 +10,7 @@ import {
   Minus, X, Pencil, EyeOff, Eye, Bookmark, Send, Maximize,
   Tag, Trash2, Check, ExternalLink, ChevronDown, ChevronRight,
   Upload, BookOpen, Palette, Music, Keyboard, Undo2, Info, Activity,
-  List, Rows3, type LucideProps
+  List, Rows3, Podcast, Film, type LucideProps
 } from 'lucide-react'
 
 // Brand icons (GitHub / X) were dropped from lucide-react; defined inline as
@@ -35,8 +35,9 @@ function BrandTwitter({ size = 24, color = 'currentColor', className, style, ...
 
 export type IconName =
   | 'rss' | 'read' | 'inbox' | 'later' | 'favorite' | 'archived' | 'all'
+  | 'podcast' | 'video'
   | 'settings' | 'search' | 'gallery' | 'board' | 'writer' | 'plus' | 'refresh'
-  | 'type' | 'link' | 'image' | 'video' | 'file' | 'ref'
+  | 'type' | 'link' | 'image' | 'file' | 'ref'
   | 'minus' | 'close' | 'edit' | 'eyeOff' | 'eye' | 'bookmark' | 'send'
   | 'tag' | 'trash' | 'check' | 'external' | 'chevronDown' | 'chevronRight'
   | 'upload' | 'book' | 'github' | 'twitter' | 'palette' | 'music' | 'keyboard' | 'undo' | 'info' | 'activity'
@@ -44,8 +45,9 @@ export type IconName =
 
 const MAP: Record<IconName, React.ComponentType<LucideProps>> = {
   rss: Rss, read: MailOpen, inbox: Inbox, later: Clock, favorite: Star, archived: Archive, all: Library,
+  podcast: Podcast, video: Video,
   settings: Settings, search: Search, gallery: Image, board: LayoutGrid, writer: FileText, plus: Plus, refresh: RefreshCw,
-  type: Type, link: Link2, image: Image, video: Video, file: Paperclip, ref: Quote,
+  type: Type, link: Link2, image: Image, file: Paperclip, ref: Quote,
   minus: Minus, close: X, edit: Pencil, eyeOff: EyeOff, eye: Eye, bookmark: Bookmark, send: Send,
   tag: Tag, trash: Trash2, check: Check, external: ExternalLink, chevronDown: ChevronDown, chevronRight: ChevronRight,
   upload: Upload, book: BookOpen, github: BrandGithub, twitter: BrandTwitter,
