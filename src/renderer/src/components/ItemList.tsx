@@ -184,25 +184,29 @@ export function ItemList() {
       <div className="feed-header">
         <span className="title">{headerLabel}</span>
         <div className="feed-right">
-          <div className="view-toggle">
+          <span className="feed-actions">
             <button
-              className={listMode === 'card' ? 'active' : ''}
+              className={`mini ${listMode === 'card' ? 'active' : ''}`}
               title="卡片视图"
               onClick={() => setListModeAndPersist('card')}>
-              <Icon name="board" size={15} />
+              <Icon name="board" size={13} /> 卡片
             </button>
             <button
-              className={listMode === 'list' ? 'active' : ''}
+              className={`mini ${listMode === 'list' ? 'active' : ''}`}
               title="列表视图"
               onClick={() => setListModeAndPersist('list')}>
-              <Icon name="list" size={15} />
+              <Icon name="list" size={13} /> 列表
             </button>
-          </div>
-          <span className="feed-actions">
             {(view === 'rss' || view === 'podcast' || view === 'video') && (
               <>
-                <button className="mini" title={`把${viewLabel}未读全部标为已读`} onClick={() => void markAllRead(view)}>标为已读</button>
-                {view === 'rss' && <button className="mini" title="清空 RSS（保留收藏与白板引用）" onClick={onClear}>清空</button>}
+                <button className="mini" title={`把${viewLabel}未读全部标为已读`} onClick={() => void markAllRead(view)}>
+                  <Icon name="check" size={13} /> 标为已读
+                </button>
+                {view === 'rss' && (
+                  <button className="mini" title="清空 RSS（保留收藏与白板引用）" onClick={onClear}>
+                    <Icon name="trash" size={13} /> 清空
+                  </button>
+                )}
               </>
             )}
           </span>

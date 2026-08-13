@@ -162,27 +162,9 @@ input:focus { border-color: var(--color-border-info); }
   background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer;
 }
 .feed-actions .mini:hover { border-color: var(--color-border-info); color: var(--color-text-info); }
-/* 右侧：视图切换 + 操作按钮 组合区 */
-.feed-right { display: flex; align-items: center; gap: 8px; }
-.feed-right .feed-actions { margin-left: 0; }
-/* 卡片 / 列表 视图切换（高度与右侧 .mini 文字按钮对齐） */
-.view-toggle {
-  display: inline-flex; align-items: center; gap: 1px;
-  padding: 0; border-radius: 6px;
-  background: var(--color-background-tertiary);
-  border: 0.5px solid var(--color-border-tertiary);
-}
-.view-toggle button {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px;
-  background: transparent; color: var(--color-text-tertiary); cursor: pointer;
-  transition: background .12s var(--ease-out), color .12s var(--ease-out);
-}
-.view-toggle button:hover { color: var(--color-text-primary); }
-.view-toggle button.active {
-  background: var(--color-background-primary); color: var(--color-text-info);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
-}
+.feed-actions .mini.active { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; }
+.feed-actions .mini.active:hover { border-color: var(--color-border-info); }
+.feed-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .feed-list { flex: 1; min-height: 0; overflow: hidden; padding: 10px 6px 10px 12px; }
 /* 信息流底部翻页状态栏：始终可见，提示已加载条数与「滚动加载更多」 */
 .feed-footer { height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
