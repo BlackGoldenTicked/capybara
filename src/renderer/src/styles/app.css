@@ -290,16 +290,16 @@ input:focus { border-color: var(--color-border-info); }
 .act.on:hover { background: var(--color-background-info); }
 .act.danger:hover { background: var(--color-background-warning); color: var(--color-text-warning); }
 
-/* ===== 列表视图行（紧凑单行：标签 + 标题 + 时间，不显示描述） ===== */
+/* ===== 列表视图行（标签+时间一行，标题单独一行可换行完整显示） ===== */
 .list-row {
-  display: flex; align-items: center; gap: 10px;
-  height: calc(100% - 4px);
-  padding: 0 12px;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 12px;
   border-radius: var(--border-radius-md);
   cursor: pointer; position: relative;
 }
 .list-row:hover { background: var(--color-background-tertiary); }
 .list-row.selected { background: var(--color-background-info); }
+.list-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .list-badge {
   flex: none; font-size: 11px; line-height: 1;
   border-radius: 4px; padding: 2px 6px; white-space: nowrap;
@@ -308,16 +308,16 @@ input:focus { border-color: var(--color-border-info); }
 }
 .list-row.selected .list-badge { background: var(--color-background-primary); color: var(--color-text-info); border-color: var(--color-border-info); }
 .list-title {
-  flex: 1; min-width: 0;
-  font-size: 13px; color: var(--color-text-primary);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; line-height: 1.45;
+  color: var(--color-text-primary);
+  white-space: normal; word-break: break-word;
 }
 .list-row.unread .list-title { font-weight: 600; }
 .list-row.selected .list-title { color: var(--color-text-info); }
 .list-time { flex: none; font-size: 12px; color: var(--color-text-tertiary); white-space: nowrap; transition: opacity .12s var(--ease-out); }
-/* 操作按钮绝对定位悬浮（不占布局宽度，避免挤压标题）；hover 时时间淡出、按钮淡入，覆盖在行右侧 */
+/* 操作按钮绝对定位悬浮（不占布局宽度，避免挤压标题）；hover 时时间淡出、按钮淡入，覆盖在行右上角 */
 .list-actions {
-  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  position: absolute; right: 8px; top: 8px;
   display: flex; gap: 2px;
   padding: 2px; border-radius: 6px;
   background: var(--color-background-primary);

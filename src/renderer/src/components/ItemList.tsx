@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { FixedSizeList, type ListChildComponentProps } from 'react-window'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { FixedSizeList, VariableSizeList, type ListChildComponentProps } from 'react-window'
 import { useStore } from '../store'
 import type { ItemRow } from '../env'
 import { Icon } from './icons'
@@ -22,13 +22,14 @@ function relTime(iso: string) {
 
 // 信息流卡片高度（紧凑密度，标题 + 摘要 + 留白 ≈ 156px 可视区域）
 const ITEM_SIZE = 164
-// 列表视图行高（单行：标签 + 标题 + 时间）
-const LIST_ITEM_SIZE = 44
+// 列表视图行高估算值（真实高度按标题换行数动态测量；此处仅作未渲染行的初始估算）
+const LIST_ITEM_ESTIMATE = 56
 
 interface RowData {
   items: ItemRow[]
   selectedId: number | null
   mode: 'card' | 'list'
+  onRowSize?: (index: number, height: number) => void
   onSelect: (id: number) => void
   onOpen: (url: string) => void
   onToggleRead: (id: number) => void
@@ -58,17 +59,28 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
     onDragStart: (e: React.DragEvent) => { e.dataTransfer.setData('application/x-item-id', String(item.id)); e.dataTransfer.effectAllowed = 'copy' }
   }
 
-  // 列表视图：单行紧凑展示，只显示 标签 / 标题 / 时间，不显示描述
+  const rowRef = useRef<HTMLDivElement>(null)
+  // 列表模式：测量行实际高度回传，供动态行高使用（onRowSize 内部做去重，避免死循环）
+  useLayoutEffect(() => {
+    if (data.mode !== 'list' || !data.onRowSize) return
+    const el = rowRef.current
+    if (el) data.onRowSize(index, el.offsetHeight)
+  })
+
+  // 列表视图：标签 + 时间一行，标题单独一行可自动换行完整显示
   if (data.mode === 'list') {
     return (
       <div style={style}>
         <div
+          ref={rowRef}
           className={`list-row ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
           {...dragProps}
           onClick={() => data.onSelect(item.id)}>
-          <span className={`list-badge ${item.source_type}`}>{SOURCE_LABEL[item.source_type]}</span>
-          <span className="list-title">{item.title}</span>
-          <span className="list-time">{relTime(item.published_at || item.fetched_at)}</span>
+          <div className="list-top">
+            <span className={`list-badge ${item.source_type}`}>{SOURCE_LABEL[item.source_type]}</span>
+            <span className="list-time">{relTime(item.published_at || item.fetched_at)}</span>
+          </div>
+          <div className="list-title">{item.title}</div>
           <div className="list-actions" onClick={stop} onDragStart={stop}>
             <button className="act" title="用系统默认浏览器打开" onClick={open}><Icon name="external" size={14} /></button>
             <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onClick={toggleRead}><Icon name="check" size={14} /></button>
@@ -125,6 +137,8 @@ export function ItemList() {
 
   const wrapRef = useRef<HTMLDivElement>(null)
   const scrollTimerRef = useRef<number>(0)
+  const listRef = useRef<VariableSizeList>(null)
+  const sizeMap = useRef<Record<number, number>>({})
   const [height, setHeight] = useState(400)
   const [listMode, setListMode] = useState<'card' | 'list'>('card')
   useEffect(() => {
@@ -134,6 +148,15 @@ export function ItemList() {
   const setListModeAndPersist = (m: 'card' | 'list') => {
     setListMode(m)
     void window.readflow.invoke('settings:set', 'list_mode', m)
+    // 切换视图后清空行高缓存，重新测量
+    sizeMap.current = {}
+    listRef.current?.resetAfterIndex(0, false)
+  }
+  // 列表行高回填：去重后更新缓存并重置该行之后的偏移
+  const onRowSize = (index: number, h: number) => {
+    if (sizeMap.current[index] === h) return
+    sizeMap.current[index] = h
+    listRef.current?.resetAfterIndex(index, false)
   }
   useEffect(() => {
     const el = wrapRef.current
@@ -157,7 +180,7 @@ export function ItemList() {
       scrollTimerRef.current = window.setTimeout(() => el.classList.remove('is-scrolling'), 900)
     }
     if (itemsDone || itemsLoadingMore || items.length === 0) return
-    const rowH = listMode === 'list' ? LIST_ITEM_SIZE : ITEM_SIZE
+    const rowH = listMode === 'list' ? LIST_ITEM_ESTIMATE : ITEM_SIZE
     const total = items.length * rowH
     if (scrollOffset + listHeight >= total - rowH * 0.8) void loadMoreItems()
   }
@@ -168,7 +191,7 @@ export function ItemList() {
   }
 
   const rowData: RowData = {
-    items, selectedId, mode: listMode,
+    items, selectedId, mode: listMode, onRowSize,
     onSelect: (id) => select(id, { click: true }),
     onOpen: (url) => openInBrowser(url),
     onToggleRead: (id) => void toggleRead(id),
@@ -227,17 +250,32 @@ export function ItemList() {
           )
         ) : (
           <>
-            <FixedSizeList
-              height={listHeight}
-              width="100%"
-              itemCount={items.length}
-              itemSize={listMode === 'list' ? LIST_ITEM_SIZE : ITEM_SIZE}
-              itemData={rowData}
-              overscanCount={6}
-              onScroll={onListScroll}
-            >
-              {Row}
-            </FixedSizeList>
+            {listMode === 'list' ? (
+              <VariableSizeList
+                ref={listRef}
+                height={listHeight}
+                width="100%"
+                itemCount={items.length}
+                itemSize={(i) => sizeMap.current[i] ?? LIST_ITEM_ESTIMATE}
+                itemData={rowData}
+                overscanCount={6}
+                onScroll={onListScroll}
+              >
+                {Row}
+              </VariableSizeList>
+            ) : (
+              <FixedSizeList
+                height={listHeight}
+                width="100%"
+                itemCount={items.length}
+                itemSize={ITEM_SIZE}
+                itemData={rowData}
+                overscanCount={6}
+                onScroll={onListScroll}
+              >
+                {Row}
+              </FixedSizeList>
+            )}
             <div className="feed-footer">
               {itemsLoadingMore
                 ? <><span className="spin" /> 加载中…</>
