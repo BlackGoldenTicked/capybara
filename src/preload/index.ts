@@ -7,6 +7,8 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 const validChannels = [
   'app:version',
   'app:fontList',
+  'app:logoList',
+  'app:setLogo',
   'app:bootstrap',
   'shell:openExternal',
   'items:list', 'items:listPage', 'items:get', 'items:counts', 'items:updateStatus', 'items:markRead', 'items:setRead', 'items:delete',

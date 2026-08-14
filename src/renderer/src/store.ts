@@ -32,6 +32,7 @@ interface State {
   appearance: Appearance
   soundEnabled: boolean
   soundVolume: number
+  logo: string
 
   developerMode: boolean
   netLog: NetLogEntry[]
@@ -95,6 +96,7 @@ interface State {
   setShortcuts: (next: Record<ShortcutAction, string>) => void
   resetShortcuts: () => void
   setSoundVolume: (volume: number) => void
+  setLogo: (id: string) => void
   purge: (keepArchivedDays: number, maxItems: number) => Promise<void>
 }
 
@@ -113,6 +115,7 @@ export const useStore = create<State>((set, get) => ({
   appearance: DEFAULT_APPEARANCE,
   soundEnabled: false,
   soundVolume: 0.7,
+  logo: '默认.png',
 
   developerMode: false,
   netLog: [],
@@ -389,12 +392,13 @@ export const useStore = create<State>((set, get) => ({
       soundVolume: number
       shortcuts?: string | null
       developerMode: boolean
+      logo?: string | null
     }
     const a = boot.appearance
     applyAppearance(a)
     audioSetEnabled(boot.soundEnabled)
     audioSetVolume(boot.soundVolume)
-    set({ appearance: a, soundEnabled: boot.soundEnabled, soundVolume: boot.soundVolume, shortcuts: parseShortcuts(boot.shortcuts), developerMode: boot.developerMode })
+    set({ appearance: a, soundEnabled: boot.soundEnabled, soundVolume: boot.soundVolume, shortcuts: parseShortcuts(boot.shortcuts), developerMode: boot.developerMode, logo: boot.logo || '默认.png' })
     // 加载当前数据库路径配置
     void window.readflow.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
     // 网络诊断日志：开发者模式下持续追加，供应用内浮动面板显示（最多保留 300 条）
@@ -432,6 +436,11 @@ export const useStore = create<State>((set, get) => ({
     audioSetVolume(v)
     void window.readflow.invoke('settings:set', 'sound_volume', String(v))
     set({ soundVolume: v })
+  },
+  setLogo: (id) => {
+    void window.readflow.invoke('app:setLogo', id)
+    set({ logo: id })
+    playSound('style')
   },
   setSettingsTab: (t) => set({ settingsTab: t }),
   openSettings: (tab) => {

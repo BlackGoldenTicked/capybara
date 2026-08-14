@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol, shell, dialog, nativeImage } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -223,10 +223,45 @@ function str(v: unknown): string { return typeof v === 'string' ? v : (v == null
 // 自定义协议：渲染进程通过 board-asset://<file> 安全访问白板本地附件（图片/视频/文件）
 protocol.registerSchemesAsPrivileged([
   { scheme: 'board-asset', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
-  { scheme: 'cover', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
+  { scheme: 'cover', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+  { scheme: 'logo', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
 ])
 
 let mainWindow: BrowserWindow | null = null
+
+// ===== 应用图标（Dock logo）切换 =====
+/** 内置 logo 目录：dev 下取项目 build/logos，打包后取 Resources/logos（由 extraResources 复制）。 */
+function logoDir(): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'logos')
+    : path.join(process.cwd(), 'build', 'logos')
+}
+
+/** 扫描 logo 目录内所有 .png，返回 {id, name}（id 为文件名，name 为去后缀名，供设置页展示）。 */
+function listLogos(): Array<{ id: string; name: string }> {
+  const dir = logoDir()
+  const out: Array<{ id: string; name: string }> = []
+  try {
+    if (!fs.existsSync(dir)) return out
+    const files = fs.readdirSync(dir)
+      .filter((f) => f.toLowerCase().endsWith('.png'))
+      .sort((a, b) => a.localeCompare(b, 'zh-Hans'))
+    for (const f of files) out.push({ id: f, name: f.replace(/\.png$/i, '') })
+  } catch { /* 目录不可读则忽略 */ }
+  return out
+}
+
+/** 把指定 logo 应用到 Dock 图标（macOS）；id 为空或文件缺失则回退到内置默认 png。 */
+function applyLogo(id: string): void {
+  if (!app.dock) return // 非 macOS 无 Dock，忽略
+  let p = ''
+  if (id) p = path.join(logoDir(), id)
+  if (!p || !fs.existsSync(p)) p = path.join(logoDir(), '默认.png')
+  try {
+    const img = nativeImage.createFromPath(p)
+    if (!img.isEmpty()) app.dock.setIcon(img)
+  } catch { /* 图标读取失败则保持现状 */ }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -306,6 +341,10 @@ function registerIpc() {
   const handlers: Record<string, (...args: never[]) => unknown> = {
     'app:version': () => app.getVersion(),
     'app:fontList': (() => scanSystemFonts()) as never,
+    // 应用图标（Dock logo）：列出内置 logo 目录下所有 PNG，供设置页切换
+    'app:logoList': (() => listLogos()) as never,
+    // 切换 Dock 图标：持久化选择 + 立即应用到 Dock
+    'app:setLogo': ((id: string) => { setSetting('logo', id); applyLogo(id); return true }) as never,
     // 暴露数据库文件绝对路径，便于用户在「设置 → 操作」里核对自己运行的 app 到底指向哪个库
     'app:dbFile': () => getDbFile(),
     'app:openDbDir': (() => { try { shell.openPath(path.dirname(getDbFile())); } catch { /* 忽略 */ } return true }) as never,
@@ -331,6 +370,7 @@ function registerIpc() {
         soundVolume: Number(g('sound_volume')) || 0.7,
         shortcuts: g('shortcuts'),
         developerMode: bool('developer_mode'),
+        logo: g('logo') ?? '默认.png',
         layout: {
           sideW: num('side_w', 196),
           listW: num('list_w', 320),
@@ -566,8 +606,19 @@ app.whenReady().then(() => {
       callback({ error: -2 })
     }
   })
+  // 注册 logo:// 协议，把内置 logo 目录映射出去供设置页预览缩略图
+  protocol.registerFileProtocol('logo', (request, callback) => {
+    try {
+      const rel = decodeURIComponent(request.url.replace(/^logo:\/\//, '')).replace(/^\/+/, '').split('?')[0]
+      callback({ path: path.join(logoDir(), rel) })
+    } catch {
+      callback({ error: -2 })
+    }
+  })
   // 2) 窗口先行：保证 UI 永远能打开；次级服务（ingest / scheduler）即便抛错也不再拖垮窗口
   createWindow()
+  // 启动即应用上次选择的 Dock 图标
+  applyLogo(getSetting('logo') ?? '默认.png')
   try { startIngestServer() } catch (e) { console.error('[ingest] failed:', (e as Error).message) }
   try { startScheduler(notifyRefresh) } catch (e) { console.error('[scheduler] failed:', (e as Error).message) }
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })

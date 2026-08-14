@@ -58,12 +58,18 @@ export function SettingsView() {
 
 /* ===================== 外观 ===================== */
 function AppearanceTab() {
-  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume } = useStore()
+  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo } = useStore()
   const [systemFonts, setSystemFonts] = useState<string[]>([])
+  const [logos, setLogos] = useState<Array<{ id: string; name: string }>>([])
   const styleGridRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     window.readflow.invoke('app:fontList').then((list) => setSystemFonts(list as string[])).catch(() => {})
+  }, [])
+
+  // 加载内置 logo 列表（应用图标切换）
+  useEffect(() => {
+    window.readflow.invoke('app:logoList').then((list) => setLogos(list as Array<{ id: string; name: string }>)).catch(() => {})
   }, [])
 
   const setTheme = (theme: ThemeMode) => updateAppearance({ theme })
@@ -151,6 +157,26 @@ function AppearanceTab() {
         <div className="reading-theme-grid">
           {renderReadingThemes(appearance.readingTheme, (id) => setReadingTheme(id), (t) => setThemeEdit(t))}
         </div>
+      </div>
+
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">应用图标</p>
+        </div>
+        <p className="src-hint">切换应用在 Dock 中显示的图标。将 PNG 图标放入 build/logos 目录后会自动出现在这里（建议 1024×1024，文件名作为图标名）。</p>
+        {logos.length === 0 ? (
+          <p className="src-hint">暂无内置图标，请将 PNG 文件放入 build/logos 目录。</p>
+        ) : (
+          <div className="logo-grid">
+            {logos.map((l) => (
+              <button key={l.id} className={`logo-opt ${logo === l.id ? 'active' : ''}`}
+                onClick={() => setLogo(l.id)} title={l.name}>
+                <img className="logo-preview" src={`logo://${encodeURIComponent(l.id)}`} alt={l.name} />
+                <span className="logo-name">{l.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="set-card">
