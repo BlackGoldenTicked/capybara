@@ -160,11 +160,12 @@ input:focus { border-color: var(--color-border-info); }
   padding: 0 8px; border-radius: 6px;
   border: 0.5px solid var(--color-border-tertiary);
   background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: pointer;
+  white-space: nowrap;
 }
 .feed-actions .mini:hover { border-color: var(--color-border-info); color: var(--color-text-info); }
 .feed-actions .mini.active { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; }
 .feed-actions .mini.active:hover { border-color: var(--color-border-info); }
-.feed-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.feed-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .feed-list { flex: 1; min-height: 0; overflow: hidden; padding: 10px 6px 10px 12px; }
 /* 信息流底部翻页状态栏：始终可见，提示已加载条数与「滚动加载更多」 */
 .feed-footer { height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
