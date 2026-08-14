@@ -65,6 +65,17 @@ export function RssManager() {
     <div className="set-scroll">
       <div className="set-card">
         <p className="src-label">RSS 订阅管理</p>
+
+        {/* 类型选择：放最前，全宽 segmented，与下方方式选择视觉对齐 */}
+        <div className="src-3way">
+          <div className="seg seg-3way">
+            <button type="button" className={`seg-btn ${kind === 'article' ? 'active' : ''}`} onClick={() => setKind('article')}>图文</button>
+            <button type="button" className={`seg-btn ${kind === 'podcast' ? 'active' : ''}`} onClick={() => setKind('podcast')}>播客</button>
+            <button type="button" className={`seg-btn ${kind === 'video' ? 'active' : ''}`} onClick={() => setKind('video')}>视频</button>
+          </div>
+        </div>
+
+        {/* 方式选择 */}
         <div className="src-3way">
           <div className="seg seg-2way">
             <button className={`seg-btn ${rssMethod === 'add' ? 'active' : ''}`} onClick={() => setRssMethod('add')}>
@@ -76,20 +87,11 @@ export function RssManager() {
           </div>
         </div>
 
-        <div className="src-field">
-          <label>内容类型</label>
-          <div className="seg seg-3way">
-            <button type="button" className={`seg-btn ${kind === 'article' ? 'active' : ''}`} onClick={() => setKind('article')}>图文</button>
-            <button type="button" className={`seg-btn ${kind === 'podcast' ? 'active' : ''}`} onClick={() => setKind('podcast')}>播客</button>
-            <button type="button" className={`seg-btn ${kind === 'video' ? 'active' : ''}`} onClick={() => setKind('video')}>视频</button>
-          </div>
-        </div>
-
         {rssMethod === 'add' && (
           <div className="src-form">
             <div className="src-field">
               <label htmlFor="rss-name">源名称（可选，留空自动识别）</label>
-              <input id="rss-name" placeholder="如：前端周刊" value={name} onChange={(e) => setName(e.target.value)} />
+              <input id="rss-name" placeholder="chaordex.com" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="src-field">
               <label htmlFor="rss-url">URL</label>
@@ -98,14 +100,13 @@ export function RssManager() {
             <div className="src-field">
               <label htmlFor="rss-schedule">刷新频率</label>
               <div className="src-field-cell">
-                <span className="src-unit">每</span>
                 <input id="rss-schedule" type="number" min={5} value={schedule} onChange={(e) => setSchedule(Number(e.target.value))} className="src-num" />
                 <span className="src-unit">分钟</span>
               </div>
             </div>
             <div className="src-field src-actions-field">
               <div aria-hidden="true" />
-              <div className="src-actions">
+              <div className="src-actions src-actions-left">
                 <button onClick={() => void submit()} disabled={validating}>{validating ? '验证中…' : '添加'}</button>
               </div>
             </div>

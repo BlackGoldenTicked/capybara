@@ -625,14 +625,19 @@ input:focus { border-color: var(--color-border-info); }
 }
 .src-hint { font-size: 12px; color: var(--color-text-tertiary); }
 .src-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 0 2px; border-top: 0.5px solid var(--color-border-tertiary); }
-/* 三个平级操作段控件（手动添加 / 选择 RSS 源 / 导入 OPML） */
+/* 顶部两个平级段控件（类型 / 方式）：全宽 segmented，与下方表单输入框左边缘对齐 */
 .src-3way { margin-top: 4px; }
+/* 两个 .src-3way 堆叠时，去掉第二个的额外上间距，统一靠父容器 gap 控间距 */
+.src-card .src-3way + .src-3way { margin-top: 0; }
+.seg.seg-2way { width: 100%; display: flex; }
+.seg.seg-2way .seg-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; font-size: 12.5px; }
 .seg.seg-3way { width: 100%; display: flex; }
 .seg.seg-3way .seg-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; font-size: 12.5px; }
 /* 行内表单：类型 / 名称 / URL / 频率 等字段统一最小宽度，input 自动撑开 */
 .src-num { width: 80px; flex: 0 0 80px !important; }
 .src-unit { color: var(--color-text-tertiary); font-size: 12px; }
 .src-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.src-actions.src-actions-left { justify-content: flex-start; }
 .src-actions .src-hint.src-grow { flex: 1; min-width: 0; }
 /* 按钮行与上方输入框左边缘对齐（用 src-field 的空 label 列占位） */
 .src-field.src-actions-field { margin-top: 2px; }
