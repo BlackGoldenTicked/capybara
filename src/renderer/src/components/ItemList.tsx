@@ -185,18 +185,20 @@ export function ItemList() {
         <span className="title">{headerLabel}</span>
         <div className="feed-right">
           <span className="feed-actions">
-            <button
-              className={`mini ${listMode === 'card' ? 'active' : ''}`}
-              title="卡片视图"
-              onClick={() => setListModeAndPersist('card')}>
-              <Icon name="board" size={13} /> 卡片
-            </button>
-            <button
-              className={`mini ${listMode === 'list' ? 'active' : ''}`}
-              title="列表视图"
-              onClick={() => setListModeAndPersist('list')}>
-              <Icon name="list" size={13} /> 列表
-            </button>
+            <div className="view-toggle">
+              <button
+                className={listMode === 'card' ? 'active' : ''}
+                title="卡片视图"
+                onClick={() => setListModeAndPersist('card')}>
+                <Icon name="board" size={15} />
+              </button>
+              <button
+                className={listMode === 'list' ? 'active' : ''}
+                title="列表视图"
+                onClick={() => setListModeAndPersist('list')}>
+                <Icon name="list" size={15} />
+              </button>
+            </div>
             {(view === 'rss' || view === 'podcast' || view === 'video') && (
               <>
                 <button className="mini" title={`把${viewLabel}未读全部标为已读`} onClick={() => void markAllRead(view)}>
