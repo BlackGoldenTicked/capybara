@@ -223,8 +223,7 @@ function str(v: unknown): string { return typeof v === 'string' ? v : (v == null
 // 自定义协议：渲染进程通过 board-asset://<file> 安全访问白板本地附件（图片/视频/文件）
 protocol.registerSchemesAsPrivileged([
   { scheme: 'board-asset', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
-  { scheme: 'cover', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
-  { scheme: 'logo', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
+  { scheme: 'cover', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
 ])
 
 let mainWindow: BrowserWindow | null = null
@@ -237,16 +236,20 @@ function logoDir(): string {
     : path.join(process.cwd(), 'build', 'logos')
 }
 
-/** 扫描 logo 目录内所有 .png，返回 {id, name}（id 为文件名，name 为去后缀名，供设置页展示）。 */
-function listLogos(): Array<{ id: string; name: string }> {
+/** 扫描 logo 目录内所有 .png，返回 {id, name, thumb}（thumb 为 128×128 缩略图 data URL，供设置页直接展示，规避中文文件名的 URL 编码问题）。 */
+function listLogos(): Array<{ id: string; name: string; thumb: string }> {
   const dir = logoDir()
-  const out: Array<{ id: string; name: string }> = []
+  const out: Array<{ id: string; name: string; thumb: string }> = []
   try {
     if (!fs.existsSync(dir)) return out
     const files = fs.readdirSync(dir)
       .filter((f) => f.toLowerCase().endsWith('.png'))
       .sort((a, b) => a.localeCompare(b, 'zh-Hans'))
-    for (const f of files) out.push({ id: f, name: f.replace(/\.png$/i, '') })
+    for (const f of files) {
+      const img = nativeImage.createFromPath(path.join(dir, f))
+      const thumb = img.isEmpty() ? '' : img.resize({ width: 128, height: 128 }).toDataURL()
+      out.push({ id: f, name: f.replace(/\.png$/i, ''), thumb })
+    }
   } catch { /* 目录不可读则忽略 */ }
   return out
 }
@@ -602,15 +605,6 @@ app.whenReady().then(() => {
     try {
       const rel = decodeURIComponent(request.url.replace(/^cover:\/\//, '')).replace(/^\/+/, '').split('?')[0]
       callback({ path: path.join(getImagesDir(), rel) })
-    } catch {
-      callback({ error: -2 })
-    }
-  })
-  // 注册 logo:// 协议，把内置 logo 目录映射出去供设置页预览缩略图
-  protocol.registerFileProtocol('logo', (request, callback) => {
-    try {
-      const rel = decodeURIComponent(request.url.replace(/^logo:\/\//, '')).replace(/^\/+/, '').split('?')[0]
-      callback({ path: path.join(logoDir(), rel) })
     } catch {
       callback({ error: -2 })
     }

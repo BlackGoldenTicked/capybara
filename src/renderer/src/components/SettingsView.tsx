@@ -60,7 +60,7 @@ export function SettingsView() {
 function AppearanceTab() {
   const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo } = useStore()
   const [systemFonts, setSystemFonts] = useState<string[]>([])
-  const [logos, setLogos] = useState<Array<{ id: string; name: string }>>([])
+  const [logos, setLogos] = useState<Array<{ id: string; name: string; thumb: string }>>([])
   const styleGridRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -69,7 +69,7 @@ function AppearanceTab() {
 
   // 加载内置 logo 列表（应用图标切换）
   useEffect(() => {
-    window.readflow.invoke('app:logoList').then((list) => setLogos(list as Array<{ id: string; name: string }>)).catch(() => {})
+    window.readflow.invoke('app:logoList').then((list) => setLogos(list as Array<{ id: string; name: string; thumb: string }>)).catch(() => {})
   }, [])
 
   const setTheme = (theme: ThemeMode) => updateAppearance({ theme })
@@ -171,7 +171,7 @@ function AppearanceTab() {
             {logos.map((l) => (
               <button key={l.id} className={`logo-opt ${logo === l.id ? 'active' : ''}`}
                 onClick={() => setLogo(l.id)} title={l.name}>
-                <img className="logo-preview" src={`logo://${encodeURIComponent(l.id)}`} alt={l.name} />
+                {l.thumb ? <img className="logo-preview" src={l.thumb} alt={l.name} /> : <span className="logo-preview logo-fallback" />}
                 <span className="logo-name">{l.name}</span>
               </button>
             ))}
