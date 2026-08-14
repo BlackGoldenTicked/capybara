@@ -3,6 +3,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { app } from 'electron'
 import { decodeHtmlEntities, htmlToSnippet } from './lib/html'
+import { DISCOVER_ROLES, DISCOVER_SOURCES, ROLE_SOURCE_MAP } from './discover/data'
 
 export type ItemStatus = 'inbox' | 'later' | 'favorite' | 'archived'
 export type SourceType = 'rss' | 'x' | 'wechat' | 'tophub' | 'github' | 'x_bookmark' | 'manual'
@@ -451,6 +452,71 @@ function migrate() {
 
   // 修复旧数据中 HTML 实体编码的摘要/正文（RSS description 常把 <img> 整段编码，导致卡片与阅读区裸奔源码）
   try { repairHtmlEncodedItems() } catch (e) { console.error('[initDb] 修复 HTML 实体编码失败：', (e as Error).message) }
+
+  // 信源发现库（feeds 工作空间迁移）：roles / rss_sources / role_source_map 三表 + 种子数据
+  try { migrateDiscover() } catch (e) { console.error('[initDb] 信源发现库迁移失败：', (e as Error).message) }
+}
+
+// ===================== 信源发现库（feeds 工作空间迁移） =====================
+function migrateDiscover() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS roles (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      name        TEXT    NOT NULL UNIQUE,
+      domain      TEXT    NOT NULL,
+      description TEXT
+    );
+    CREATE TABLE IF NOT EXISTS rss_sources (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      title       TEXT    NOT NULL,
+      xml_url     TEXT    NOT NULL UNIQUE,
+      html_url    TEXT,
+      source_type TEXT    NOT NULL,
+      tier        TEXT    NOT NULL,
+      stars       INTEGER NOT NULL,
+      tags        TEXT    DEFAULT '[]',
+      language    TEXT    DEFAULT 'zh',
+      description TEXT
+    );
+    CREATE TABLE IF NOT EXISTS role_source_map (
+      role_id      INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+      source_id    INTEGER NOT NULL REFERENCES rss_sources(id) ON DELETE CASCADE,
+      priority     TEXT    NOT NULL DEFAULT '选配',
+      match_reason TEXT,
+      PRIMARY KEY (role_id, source_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_rsm_source ON role_source_map(source_id);
+    CREATE INDEX IF NOT EXISTS idx_rsm_role   ON role_source_map(role_id);
+  `)
+  seedDiscover()
+}
+
+/** 首次启动一次性导入 2242 条候选源 + 65 角色 + 角色映射（settings 标记防重复） */
+function seedDiscover() {
+  if (getSetting('discover_seeded') === '1') return
+  const existing = (db.prepare('SELECT COUNT(*) c FROM rss_sources').get() as { c: number }).c
+  if (existing > 0) { setSetting('discover_seeded', '1'); return }
+  db.exec('BEGIN')
+  try {
+    const insRole = db.prepare('INSERT INTO roles (name, domain, description) VALUES (?, ?, ?)')
+    for (const r of DISCOVER_ROLES) insRole.run(r.name, r.domain, r.description)
+
+    const insSrc = db.prepare('INSERT INTO rss_sources (title, xml_url, html_url, source_type, tier, stars, tags, language, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    for (const s of DISCOVER_SOURCES) {
+      insSrc.run(s[0], s[1], s[2], s[3], s[4], s[5], JSON.stringify(s[6]), s[7], s[8])
+    }
+
+    const insMap = db.prepare('INSERT INTO role_source_map (role_id, source_id, priority) VALUES (?, ?, ?)')
+    for (const [ri, si, prio] of ROLE_SOURCE_MAP) {
+      insMap.run(ri + 1, si + 1, prio)
+    }
+    db.exec('COMMIT')
+    setSetting('discover_seeded', '1')
+    console.log(`[seedDiscover] 导入 ${DISCOVER_SOURCES.length} 源 / ${DISCOVER_ROLES.length} 角色 / ${ROLE_SOURCE_MAP.length} 映射`)
+  } catch (e) {
+    db.exec('ROLLBACK')
+    console.error('[seedDiscover] 失败：', (e as Error).message)
+  }
 }
 
 /** 一次性修复：把 summary / content_html / content_text 中仍含 &lt; &gt; 等实体编码的行清洗还原。
@@ -1001,4 +1067,93 @@ export function dbRows(table: string, limit = 100, offset = 0): { columns: strin
 function quoteIdent(name: string): string {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error('非法标识符：' + name)
   return '"' + name.replace(/"/g, '') + '"'
+}
+
+// ===================== 信源发现查询 =====================
+export interface DiscoverRole { id: number; name: string; domain: string; description: string }
+export interface DiscoverFeed {
+  id: number
+  title: string
+  xml_url: string
+  html_url: string
+  source_type: string
+  tier: string
+  stars: number
+  tags: string[]
+  language: string
+  description: string
+  subscribed: number // 0/1 是否已订阅
+}
+export interface DiscoverFilter {
+  roleIds?: number[]      // 命中任一角色
+  tags?: string[]         // 命中任一标签（OR）
+  tiers?: string[]        // T0-T4
+  sourceTypes?: string[]  // 企业/个人/机构
+  languages?: string[]    // zh/en
+  keyword?: string        // 标题/URL 模糊
+  page: number
+  pageSize: number
+}
+
+/** 65 种角色（按 domain 分组的筛选维度） */
+export function discoverRoles(): DiscoverRole[] {
+  return db.prepare('SELECT id, name, domain, description FROM roles ORDER BY id').all() as unknown as DiscoverRole[]
+}
+
+/** 全量标签集合（从 rss_sources.tags JSON 聚合去重） */
+export function discoverTags(): string[] {
+  const rows = db.prepare("SELECT tags FROM rss_sources WHERE tags IS NOT NULL AND tags != '[]'").all() as Array<{ tags: string }>
+  const set = new Set<string>()
+  for (const r of rows) {
+    try { for (const t of JSON.parse(r.tags)) if (t) set.add(t) } catch { /* 忽略坏 JSON */ }
+  }
+  return [...set].sort((a, b) => a.localeCompare(b, 'zh'))
+}
+
+function parseTags(raw: string): string[] {
+  try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
+}
+
+/** 按多条件筛选候选源；LEFT JOIN feeds 标记是否已订阅 */
+export function discoverFeeds(opts: DiscoverFilter): { rows: DiscoverFeed[]; total: number } {
+  const where: string[] = []
+  const params: SQLInputValue[] = []
+  const inClause = (n: number) => Array.from({ length: n }, () => '?').join(',')
+
+  if (opts.roleIds && opts.roleIds.length) {
+    where.push(`s.id IN (SELECT source_id FROM role_source_map WHERE role_id IN (${inClause(opts.roleIds.length)}))`)
+    params.push(...opts.roleIds)
+  }
+  if (opts.tags && opts.tags.length) {
+    where.push(`s.id IN (SELECT DISTINCT s2.id FROM rss_sources s2, json_each(s2.tags) j WHERE j.value IN (${inClause(opts.tags.length)}))`)
+    params.push(...opts.tags)
+  }
+  if (opts.tiers && opts.tiers.length) { where.push(`s.tier IN (${inClause(opts.tiers.length)})`); params.push(...opts.tiers) }
+  if (opts.sourceTypes && opts.sourceTypes.length) { where.push(`s.source_type IN (${inClause(opts.sourceTypes.length)})`); params.push(...opts.sourceTypes) }
+  if (opts.languages && opts.languages.length) { where.push(`s.language IN (${inClause(opts.languages.length)})`); params.push(...opts.languages) }
+  if (opts.keyword) {
+    const kw = `%${opts.keyword}%`
+    where.push('(s.title LIKE ? OR s.xml_url LIKE ?)')
+    params.push(kw, kw)
+  }
+
+  const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : ''
+  const total = (db.prepare(`SELECT COUNT(*) c FROM rss_sources s ${whereSql}`).get(...params) as { c: number }).c
+
+  const page = Math.max(0, Math.floor(opts.page))
+  const size = Math.max(1, Math.min(200, Math.floor(opts.pageSize)))
+  const rows = db.prepare(`
+    SELECT s.id, s.title, s.xml_url, s.html_url, s.source_type, s.tier, s.stars, s.tags, s.language, s.description,
+           (f.id IS NOT NULL) AS subscribed
+    FROM rss_sources s
+    LEFT JOIN feeds f ON f.url = s.xml_url
+    ${whereSql}
+    ORDER BY s.stars DESC, s.tier ASC, s.id ASC
+    LIMIT ? OFFSET ?
+  `).all(...params, size, page * size) as Array<Omit<DiscoverFeed, 'tags'> & { tags: string }>
+
+  return {
+    total,
+    rows: rows.map((r) => ({ ...r, tags: parseTags(r.tags), subscribed: r.subscribed ? 1 : 0 }))
+  }
 }

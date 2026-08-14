@@ -49,6 +49,23 @@ export type Screen = 'library' | 'board' | 'settings'
 export interface Feed { id: number; type: string; name: string; url: string; schedule_min: number; last_fetched_at: string; error_count: number; last_error: string; enabled: number; etag: string; last_modified: string; kind: MediaKind }
 export interface Board { id: number; name: string; updated_at: string }
 
+/** 信源发现：角色（用户特点筛选维度，feeds 工作空间迁移） */
+export interface DiscoverRole { id: number; name: string; domain: string; description: string }
+/** 信源发现：候选源（feeds 工作空间迁移的 2242 条库） */
+export interface DiscoverFeed {
+  id: number
+  title: string
+  xml_url: string
+  html_url: string
+  source_type: string
+  tier: string
+  stars: number
+  tags: string[]
+  language: string
+  description: string
+  subscribed: number
+}
+
 /** 白板卡片：独立持久化，按 board_id 归属。kind 决定内容与可承载的附件类型。 */
 export type CardKind = 'ref' | 'text' | 'link' | 'image' | 'file' | 'video'
 export interface Card {

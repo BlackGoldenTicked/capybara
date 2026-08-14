@@ -21,6 +21,7 @@ const validChannels = [
   'github:fetchStars', 'twitter:importBookmarks', 'items:sourceCounts',
   'feeds:importOpml',
   'feeds:listPage', 'feeds:count', 'feeds:validate',
+  'discover:roles', 'discover:tags', 'discover:feeds', 'discover:add',
   'settings:export', 'settings:import', 'settings:getDbPath', 'settings:setDbPath', 'settings:pickDbPath',
   'sync:backup', 'devtools:toggle',
   'db:tables', 'db:rows',

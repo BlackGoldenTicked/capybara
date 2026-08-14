@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import type { Feed, MediaKind } from '../env'
 import { Icon } from './icons'
+import { DiscoverPanel } from './DiscoverPanel'
 
 const PAGE_SIZE = 100
 const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
@@ -123,6 +124,9 @@ export function RssManager() {
           </div>
         )}
       </div>
+
+      {/* 信源发现：从预置源库按角色/分类筛选订阅 */}
+      <DiscoverPanel />
 
       {/* 已订阅列表（分页） */}
       <div className="set-card">

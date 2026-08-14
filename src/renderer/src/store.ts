@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, RepoInfo, DiscoveredFeed, NetLogEntry, MediaKind } from './env'
+import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, NetLogEntry, MediaKind } from './env'
 import { applyAppearance, persistAppearance, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
 import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/shortcuts'
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'

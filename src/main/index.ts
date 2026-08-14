@@ -12,7 +12,7 @@ import {
   getSetting, setSetting, sourceCounts, getDbFile, getDb,
   setCustomDbPath, getCustomDbPath,
   storeCover, enforceRetention, markAllRead, clearInbox, purgeOldItems, checkpoint, stopWalCheckpoint,
-  dbTables, dbRows
+  dbTables, dbRows, discoverRoles, discoverTags, discoverFeeds
 } from './db'
 import { startIngestServer } from './ingest'
 import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
@@ -522,6 +522,12 @@ function registerIpc() {
       notifyRefresh()
       return { added, skipped, total: feeds.length }
     }) as never,
+
+    // ===== 信源发现（feeds 工作空间迁移）：角色/标签/筛选候选源 + 一键添加 =====
+    'discover:roles': (() => discoverRoles()) as never,
+    'discover:tags': (() => discoverTags()) as never,
+    'discover:feeds': ((opts: Parameters<typeof discoverFeeds>[0]) => discoverFeeds(opts)) as never,
+    'discover:add': ((xml_url: string, title: string, kind: MediaKind) => addFeed({ type: 'rss', name: title || xml_url, url: xml_url, schedule_min: 120, kind })) as never,
 
     // ===== GitHub ★：按用户名拉取 starred 仓库，写入阅读列表（source_type=github） =====
     'github:fetchStars': (async (username: string) => {
