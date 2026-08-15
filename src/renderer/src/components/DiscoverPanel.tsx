@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { DiscoverFeed, DiscoverRole, MediaKind } from '../env'
 import { Icon } from './icons'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 8
 const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
-const TIERS = ['T0', 'T1', 'T2', 'T3', 'T4'] as const
-const SOURCE_TYPES = ['企业', '个人', '机构'] as const
 
-/** 信源发现：从预置 2242 条 RSS 源库按角色/分类/星级筛选，一键订阅 */
+/** 信源发现：从预置 2242 条 RSS 源库按角色/分类筛选，一键订阅 */
 export function DiscoverPanel() {
   const { addFeed, showToast } = useStore()
 
@@ -19,8 +17,6 @@ export function DiscoverPanel() {
   // 筛选条件
   const [roleId, setRoleId] = useState(0) // 0 = 全部角色
   const [selTags, setSelTags] = useState<string[]>([])
-  const [selTiers, setSelTiers] = useState<string[]>([])
-  const [selTypes, setSelTypes] = useState<string[]>([])
   const [lang, setLang] = useState<'all' | 'zh' | 'en'>('all')
   const [keyword, setKeyword] = useState('')
 
@@ -28,7 +24,8 @@ export function DiscoverPanel() {
   const [rows, setRows] = useState<DiscoverFeed[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [pageInput, setPageInput] = useState('1')
+  const [thumbPct, setThumbPct] = useState(0)
   const [loaded, setLoaded] = useState(false)
 
   // 添加交互：picking = 正在选分类的源 id
@@ -37,6 +34,9 @@ export function DiscoverPanel() {
   const [adding, setAdding] = useState(false)
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const tickCount = totalPages <= 20 ? totalPages : 20
+  const dragRatio = Math.max(0, Math.min(1, thumbPct / 100))
+  const currentTick = Math.min(tickCount - 1, Math.max(0, Math.round(dragRatio * (tickCount - 1))))
 
   const roleGroups = useMemo(() => {
     const m = new Map<string, DiscoverRole[]>()
@@ -54,13 +54,10 @@ export function DiscoverPanel() {
   }, [])
 
   const query = async (p: number) => {
-    setLoading(true)
     try {
       const r = await window.readflow.invoke('discover:feeds', {
         roleIds: roleId ? [roleId] : [],
         tags: selTags,
-        tiers: selTiers,
-        sourceTypes: selTypes,
         languages: lang === 'all' ? [] : [lang],
         keyword: keyword.trim() || undefined,
         page: p,
@@ -69,16 +66,17 @@ export function DiscoverPanel() {
       setRows(r.rows)
       setTotal(r.total)
       setPage(p)
+      setPageInput(String(p + 1))
+      const tp = r.total > 0 ? Math.min(100, (p / Math.max(1, Math.ceil(r.total / PAGE_SIZE) - 1)) * 100) : 0
+      setThumbPct(tp)
       setLoaded(true)
     } catch (e) {
       showToast('筛选失败：' + (e as Error).message)
-    } finally {
-      setLoading(false)
     }
   }
 
   // 筛选条件变化即自动查询（关键词除外，回车/按钮触发）
-  useEffect(() => { void query(0) }, [roleId, selTags, selTiers, selTypes, lang])
+  useEffect(() => { void query(0) }, [roleId, selTags, lang])
 
   const toggle = (arr: string[], v: string, set: (x: string[]) => void) => {
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v])
@@ -98,10 +96,60 @@ export function DiscoverPanel() {
     }
   }
 
+  /** 页码跳转：clamp 到 [1, totalPages]，有效才查询 */
+  const gotoPage = () => {
+    const n = parseInt(pageInput, 10)
+    if (isNaN(n)) { setPageInput(String(page + 1)); return }
+    const target = Math.max(1, Math.min(totalPages, n)) - 1
+    if (target !== page) void query(target)
+    else setPageInput(String(page + 1))
+  }
+
+  /** 圆点分页：拖动/点击跳转，位置 rAF 节流，拖动中不查列表，松手才查询 */
+  const trackRef = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number | null>(null)
+  const pendingPct = useRef(0)
+  const scheduleThumb = (pct: number) => {
+    pendingPct.current = pct
+    if (rafRef.current != null) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null
+      const p = pendingPct.current
+      setThumbPct(p)
+      setPageInput(String(Math.round((p / 100) * (totalPages - 1)) + 1))
+    })
+  }
+  const seekToClientX = (clientX: number, final: boolean) => {
+    const rect = trackRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0) return
+    const PAD = 6
+    const usable = rect.width - PAD * 2
+    const ratio = usable > 0 ? Math.max(0, Math.min(1, (clientX - rect.left - PAD) / usable)) : 0
+    scheduleThumb(ratio * 100)
+    if (final) {
+      const target = Math.round(ratio * (totalPages - 1))
+      if (target !== page) void query(target)
+    }
+  }
+  const onTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    seekToClientX(e.clientX, false)
+    const onMove = (em: PointerEvent) => seekToClientX(em.clientX, false)
+    const onUp = (eu: PointerEvent) => {
+      seekToClientX(eu.clientX, true)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const tickCls = (i: number) => (i === currentTick ? 'pager-tick current' : 'pager-tick')
+
   return (
     <div className="set-card">
       <p className="src-label">信源发现（{loaded ? total : '…'} 个候选源）</p>
-      <p className="src-hint">从预置 RSS 源库按「角色 / 分类 / 权威等级」筛选，点击添加即订阅。</p>
 
       <div className="src-grid-2">
         <div className="src-field">
@@ -133,28 +181,10 @@ export function DiscoverPanel() {
       </div>
 
       <div className="src-field">
-        <label>分类标签（可多选）</label>
+        <label>分类标签</label>
         <div className="disc-chips">
           {tags.map((t) => (
             <button key={t} type="button" className={`chip ${selTags.includes(t) ? 'active' : ''}`} onClick={() => toggle(selTags, t, setSelTags)}>{t}</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="src-field">
-        <label>权威等级（T0 官方/实验室 → T4 个人长尾）</label>
-        <div className="disc-chips">
-          {TIERS.map((t) => (
-            <button key={t} type="button" className={`chip ${selTiers.includes(t) ? 'active' : ''}`} onClick={() => toggle(selTiers, t, setSelTiers)}>{t}</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="src-field">
-        <label>来源类型</label>
-        <div className="disc-chips">
-          {SOURCE_TYPES.map((t) => (
-            <button key={t} type="button" className={`chip ${selTypes.includes(t) ? 'active' : ''}`} onClick={() => toggle(selTypes, t, setSelTypes)}>{t}</button>
           ))}
         </div>
       </div>
@@ -169,11 +199,11 @@ export function DiscoverPanel() {
       </div>
 
       <div className="feed-rows discover-list">
-        {loading && <p className="src-hint">加载中…</p>}
-        {!loading && loaded && rows.length === 0 && <p className="src-hint">无匹配结果，试试放宽筛选条件。</p>}
+        {!loaded && <p className="src-hint">加载中…</p>}
+        {loaded && rows.length === 0 && <p className="src-hint">无匹配结果，试试放宽筛选条件。</p>}
         {rows.map((f) => (
           <div key={f.id} className={`feed-row2 ${f.subscribed ? 'added' : ''}`}>
-            <span className="fr-stars" title={`权威等级 ${f.tier}`}>{'★'.repeat(f.stars)}</span>
+            <span className={`tier-dot tier-${f.tier.toLowerCase()}`} title={`权威等级 ${f.tier}`} />
             <div className="feed-info">
               <span className="feed-title">{f.title}</span>
               <span className="feed-url">{f.xml_url}</span>
@@ -205,9 +235,24 @@ export function DiscoverPanel() {
 
       {totalPages > 1 && (
         <div className="feed-pager">
-          <button disabled={page <= 0} onClick={() => void query(page - 1)}>上一页</button>
-          <span>{page + 1} / {totalPages}</span>
-          <button disabled={page >= totalPages - 1} onClick={() => void query(page + 1)}>下一页</button>
+          <div className="pager-track" ref={trackRef} onPointerDown={onTrackPointerDown}>
+            <div className="pager-ticks" aria-hidden="true">
+              {Array.from({ length: tickCount }).map((_, i) => (
+                <span key={i} className={tickCls(i)} />
+              ))}
+            </div>
+          </div>
+          <input
+            className="pager-jump"
+            type="number"
+            min={1}
+            max={totalPages}
+            value={pageInput}
+            onChange={(e) => setPageInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') gotoPage() }}
+            onBlur={gotoPage}
+            title={`精确跳转：1 - ${totalPages}`}
+          />
         </div>
       )}
     </div>

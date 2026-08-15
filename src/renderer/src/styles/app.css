@@ -1362,7 +1362,13 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 .src-field .disc-search input { flex: 1; width: auto; }
 .src-field .disc-search button { white-space: nowrap; flex-shrink: 0; }
 .discover-list { display: flex; flex-direction: column; gap: 6px; max-height: none; overflow: visible; }
-.fr-stars { color: var(--color-text-warning); font-size: 12px; letter-spacing: 1px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+/* 权威等级五色圆点（T0→T4，固定色，替代星星避免字符渲染视觉跳动） */
+.tier-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.tier-t0 { background: #e5484d; }
+.tier-t1 { background: #f76b15; }
+.tier-t2 { background: #0d74ce; }
+.tier-t3 { background: #30a46c; }
+.tier-t4 { background: #8b8d98; }
 .fr-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
 .discover-pick { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .discover-pick .seg-3way { min-width: 176px; }
@@ -1373,5 +1379,25 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 .discover-pick button:hover { border-color: var(--color-border-info); color: var(--color-text-info); }
 .discover-pick .discover-confirm { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); }
 .discover-pick .discover-confirm:disabled { opacity: 0.5; cursor: default; }
+
+/* 分页器：底部 6px 圆点分页（拖动/点击跳转）+ 独立精确跳转输入框 */
+.feed-pager { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+.pager-track {
+  flex: 1; max-width: 50%; min-width: 220px; height: 18px;
+  position: relative; cursor: pointer; touch-action: none;
+  user-select: none;
+}
+.pager-ticks { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; pointer-events: none; }
+.pager-tick { width: 6px; height: 6px; border-radius: 50%; background: var(--color-border-info); flex-shrink: 0; transition: background .12s var(--ease-out), transform .18s var(--ease-out); }
+.pager-tick.current { background: var(--color-text-primary); transform: scale(1.5); }
+.pager-jump {
+  width: 48px; padding: 3px 6px; flex-shrink: 0;
+  text-align: center; font-variant-numeric: tabular-nums; font-size: 12px;
+  background: var(--color-background-tertiary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: 6px; color: var(--color-text-secondary);
+}
+.pager-jump::-webkit-outer-spin-button,
+.pager-jump::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 
