@@ -357,11 +357,11 @@ function registerIpc() {
       const g = (k: string) => getSetting(k)
       const num = (k: string, d: number) => { const v = Number(g(k)); return Number.isFinite(v) && v !== 0 ? v : d }
       const bool = (k: string) => g(k) === '1'
-      const theme = g('theme'); const cardStyle = g('card_style')
+      const theme = g('theme'); const colorTheme = g('color_theme')
       const weight = g('font_weight') || 'normal'
       const appearance = {
         theme: (['system', 'light', 'dark'].includes(theme ?? '') ? theme : 'system') as 'system' | 'light' | 'dark',
-        cardStyle: (cardStyle && cardStyle !== 'none' ? cardStyle : 'none') as string,
+        colorTheme: (colorTheme && colorTheme !== 'none' ? colorTheme : 'none') as string,
         fontFamily: g('font_family') ?? '',
         fontScale: Math.min(2, Math.max(0.7, Number(g('font_scale')) || 1)),
         fontWeight: (['thin', 'normal', 'bold'].includes(weight) ? weight : 'normal') as string,

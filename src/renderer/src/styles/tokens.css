@@ -1,9 +1,15 @@
-/* ============================================
-   ReadFlow 设计令牌 —— 对齐 WorkBuddy UI 设计规范
-   - 扁平、0.5px 边框、字重只用 400/500
-   - 正文 13px / 标题 14-15px·500
-   - 圆角 8/12/16
-   ============================================ */
+/* ============================================================
+   ReadFlow 设计令牌 —— 对齐 NewMax 自研 Design System（DS）
+   - 令牌前缀统一为 --ds-*（text / brand / surface / icon / radius /
+     elevation / motion / font），源自 NewMax globals.css 取证。
+   - 浅色基准定义于 :root，深色基准定义于 html.dark（NewMax 约定，
+     深色用 .dark 类后缀而非 data-theme="dark"）。
+   - 12 套预设主题色板见 themes.css（html[data-theme="X"] 与
+     html[data-theme="X"].dark）。
+   - 为兼容既有组件样式，保留 ReadFlow 旧令牌（--color-* / --border-* /
+     --card-accent / --border-radius-* / --ease-* / --dur-*）作为
+     --ds-* 的别名，在 :root 一次性映射，随主题动态解析。
+   ============================================================ */
 
 /* 边框光效动画（CSS @property 需顶层声明） */
 @property --beam-opacity {
@@ -12,348 +18,213 @@
   inherits: false;
 }
 
+/* ============================================================
+   NewMax DS 基准令牌（浅色）—— 深绿松石品牌 + 暖金强调
+   ============================================================ */
 :root {
+  /* ---- 文本 ---- */
+  --ds-text-primary: #181b19;
+  --ds-text-secondary: rgba(24, 27, 25, 0.64);
+  --ds-text-tertiary: rgba(24, 27, 25, 0.48);
+
+  /* ---- 品牌 / 强调 ---- */
+  --ds-brand-primary: #2d4739;
+  --ds-brand-primary-text: rgba(255, 255, 255, 0.9);
+  --ds-selection-bg: #2d4739d9;
+  --ds-glow-rgb: 45, 71, 57;
+  --ds-accent: #8c7851;
+  --ds-accent-text: rgba(255, 255, 255, 0.9);
+  --ds-icon: #7e7f7e;
+
+  /* ---- 语义色 ---- */
+  --ds-danger: #b64a34;
+  --ds-success: #287d46;
+  --ds-warning: #916300;
+
+  /* ---- 表面层级（100 最高层卡片/弹窗 → 400 最深层输入框外底） ---- */
+  --ds-surface-100: #ffffff;
+  --ds-surface-200: #faf9f5;
+  --ds-surface-300: #f6f4ef;
+  --ds-surface-400: #f2eee6;
+  --ds-on-surface: rgba(55, 61, 58, 0.06);
+  --ds-on-surface-active: rgba(55, 61, 58, 0.08);
+  --ds-surface-input: #ffffff;
+  --ds-popover: #ffffff;
+  --ds-divider: color-mix(in srgb, #181b19 6%, transparent);
+  --ds-overlay: rgba(0, 0, 0, 0.3);
+
+  /* ---- 圆角 ---- */
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 18px;
+  --ds-radius-xl: 24px;
+  --ds-radius-pill: 64px;
+  --ds-chat-composer-radius: 20px;
+
+  /* ---- 高程 / 阴影（玻璃·纸感多层投影） ---- */
+  --ds-elevation-100:
+    inset 0.5px 0.5px 0.5px #ffffff,
+    0 0 0.5px 0.5px rgba(0, 0, 0, 0.04),
+    0.5px 0.5px 1px rgba(0, 0, 0, 0.08);
+  --ds-elevation-200:
+    0 0 0 0.5px rgba(45, 71, 57, 0.12),
+    0 9px 4px rgba(0, 0, 0, 0.01),
+    0 5px 3px rgba(0, 0, 0, 0.02),
+    0 2px 2px rgba(0, 0, 0, 0.03),
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    inset 0.5px 0.5px 0.5px rgba(255, 255, 255, 0.85);
+  --ds-elevation-300:
+    0 0 0 0.5px rgba(45, 71, 57, 0.1),
+    0 18px 9px rgba(0, 0, 0, 0.01),
+    0 10px 6px rgba(0, 0, 0, 0.02),
+    0 4px 4px rgba(0, 0, 0, 0.03),
+    0 2px 2px rgba(0, 0, 0, 0.04),
+    0 1px 1px rgba(0, 0, 0, 0.05),
+    inset 0.5px 0.5px 0.5px rgba(255, 255, 255, 0.85);
+  --ds-input-shadow:
+    0 0 0.5px 0.5px rgba(0, 0, 0, 0.08),
+    0.5px 0.5px 1px 0 rgba(0, 0, 0, 0.12);
+  --ds-input-shadow-focus:
+    0 0 0 0.5px rgba(0, 0, 0, 0.04),
+    0 0 0 3px color-mix(in srgb, var(--ds-brand-primary) 10%, transparent),
+    0.5px 0.5px 1px 0 rgba(0, 0, 0, 0.08);
+  --ds-menu-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.12),
+    2px 1px 5px rgba(50, 48, 48, 0.06),
+    8px 6px 10px rgba(50, 48, 48, 0.05),
+    18px 13px 13px rgba(50, 48, 48, 0.03),
+    31px 24px 16px rgba(50, 48, 48, 0.01),
+    49px 37px 17px rgba(50, 48, 48, 0);
+
+  /* ---- 动效（缓动 + 时长 + 组合） ---- */
+  --ds-ease-swift: cubic-bezier(0.33, 1, 0.68, 1);
+  --ds-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ds-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --ds-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ds-duration-fast: 180ms;
+  --ds-duration-base: 240ms;
+  --ds-duration-slow: 350ms;
+  --ds-duration-layout: 500ms;
+  --ds-duration-bounce: 700ms;
+  --ds-motion-swift: var(--ds-duration-fast) var(--ds-ease-swift);
+  --ds-motion-soft: var(--ds-duration-base) var(--ds-ease-soft);
+  --ds-motion-spring: var(--ds-duration-base) var(--ds-ease-spring);
+  --ds-motion-layout: var(--ds-duration-layout) var(--ds-ease-soft);
+  --ds-motion-bounce: var(--ds-duration-bounce) var(--ds-ease-bounce);
+
+  /* ---- 字体 ---- */
+  --ds-font-kbd: 'Inter Variable', 'Inter', sans-serif;
+  --ds-font-display-number: 'Spline Sans Mono', ui-monospace, monospace;
+
+  /* ============================================================
+     ReadFlow 旧令牌别名 → 映射到 --ds-*（随主题动态解析）
+     ============================================================ */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", Menlo, monospace;
 
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --border-radius-xl: 16px;
+  /* 表面：primary=最高层(卡片/输入)、secondary=面板、tertiary=应用底/hover */
+  --color-background-primary: var(--ds-surface-100);
+  --color-background-secondary: var(--ds-surface-200);
+  --color-background-tertiary: var(--ds-surface-300);
+  --color-background-success: color-mix(in srgb, var(--ds-success) 10%, transparent);
+  --color-background-warning: color-mix(in srgb, var(--ds-warning) 10%, transparent);
 
-  /* ===== 动效令牌（对齐 emilkowalski/skills 高水准规范）=====
-     - 内置 CSS easing 太弱，统一改用强 cubic-bezier
-     - 进入/退出用 ease-out（起步快、跟手）；位移/形变用 ease-in-out
-     - 所有 UI 动效 < 300ms；按钮反馈 100-160ms */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --dur-fast: 120ms;   /* 按钮反馈 / 小弹层 */
-  --dur-base: 160ms;   /* 下拉 / 卡片态切换 */
-  --dur-slow: 240ms;   /* 模态 / 抽屉 */
+  /* 文本 */
+  --color-text-primary: var(--ds-text-primary);
+  --color-text-secondary: var(--ds-text-secondary);
+  --color-text-tertiary: var(--ds-text-tertiary);
+  --color-text-success: var(--ds-success);
+  --color-text-warning: var(--ds-warning);
 
-  /* 语义色（双色板通用，取自 WorkBuddy 调色板 600 档） */
-  --accent-info: #378add;
-  --accent-success: #1d9e75;
-  --accent-warning: #ba7517;
+  /* 边框（tertiary=细分隔线、secondary=较强描边） */
+  --color-border-tertiary: var(--ds-divider);
+  --color-border-secondary: color-mix(in srgb, var(--ds-text-primary) 20%, transparent);
+
+  /* 语义强调色：交互强调色（按钮/开关/聚焦环/选中态）直接用品牌色 */
+  --card-accent: var(--ds-brand-primary);
+  --accent-info: var(--ds-brand-primary);
+  --accent-success: var(--ds-success);
+  --accent-warning: var(--ds-warning);
+  --accent-coral: var(--ds-danger);
   --accent-purple: #7f77dd;
-  --accent-coral: #d85a30;
   --accent-pink: #d4537e;
+  --color-text-info: color-mix(in srgb, var(--ds-brand-primary) 68%, var(--ds-text-primary) 32%);
+  --color-background-info: color-mix(in srgb, var(--ds-brand-primary) 12%, transparent);
+  --color-border-info: color-mix(in srgb, var(--ds-brand-primary) 42%, transparent);
 
-  /* 由外观设置动态覆盖（缺省值见 appearance.ts） */
+  /* 圆角 / 动效旧别名 */
+  --border-radius-md: var(--ds-radius-sm);
+  --border-radius-lg: var(--ds-radius-md);
+  --border-radius-xl: var(--ds-radius-lg);
+  --ease-out: var(--ds-ease-soft);
+  --ease-in-out: var(--ds-ease-swift);
+  --ease-drawer: var(--ds-ease-soft);
+  --dur-fast: var(--ds-duration-fast);
+  --dur-base: var(--ds-duration-base);
+  --dur-slow: var(--ds-duration-slow);
+
+  /* 由外观设置动态覆盖 */
   --font-scale: 1;
   --font-weight: 400;
   --font-reading: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
   --font-ui: var(--font-sans);
-
-  /* 主强调色直接由所选卡片风格的签名色 --card-accent 派生（不再有独立「强调色」控件）：
-     - 交互强调色（按钮 / 开关 / 聚焦环 / 选中态）直接用 --card-accent 本身
-     - 链接 / 信息文字向正文色靠拢，保证亮暗主题下的对比度
-     - 信息底纹 / 描边用低透明度 card-accent，避免抢眼 */
-  --card-accent: #378add;
-  --accent-info: var(--card-accent);
-  --color-text-info: color-mix(in srgb, var(--card-accent) 68%, var(--color-text-primary) 32%);
-  --color-background-info: color-mix(in srgb, var(--card-accent) 15%, transparent);
-  --color-border-info: color-mix(in srgb, var(--card-accent) 42%, transparent);
-}
-
-/* 浅色主题 */
-:root, :root[data-theme="light"] {
-  --color-background-primary: #ffffff;
-  --color-background-secondary: #f7f7f5;
-  --color-background-tertiary: #f1f0eb;
-  --color-background-success: #e1f5ee;
-  --color-background-warning: #faeeda;
-
-  --color-text-primary: #1a1a18;
-  --color-text-secondary: #5f5e5a;
-  --color-text-tertiary: #888780;
-  --color-text-success: #0f6e56;
-  --color-text-warning: #854f0b;
-
-  --color-border-tertiary: rgba(0, 0, 0, 0.10);
-  --color-border-secondary: rgba(0, 0, 0, 0.20);
-}
-
-/* 深色主题（默认，跟随系统） */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-background-primary: #262624;
-    --color-background-secondary: #1f1f1d;
-    --color-background-tertiary: #171715;
-    --color-background-success: rgba(29, 158, 117, 0.16);
-    --color-background-warning: rgba(186, 117, 23, 0.16);
-
-    --color-text-primary: #eeece4;
-    --color-text-secondary: #b4b2a9;
-    --color-text-tertiary: #888780;
-    --color-text-success: #5dcaa5;
-    --color-text-warning: #fac775;
-
-    --color-border-tertiary: rgba(255, 255, 255, 0.10);
-    --color-border-secondary: rgba(255, 255, 255, 0.22);
-  }
-}
-:root[data-theme="dark"] {
-  --color-background-primary: #262624;
-  --color-background-secondary: #1f1f1d;
-  --color-background-tertiary: #171715;
-  --color-background-success: rgba(29, 158, 117, 0.16);
-  --color-background-warning: rgba(186, 117, 23, 0.16);
-  --color-text-primary: #eeece4;
-  --color-text-secondary: #b4b2a9;
-  --color-text-tertiary: #888780;
-  --color-text-success: #5dcaa5;
-  --color-text-warning: #fac775;
-  --color-border-tertiary: rgba(255, 255, 255, 0.10);
-  --color-border-secondary: rgba(255, 255, 255, 0.22);
 }
 
 /* ============================================================
-   卡片风格（整面「基调」+ 主强调色）—— 受 shiye-tabs 启发
-   每个风格提供 light + dark 两个色板（12 × 2 = 24 套），通过
-   [data-card-style=X][data-theme=dark] 组合选择器让主题在卡片风
-   格选中时仍生效。--card-accent 是签名色，UI 主强调色直接由其派
-   生（见 :root 中的 color-mix 推导，无需独立强调色控件）。
+   NewMax DS 基准令牌（深色）—— 亮绿品牌，用 .dark 类切换
    ============================================================ */
+html.dark {
+  --ds-text-primary: #e6e6e2;
+  --ds-text-secondary: rgba(230, 230, 226, 0.6);
+  --ds-text-tertiary: rgba(230, 230, 226, 0.38);
 
-/* ----- paper（纸感）— 默认 light ----- */
-:root[data-card-style="paper"] {
-  --color-background-primary: #fffaf0; --color-background-secondary: #f3e8d2; --color-background-tertiary: #ece0c9;
-  --color-text-primary: #3a3023; --color-text-secondary: #76644d; --color-text-tertiary: #9d876a;
-  --color-border-tertiary: rgba(121,93,55,.18); --color-border-secondary: rgba(121,93,55,.3);
-  --card-accent: #ad6946;
-}
-:root[data-card-style="paper"][data-theme="dark"] {
-  --color-background-primary: #1a140a; --color-background-secondary: #251c0f; --color-background-tertiary: #2e2210;
-  --color-text-primary: #e8d8b8; --color-text-secondary: #b89a6e; --color-text-tertiary: #8a7050;
-  --color-border-tertiary: rgba(173,105,70,.2); --color-border-secondary: rgba(173,105,70,.36);
-  --card-accent: #d6885a;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-card-style="paper"]:not([data-theme="light"]) {
-    --color-background-primary: #1a140a; --color-background-secondary: #251c0f; --color-background-tertiary: #2e2210;
-    --color-text-primary: #e8d8b8; --color-text-secondary: #b89a6e; --color-text-tertiary: #8a7050;
-    --color-border-tertiary: rgba(173,105,70,.2); --color-border-secondary: rgba(173,105,70,.36);
-    --card-accent: #d6885a;
-  }
-}
+  --ds-brand-primary: #36d385;
+  --ds-brand-primary-text: rgba(0, 0, 0, 0.9);
+  --ds-selection-bg: #36d385d9;
+  --ds-glow-rgb: 54, 211, 133;
+  --ds-accent: #b8a06a;
+  --ds-accent-text: rgba(0, 0, 0, 0.9);
+  --ds-icon: #9a9a98;
 
-/* ----- glass（玻璃）— 默认 light ----- */
-:root[data-card-style="glass"] {
-  --color-background-primary: #eef5f8; --color-background-secondary: #e2eef2; --color-background-tertiary: #d9e8ee;
-  --color-text-primary: #18313a; --color-text-secondary: #506c75; --color-text-tertiary: #7f9ba4;
-  --color-border-tertiary: rgba(75,127,145,.2); --color-border-secondary: rgba(75,127,145,.34);
-  --card-accent: #3e8293;
-}
-:root[data-card-style="glass"][data-theme="dark"] {
-  --color-background-primary: #0e1e25; --color-background-secondary: #142832; --color-background-tertiary: #1a323e;
-  --color-text-primary: #d8e8f0; --color-text-secondary: #8ba8b4; --color-text-tertiary: #5e7884;
-  --color-border-tertiary: rgba(63,130,147,.22); --color-border-secondary: rgba(63,130,147,.4);
-  --card-accent: #5fb0c4;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-card-style="glass"]:not([data-theme="light"]) {
-    --color-background-primary: #0e1e25; --color-background-secondary: #142832; --color-background-tertiary: #1a323e;
-    --color-text-primary: #d8e8f0; --color-text-secondary: #8ba8b4; --color-text-tertiary: #5e7884;
-    --color-border-tertiary: rgba(63,130,147,.22); --color-border-secondary: rgba(63,130,147,.4);
-    --card-accent: #5fb0c4;
-  }
-}
+  --ds-danger: #e0705b;
+  --ds-success: #4cae77;
+  --ds-warning: #d1a041;
 
-/* ----- noir（暗夜）— 默认 dark ----- */
-:root[data-card-style="noir"] {
-  --color-background-primary: #1c1d21; --color-background-secondary: #16171a; --color-background-tertiary: #101113;
-  --color-text-primary: #f3eee5; --color-text-secondary: #bdb5a8; --color-text-tertiary: #7e7a74;
-  --color-border-tertiary: rgba(232,214,181,.16); --color-border-secondary: rgba(232,214,181,.3);
-  --card-accent: #c69c63;
-}
-:root[data-card-style="noir"][data-theme="light"] {
-  --color-background-primary: #ffffff; --color-background-secondary: #f5f3ec; --color-background-tertiary: #e8e4d8;
-  --color-text-primary: #1a1a1a; --color-text-secondary: #5a554c; --color-text-tertiary: #8a857a;
-  --color-border-tertiary: rgba(60,50,30,.16); --color-border-secondary: rgba(60,50,30,.3);
-  --card-accent: #8a6c3a;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-card-style="noir"]:not([data-theme="dark"]) {
-    --color-background-primary: #ffffff; --color-background-secondary: #f5f3ec; --color-background-tertiary: #e8e4d8;
-    --color-text-primary: #1a1a1a; --color-text-secondary: #5a554c; --color-text-tertiary: #8a857a;
-    --color-border-tertiary: rgba(60,50,30,.16); --color-border-secondary: rgba(60,50,30,.3);
-    --card-accent: #8a6c3a;
-  }
-}
+  --ds-surface-100: #2a2b2b;
+  --ds-surface-200: #1e1f1f;
+  --ds-surface-300: #171818;
+  --ds-surface-400: #121313;
+  --ds-on-surface: rgba(255, 255, 255, 0.06);
+  --ds-on-surface-active: rgba(255, 255, 255, 0.1);
+  --ds-surface-input: #2a2b2b;
+  --ds-popover: #2a2b2b;
+  --ds-divider: color-mix(in srgb, #e6e6e2 8%, transparent);
+  --ds-overlay: rgba(0, 0, 0, 0.6);
 
-/* ----- aurora（极光）— 默认 light ----- */
-:root[data-card-style="aurora"] {
-  --color-background-primary: #eef4ef; --color-background-secondary: #e0ece4; --color-background-tertiary: #d6e7dd;
-  --color-text-primary: #193229; --color-text-secondary: #526d63; --color-text-tertiary: #80998f;
-  --color-border-tertiary: rgba(64,123,99,.18); --color-border-secondary: rgba(64,123,99,.32);
-  --card-accent: #3c8b71;
-}
-:root[data-card-style="aurora"][data-theme="dark"] {
-  --color-background-primary: #0a2018; --color-background-secondary: #102a20; --color-background-tertiary: #163228;
-  --color-text-primary: #c8e0d0; --color-text-secondary: #7a9e8a; --color-text-tertiary: #587a68;
-  --color-border-tertiary: rgba(60,139,113,.22); --color-border-secondary: rgba(60,139,113,.4);
-  --card-accent: #5cb088;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-card-style="aurora"]:not([data-theme="light"]) {
-    --color-background-primary: #0a2018; --color-background-secondary: #102a20; --color-background-tertiary: #163228;
-    --color-text-primary: #c8e0d0; --color-text-secondary: #7a9e8a; --color-text-tertiary: #587a68;
-    --color-border-tertiary: rgba(60,139,113,.22); --color-border-secondary: rgba(60,139,113,.4);
-    --card-accent: #5cb088;
-  }
-}
-
-/* ----- ocean（海洋）— 默认 dark ----- */
-:root[data-card-style="ocean"] {
-  --color-background-primary: #103048; --color-background-secondary: #0c2438; --color-background-tertiary: #081a2c;
-  --color-text-primary: #d4eaf7; --color-text-secondary: #8bb8d0; --color-text-tertiary: #5a8ea8;
-  --color-border-tertiary: rgba(81,196,211,.18); --color-border-secondary: rgba(81,196,211,.32);
-  --card-accent: #51c4d3;
-}
-:root[data-card-style="ocean"][data-theme="light"] {
-  --color-background-primary: #e0f0f8; --color-background-secondary: #d0e4f0; --color-background-tertiary: #c0d8e8;
-  --color-text-primary: #103048; --color-text-secondary: #2a5070; --color-text-tertiary: #4a7090;
-  --color-border-tertiary: rgba(81,196,211,.22); --color-border-secondary: rgba(81,196,211,.4);
-  --card-accent: #2a8a98;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-card-style="ocean"]:not([data-theme="dark"]) {
-    --color-background-primary: #e0f0f8; --color-background-secondary: #d0e4f0; --color-background-tertiary: #c0d8e8;
-    --color-text-primary: #103048; --color-text-secondary: #2a5070; --color-text-tertiary: #4a7090;
-    --color-border-tertiary: rgba(81,196,211,.22); --color-border-secondary: rgba(81,196,211,.4);
-    --card-accent: #2a8a98;
-  }
-}
-
-/* ----- sunset（落日）— 默认 dark ----- */
-:root[data-card-style="sunset"] {
-  --color-background-primary: #2e182c; --color-background-secondary: #261420; --color-background-tertiary: #1d0f1b;
-  --color-text-primary: #f8e0e8; --color-text-secondary: #d4a0b2; --color-text-tertiary: #a06882;
-  --color-border-tertiary: rgba(196,66,110,.2); --color-border-secondary: rgba(196,66,110,.36);
-  --card-accent: #f5a623;
-}
-:root[data-card-style="sunset"][data-theme="light"] {
-  --color-background-primary: #fce0e8; --color-background-secondary: #f8d0dc; --color-background-tertiary: #f4c0d0;
-  --color-text-primary: #2e182c; --color-text-secondary: #6a2a4a; --color-text-tertiary: #8a4060;
-  --color-border-tertiary: rgba(196,66,110,.22); --color-border-secondary: rgba(196,66,110,.4);
-  --card-accent: #c48820;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-card-style="sunset"]:not([data-theme="dark"]) {
-    --color-background-primary: #fce0e8; --color-background-secondary: #f8d0dc; --color-background-tertiary: #f4c0d0;
-    --color-text-primary: #2e182c; --color-text-secondary: #6a2a4a; --color-text-tertiary: #8a4060;
-    --color-border-tertiary: rgba(196,66,110,.22); --color-border-secondary: rgba(196,66,110,.4);
-    --card-accent: #c48820;
-  }
-}
-
-/* ----- lavender（薰衣草）— 默认 light ----- */
-:root[data-card-style="lavender"] {
-  --color-background-primary: #f1ecf8; --color-background-secondary: #e6dcf1; --color-background-tertiary: #dccff0;
-  --color-text-primary: #2e1f42; --color-text-secondary: #5e4a78; --color-text-tertiary: #8a72a8;
-  --color-border-tertiary: rgba(149,125,173,.2); --color-border-secondary: rgba(149,125,173,.34);
-  --card-accent: #7c5cbf;
-}
-:root[data-card-style="lavender"][data-theme="dark"] {
-  --color-background-primary: #1a0e2a; --color-background-secondary: #221438; --color-background-tertiary: #2a1a46;
-  --color-text-primary: #e0d0f0; --color-text-secondary: #a08ac0; --color-text-tertiary: #7a64a0;
-  --color-border-tertiary: rgba(124,92,191,.22); --color-border-secondary: rgba(124,92,191,.4);
-  --card-accent: #a07ed8;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-card-style="lavender"]:not([data-theme="light"]) {
-    --color-background-primary: #1a0e2a; --color-background-secondary: #221438; --color-background-tertiary: #2a1a46;
-    --color-text-primary: #e0d0f0; --color-text-secondary: #a08ac0; --color-text-tertiary: #7a64a0;
-    --color-border-tertiary: rgba(124,92,191,.22); --color-border-secondary: rgba(124,92,191,.4);
-    --card-accent: #a07ed8;
-  }
-}
-
-/* ----- forest（森林）— 默认 dark ----- */
-:root[data-card-style="forest"] {
-  --color-background-primary: #0f2a1b; --color-background-secondary: #0a2014; --color-background-tertiary: #06170e;
-  --color-text-primary: #c8e6d0; --color-text-secondary: #7cb88a; --color-text-tertiary: #4e8a5e;
-  --color-border-tertiary: rgba(76,175,80,.18); --color-border-secondary: rgba(76,175,80,.3);
-  --card-accent: #4caf50;
-}
-:root[data-card-style="forest"][data-theme="light"] {
-  --color-background-primary: #e0f0e0; --color-background-secondary: #d0e8d0; --color-background-tertiary: #c0e0c0;
-  --color-text-primary: #0f2a1b; --color-text-secondary: #2a5a3a; --color-text-tertiary: #4a7a5a;
-  --color-border-tertiary: rgba(76,175,80,.22); --color-border-secondary: rgba(76,175,80,.4);
-  --card-accent: #3a8a3e;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-card-style="forest"]:not([data-theme="dark"]) {
-    --color-background-primary: #e0f0e0; --color-background-secondary: #d0e8d0; --color-background-tertiary: #c0e0c0;
-    --color-text-primary: #0f2a1b; --color-text-secondary: #2a5a3a; --color-text-tertiary: #4a7a5a;
-    --color-border-tertiary: rgba(76,175,80,.22); --color-border-secondary: rgba(76,175,80,.4);
-    --card-accent: #3a8a3e;
-  }
-}
-
-/* ----- rose（玫瑰）— 默认 dark ----- */
-:root[data-card-style="rose"] {
-  --color-background-primary: #201520; --color-background-secondary: #190f17; --color-background-tertiary: #120b11;
-  --color-text-primary: #f5dce6; --color-text-secondary: #c89aae; --color-text-tertiary: #9a6880;
-  --color-border-tertiary: rgba(232,133,159,.18); --color-border-secondary: rgba(232,133,159,.32);
-  --card-accent: #e8859f;
-}
-:root[data-card-style="rose"][data-theme="light"] {
-  --color-background-primary: #fce0ec; --color-background-secondary: #f8d0e0; --color-background-tertiary: #f4c0d4;
-  --color-text-primary: #201520; --color-text-secondary: #6a2a4a; --color-text-tertiary: #8a4060;
-  --color-border-tertiary: rgba(232,133,159,.22); --color-border-secondary: rgba(232,133,159,.4);
-  --card-accent: #c46a82;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-card-style="rose"]:not([data-theme="dark"]) {
-    --color-background-primary: #fce0ec; --color-background-secondary: #f8d0e0; --color-background-tertiary: #f4c0d4;
-    --color-text-primary: #201520; --color-text-secondary: #6a2a4a; --color-text-tertiary: #8a4060;
-    --color-border-tertiary: rgba(232,133,159,.22); --color-border-secondary: rgba(232,133,159,.4);
-    --card-accent: #c46a82;
-  }
-}
-
-/* ----- slate（石板）— 默认 dark ----- */
-:root[data-card-style="slate"] {
-  --color-background-primary: #22303f; --color-background-secondary: #1a2531; --color-background-tertiary: #131c25;
-  --color-text-primary: #d0dfe8; --color-text-secondary: #8aaab8; --color-text-tertiary: #5e8498;
-  --color-border-tertiary: rgba(138,180,200,.18); --color-border-secondary: rgba(138,180,200,.3);
-  --card-accent: #8ab4c8;
-}
-:root[data-card-style="slate"][data-theme="light"] {
-  --color-background-primary: #e8eef2; --color-background-secondary: #d8e2ea; --color-background-tertiary: #c8d6e2;
-  --color-text-primary: #22303f; --color-text-secondary: #2a455a; --color-text-tertiary: #4a6578;
-  --color-border-tertiary: rgba(138,180,200,.22); --color-border-secondary: rgba(138,180,200,.4);
-  --card-accent: #6a8ea0;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-card-style="slate"]:not([data-theme="dark"]) {
-    --color-background-primary: #e8eef2; --color-background-secondary: #d8e2ea; --color-background-tertiary: #c8d6e2;
-    --color-text-primary: #22303f; --color-text-secondary: #2a455a; --color-text-tertiary: #4a6578;
-    --color-border-tertiary: rgba(138,180,200,.22); --color-border-secondary: rgba(138,180,200,.4);
-    --card-accent: #6a8ea0;
-  }
-}
-
-/* ----- amber（琥珀）— 默认 dark ----- */
-:root[data-card-style="amber"] {
-  --color-background-primary: #2a2010; --color-background-secondary: #20180a; --color-background-tertiary: #160f06;
-  --color-text-primary: #f5e6c8; --color-text-secondary: #c8a868; --color-text-tertiary: #9a7c40;
-  --color-border-tertiary: rgba(240,192,64,.18); --color-border-secondary: rgba(240,192,64,.32);
-  --card-accent: #f0c040;
-}
-:root[data-card-style="amber"][data-theme="light"] {
-  --color-background-primary: #fce8c0; --color-background-secondary: #f8dca8; --color-background-tertiary: #f4d090;
-  --color-text-primary: #2a2010; --color-text-secondary: #6a4a18; --color-text-tertiary: #8a6428;
-  --color-border-tertiary: rgba(240,192,64,.22); --color-border-secondary: rgba(240,192,64,.4);
-  --card-accent: #c89825;
-}
-@media (prefers-color-scheme: light) {
-  :root[data-card-style="amber"]:not([data-theme="dark"]) {
-    --color-background-primary: #fce8c0; --color-background-secondary: #f8dca8; --color-background-tertiary: #f4d090;
-    --color-text-primary: #2a2010; --color-text-secondary: #6a4a18; --color-text-tertiary: #8a6428;
-    --color-border-tertiary: rgba(240,192,64,.22); --color-border-secondary: rgba(240,192,64,.4);
-    --card-accent: #c89825;
-  }
+  --ds-elevation-100:
+    inset 0.5px 0.5px 0.5px rgba(255, 255, 255, 0.06),
+    0 0 0.5px 0.5px rgba(0, 0, 0, 0.4),
+    0.5px 0.5px 1px rgba(0, 0, 0, 0.4);
+  --ds-elevation-200:
+    0 0 0 0.5px rgba(54, 211, 133, 0.14),
+    0 9px 4px rgba(0, 0, 0, 0.15),
+    0 5px 3px rgba(0, 0, 0, 0.18),
+    0 2px 2px rgba(0, 0, 0, 0.2),
+    0 1px 1px rgba(0, 0, 0, 0.25),
+    inset 0.5px 0.5px 0.5px rgba(255, 255, 255, 0.04);
+  --ds-elevation-300:
+    0 0 0 0.5px rgba(54, 211, 133, 0.12),
+    0 18px 9px rgba(0, 0, 0, 0.18),
+    0 10px 6px rgba(0, 0, 0, 0.2),
+    0 4px 4px rgba(0, 0, 0, 0.22),
+    0 2px 2px rgba(0, 0, 0, 0.25),
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    inset 0.5px 0.5px 0.5px rgba(255, 255, 255, 0.04);
+  --ds-input-shadow:
+    0 0 0.5px 0.5px rgba(0, 0, 0, 0.4),
+    0.5px 0.5px 1px 0 rgba(0, 0, 0, 0.4);
+  --ds-input-shadow-focus:
+    0 0 0 0.5px rgba(0, 0, 0, 0.3),
+    0 0 0 3px color-mix(in srgb, var(--ds-brand-primary) 14%, transparent),
+    0.5px 0.5px 1px 0 rgba(0, 0, 0, 0.4);
 }

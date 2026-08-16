@@ -7,8 +7,8 @@ import { TwitterBookmarkManager } from './TwitterBookmarkManager'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
 import {
-  THEME_OPTIONS, CARD_STYLES,
-  type ThemeMode, type CardStyleKey, type FontWeight
+  THEME_OPTIONS, COLOR_THEMES,
+  type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme } from '../lib/reading-themes'
 import { ThemeEditor } from './ThemeEditor'
@@ -73,23 +73,23 @@ function AppearanceTab() {
   }, [])
 
   const setTheme = (theme: ThemeMode) => updateAppearance({ theme })
-  const setCardStyle = (cardStyle: CardStyleKey | 'none') => updateAppearance({ cardStyle })
+  const setColorTheme = (colorTheme: ColorThemeKey | 'none') => updateAppearance({ colorTheme })
   const setFontWeight = (w: FontWeight) => updateAppearance({ fontWeight: w })
   const setReadingTheme = (id: string) => updateAppearance({ readingTheme: id })
   const [themeEdit, setThemeEdit] = useState<ReadingTheme | undefined>(undefined)
   const [, themeTick] = useState(0)
 
-  // Feature1：选中卡片风格后，把焦点与可视区域移到该卡片上
+  // Feature1：选中颜色主题后，把焦点与可视区域移到该卡片上
   useEffect(() => {
     const grid = styleGridRef.current
     if (!grid) return
     const active = grid.querySelector('.style-opt.active') as HTMLElement | null
     active?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [appearance.cardStyle])
+  }, [appearance.colorTheme])
 
-  const currentStyle = appearance.cardStyle === 'none'
+  const currentStyle = appearance.colorTheme === 'none'
     ? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
-    : CARD_STYLES.find((s) => s.key === appearance.cardStyle)!
+    : COLOR_THEMES.find((s) => s.key === appearance.colorTheme)!
 
   return (
     <div className="set-scroll">
@@ -107,15 +107,16 @@ function AppearanceTab() {
           <p className="src-label">UI 配色</p>
           <span className="cur-chip"><span className="cur-swatch" style={{ background: currentStyle.preview }} />{currentStyle.label}</span>
         </div>
+        <p className="src-hint">NewMax 设计系统整面配色：选择后主强调色（按钮/选中态/聚焦环）随之切换。</p>
         <div className="style-grid" ref={styleGridRef}>
-          <button className={`style-opt ${appearance.cardStyle === 'none' ? 'active' : ''}`}
-            onClick={(e) => { setCardStyle('none'); e.currentTarget.focus() }}>
+          <button className={`style-opt ${appearance.colorTheme === 'none' ? 'active' : ''}`}
+            onClick={(e) => { setColorTheme('none'); e.currentTarget.focus() }}>
             <span className="style-preview" style={{ background: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }} />
             <span className="style-name">默认</span>
           </button>
-          {CARD_STYLES.map((s) => (
-            <button key={s.key} className={`style-opt ${appearance.cardStyle === s.key ? 'active' : ''}`}
-              onClick={(e) => { setCardStyle(s.key); e.currentTarget.focus() }}>
+          {COLOR_THEMES.map((s) => (
+            <button key={s.key} className={`style-opt ${appearance.colorTheme === s.key ? 'active' : ''}`}
+              onClick={(e) => { setColorTheme(s.key); e.currentTarget.focus() }}>
               <span className="style-preview" style={{ background: s.preview }} />
               <span className="style-name">{s.label}</span>
             </button>

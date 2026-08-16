@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, NetLogEntry, MediaKind } from './env'
-import { applyAppearance, persistAppearance, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
+import { applyAppearance, persistAppearance, watchSystemTheme, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
 import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/shortcuts'
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
 
@@ -401,6 +401,10 @@ export const useStore = create<State>((set, get) => ({
     set({ appearance: a, soundEnabled: boot.soundEnabled, soundVolume: boot.soundVolume, shortcuts: parseShortcuts(boot.shortcuts), developerMode: boot.developerMode, logo: boot.logo || '默认.png' })
     // 加载当前数据库路径配置
     void window.readflow.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
+    // 系统亮暗偏好变化时，system 模式下跟随切换（重新应用 .dark 类）
+    watchSystemTheme(() => {
+      if (get().appearance.theme === 'system') applyAppearance(get().appearance)
+    })
     // 网络诊断日志：开发者模式下持续追加，供应用内浮动面板显示（最多保留 300 条）
     window.readflow.onNetLog((entry) => {
       if (!get().developerMode) return
