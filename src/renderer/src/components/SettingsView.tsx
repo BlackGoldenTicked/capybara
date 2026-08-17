@@ -18,6 +18,12 @@ import {
 } from '../lib/shortcuts'
 import { playSound } from '../lib/sound'
 
+// 字号步进器：以「基础字号(px)」为步进来复刻 NewMax 字号组件（显示 12px 这类数字，而非百分比）。
+// 内部仍用 --font-scale 乘子持久化，基础字号 13px 对应 scale=1.0，乘子 = px / FONT_BASE_PX。
+const FONT_BASE_PX = 13
+const FONT_MIN_PX = 10
+const FONT_MAX_PX = 24
+
 // 仅包裹右侧面板内容：切换左侧子菜单时随 settingsTab 重挂载（重置该 tab 内部状态 + 错误隔离），
 // 但外层 .settings-modal 容器保持稳定，从而不会重播 modalIn 进入动画（无感切换）。
 class TabErrorBoundary extends Component<{ children: ReactNode }, { err: Error | null }> {
@@ -104,6 +110,12 @@ function AppearanceTab() {
   const setFontWeight = (w: FontWeight) => updateAppearance({ fontWeight: w })
   const setReadingTheme = (id: string) => updateAppearance({ readingTheme: id })
   const setWallpaperBlur = (v: boolean) => updateAppearance({ wallpaperBlur: v })
+  // 当前显示为「基础字号(px)」，并夹紧到可选区间；写入时换算回 --font-scale 乘子。
+  const fontPx = Math.min(FONT_MAX_PX, Math.max(FONT_MIN_PX, Math.round(appearance.fontScale * FONT_BASE_PX)))
+  const setFontPx = (px: number) => {
+    const clamped = Math.min(FONT_MAX_PX, Math.max(FONT_MIN_PX, px))
+    updateAppearance({ fontScale: clamped / FONT_BASE_PX })
+  }
   const [themeEdit, setThemeEdit] = useState<ReadingTheme | undefined>(undefined)
   const [, themeTick] = useState(0)
 
@@ -202,11 +214,22 @@ function AppearanceTab() {
             {systemFonts.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </label>
-        <label className="src-row" style={{ marginBottom: 10 }}>
-          字号 {Math.round(appearance.fontScale * 100)}%
-          <input type="range" min={70} max={200} value={Math.round(appearance.fontScale * 100)}
-            onChange={(e) => updateAppearance({ fontScale: Number(e.target.value) / 100 })} />
-        </label>
+        <div className="src-row" style={{ marginBottom: 10, justifyContent: 'space-between' }}>
+          <span>字号</span>
+          <div className="font-size-stepper" role="group" aria-label="字号">
+            <button type="button" className="fs-btn" aria-label="减小字号"
+              disabled={fontPx <= FONT_MIN_PX}
+              onClick={() => setFontPx(fontPx - 1)}>
+              <Icon name="minus" size={15} />
+            </button>
+            <span className="fs-value">{fontPx}px</span>
+            <button type="button" className="fs-btn" aria-label="增大字号"
+              disabled={fontPx >= FONT_MAX_PX}
+              onClick={() => setFontPx(fontPx + 1)}>
+              <Icon name="plus" size={15} />
+            </button>
+          </div>
+        </div>
         <label className="src-row">字重
           <div className="seg">
             {(['thin', 'normal', 'bold'] as FontWeight[]).map((w) => (
@@ -216,7 +239,7 @@ function AppearanceTab() {
             ))}
           </div>
         </label>
-        <p className="src-hint">全局字体从系统已安装的全部字体中选择，字号为全局缩放（70%–200%），字重作用于全部文字。</p>
+        <p className="src-hint">全局字体从系统已安装的全部字体中选择，字号为全局基础字号（10–24px），作用于全部界面文字。</p>
       </div>
 
       <div className="set-card">

@@ -724,6 +724,33 @@ html.dark .reader-body {
   gap: 8px;
 }
 .src-hint { font-size: 12px; color: var(--color-text-tertiary); }
+/* ===== 字号步进器（复刻 NewMax 字号调整组件：圆角边框组 + 中间 px 数字 + 两侧 −/+） ===== */
+.font-size-stepper {
+  display: inline-flex; align-items: center;
+  height: 34px;
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: 8px;
+  background: var(--color-background-primary);
+  overflow: hidden;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+}
+.fs-btn {
+  width: 34px; height: 34px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--color-text-secondary); cursor: pointer;
+  transition: background .12s var(--ease-out), color .12s var(--ease-out);
+}
+.fs-btn:hover:not(:disabled) { background: var(--color-background-tertiary); color: var(--color-text-primary); }
+.fs-btn:active:not(:disabled) { background: color-mix(in srgb, var(--card-accent) 12%, transparent); }
+.fs-btn:disabled { color: var(--color-text-tertiary); cursor: not-allowed; opacity: .45; }
+.fs-value {
+  min-width: 48px; text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px; font-weight: 500; color: var(--color-text-primary);
+  line-height: 34px;
+  border-left: 0.5px solid var(--color-border-tertiary);
+  border-right: 0.5px solid var(--color-border-tertiary);
+}
 .src-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 0 2px; border-top: 0.5px solid var(--color-border-tertiary); }
 /* 顶部两个平级段控件（类型 / 方式）：全宽 segmented，与下方表单输入框左边缘对齐 */
 .src-3way { margin-top: 4px; }
