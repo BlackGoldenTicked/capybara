@@ -317,20 +317,22 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
   animation: modalIn var(--dur-slow) var(--ease-out) both;
 }
 .settings-close {
-  position: absolute; top: 12px; right: 14px; z-index: 6;
+  position: absolute; top: 12px; right: 14px; z-index: 30;
   width: 28px; height: 28px; padding: 0; border: none; border-radius: 7px;
-  background: transparent; color: var(--color-text-tertiary);
+  background: transparent; color: var(--color-text-secondary);
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
   transition: background .12s var(--ease-out), color .12s var(--ease-out);
 }
+/* 透明外扩命中区：小图标按钮更易点中，不增加视觉尺寸 */
+.settings-close::before { content: ''; position: absolute; left: -6px; right: -6px; top: -6px; bottom: -6px; }
 .settings-close:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
 
 .settings { display: flex; min-height: 0; background: var(--color-background-tertiary); }
-.settings-nav { width: 168px; flex-shrink: 0; padding: 16px 10px; border-right: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); display: flex; flex-direction: column; gap: 4px; }
+.settings-nav { width: 168px; flex-shrink: 0; padding: 16px 10px; border-right: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); display: flex; flex-direction: column; gap: 4px; position: relative; z-index: 1; }
 .set-nav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: none; background: transparent; color: var(--color-text-secondary); font-size: 13px; border-radius: 8px; cursor: pointer; text-align: left; }
 .set-nav:hover { background: var(--color-background-tertiary); }
 .set-nav.active { background: var(--color-background-info); color: var(--color-text-info); }
-.settings-panel { flex: 1; min-width: 0; overflow-y: auto; background: var(--color-background-primary); }
+.settings-panel { flex: 1; min-width: 0; overflow-y: auto; background: var(--color-background-primary); position: relative; z-index: 1; }
 .set-scroll { padding: 28px 32px; max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 .db-path { display: inline-block; margin-top: 6px; padding: 4px 8px; border-radius: 6px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); font-family: var(--font-ui); font-size: 12px; word-break: break-all; color: var(--color-text-secondary); }
 .db-err { margin-top: 6px; color: var(--color-danger, #e5484d); }
@@ -1356,7 +1358,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px s
 
 /* ===== 阅读配色主题编辑器弹窗 ===== */
 .theme-editor-overlay {
-  position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.32);
+  position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,.32);
   display: flex; align-items: center; justify-content: center;
 }
 .theme-editor {
