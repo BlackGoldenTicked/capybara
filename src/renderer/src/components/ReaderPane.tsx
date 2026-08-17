@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { Item } from '../env'
 import { Icon } from './icons'
@@ -25,6 +25,10 @@ export function ReaderPane() {
   const [cleanHtml, setCleanHtml] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
   const [activeId, setActiveId] = useState('')
+  // 章节在 body 内的位置百分比（0–100）：用于浮动 TOC 尺 tick 定位与 hover tooltip
+  const [positions, setPositions] = useState<Record<string, number>>({})
+  // hover tooltip：当前 hover 的章节 id + 气泡应有的 top 像素
+  const [tip, setTip] = useState<{ id: string; top: number } | null>(null)
 
   // 按需取单条完整数据（含正文），列表不再全量传正文（性能优化 #1）
   useEffect(() => {
@@ -97,6 +101,31 @@ export function ReaderPane() {
     return () => { body.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [toc])
 
+  // 计算每个章节在 body 内的位置百分比（章→{0–100}），用于右侧浮动 TOC 尺 tick top 定位。
+  // 监听 body 内容变化（图片懒加载、字体加载）和视口 resize，重算后写入 positions。
+  useLayoutEffect(() => {
+    const body = bodyRef.current
+    if (!body || toc.length === 0) { setPositions({}); return }
+    const recompute = () => {
+      const sh = body.scrollHeight
+      if (!sh) return
+      const out: Record<string, number> = {}
+      for (const h of toc) {
+        const el = body.querySelector<HTMLElement>(`#${CSS.escape(h.id)}`)
+        if (!el) { out[h.id] = 0; continue }
+        const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop
+        out[h.id] = Math.max(0, Math.min(100, (top / sh) * 100))
+      }
+      setPositions(out)
+    }
+    recompute()
+    // 图片懒加载 / 自定义字体加载可能改变正文高度 → 用 ResizeObserver 自动重算
+    const ro = 'ResizeObserver' in window ? new ResizeObserver(() => recompute()) : null
+    ro?.observe(body)
+    window.addEventListener('resize', recompute)
+    return () => { ro?.disconnect(); window.removeEventListener('resize', recompute) }
+  }, [toc, html])
+
   if (selectedId == null || !item) {
     return (<section className="reader"><div className="reader-empty">选择左侧条目开始阅读 · J/K 快速浏览{loading ? ' · 加载中…' : ''}</div></section>)
   }
@@ -149,21 +178,6 @@ export function ReaderPane() {
         </select>
       </div>
       <div className="reader-split">
-        {toc.length > 0 && (
-          <nav className="reader-toc" aria-label="正文目录">
-            <div className="toc-head">目录 · {toc.length}</div>
-            <div className="toc-list" role="listbox" aria-label="快速定位章节">
-              {toc.map((h) => (
-                <button key={h.id} type="button" role="option" aria-selected={activeId === h.id}
-                  className={`toc-row lvl-${h.level}${activeId === h.id ? ' is-active' : ''}`}
-                  style={{ '--lvl-indent': `${(h.level - 2) * 12}px` } as React.CSSProperties}
-                  onClick={() => scrollToHeading(h.id)}>
-                  <span className="toc-row__text">{h.text}</span>
-                </button>
-              ))}
-            </div>
-          </nav>
-        )}
         <div className="reader-body" ref={bodyRef}>
         <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
         <p className="reader-meta">{item.author || item.source_name}</p>
@@ -206,7 +220,44 @@ export function ReaderPane() {
             <span className="lightbox-hint">点击任意处关闭</span>
           </div>
         )}
-      </div>
+        {toc.length > 0 && (() => {
+          const tipHead = tip ? toc.find((t) => t.id === tip.id) : null
+          return (
+            <nav className="reader-toc-rail" aria-label="章节快速定位">
+              {toc.map((h) => (
+                <button key={h.id} type="button"
+                  className={`toc-tick${activeId === h.id ? ' is-active' : ''}`}
+                  style={{ top: `${positions[h.id] ?? 0}%` } as React.CSSProperties}
+                  aria-label={h.text}
+                  onMouseEnter={(e) => {
+                    const btn = e.currentTarget as HTMLElement
+                    const rail = btn.parentElement as HTMLElement
+                    const br = btn.getBoundingClientRect()
+                    const rr = rail.getBoundingClientRect()
+                    setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
+                  }}
+                  onMouseLeave={() => setTip(null)}
+                  onFocus={(e) => {
+                    const btn = e.currentTarget as HTMLElement
+                    const rail = btn.parentElement as HTMLElement
+                    const br = btn.getBoundingClientRect()
+                    const rr = rail.getBoundingClientRect()
+                    setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
+                  }}
+                  onBlur={() => setTip(null)}
+                  onClick={() => { setTip(null); scrollToHeading(h.id) }} />
+              ))}
+              {tipHead && (
+                <div className="toc-rail-tooltip" style={{ top: tip!.top } as React.CSSProperties}
+                  onMouseEnter={() => setTip(tip)} onMouseLeave={() => setTip(null)}>
+                  <div className="toc-rail-tooltip__title">{tipHead.text}</div>
+                  {tipHead.preview && <div className="toc-rail-tooltip__preview">{tipHead.preview}</div>}
+                </div>
+              )}
+            </nav>
+          )
+        })()}
+        </div>
       </div>
     </section>
   )

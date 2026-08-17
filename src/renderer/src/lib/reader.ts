@@ -164,17 +164,39 @@ export interface TocHeading {
   id: string
   text: string
   level: number
+  /** 该章节下首段正文摘要（≤60 字），用于 hover tooltip。空字符串表示无预览。 */
+  preview: string
+}
+
+/** 从一个节点抽首段可见文本（≤60 字），用于目录项 hover 气泡。 */
+function extractPreviewFromHeading(h: Element): string {
+  const MAX = 60
+  const parts: string[] = []
+  let total = 0
+  let found = false
+  let n: Element | null = h.nextElementSibling
+  while (n && !found) {
+    if (/^H[1-6]$/.test(n.tagName)) break // 到了下一个标题就停
+    const txt = (n.textContent ?? '').replace(/\s+/g, ' ').trim()
+    if (txt) {
+      parts.push(txt)
+      total += txt.length
+      found = true
+    }
+    n = n.nextElementSibling
+  }
+  const merged = parts.join(' ').trim()
+  return merged.length > MAX ? merged.slice(0, MAX).trimEnd() + '…' : merged
 }
 
 /**
- * 从正文 HTML 抽取标题目录（h2–h6），为每个标题注入唯一 id，
- * 并返回注入 id 后的 HTML（可直接 dangerouslySetInnerHTML）。
+ * 从正文 HTML 抽取标题目录（h2–h6），为每个标题注入唯一 id，并抽取每个章节的首段摘要。
+ * 返回注入 id 后的 HTML（可直接 dangerouslySetInnerHTML）。
  *
- * 用于正文阅读左侧的「目录 / 快速定位」导航：点击目录项即可平滑滚动到对应章节，
- * 滚动时高亮当前所在章节（scroll-spy）。
+ * 用于正文阅读右侧的「浮动 TOC 尺」快速定位：每段对应一个章节，hover 显示摘要气泡，
+ * 点击平滑滚动，滚动时高亮当前章节。
  *
- * 只取 h2–h6：h1 通常是文章主标题，而正文顶部已用 .reader-title 单独展示，
- * 再纳入目录会造成重复。
+ * 只取 h2–h6：h1 通常是文章主标题，正文顶部用 .reader-title 单独展示，避免重复。
  */
 export function buildToc(rawHtml: string): { html: string; toc: TocHeading[] } {
   if (!rawHtml || !rawHtml.trim()) return { html: rawHtml, toc: [] }
@@ -199,7 +221,8 @@ export function buildToc(rawHtml: string): { html: string; toc: TocHeading[] } {
     seen.set(base, used + 1)
     const id = `toc-${slug}`
     h.setAttribute('id', id)
-    toc.push({ id, text, level })
+    const preview = extractPreviewFromHeading(h)
+    toc.push({ id, text, level, preview })
   })
   const html = doc.body?.innerHTML ?? rawHtml
   return { html, toc }
