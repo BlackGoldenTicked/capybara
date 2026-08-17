@@ -7,7 +7,7 @@ import { TwitterBookmarkManager } from './TwitterBookmarkManager'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
 import {
-  THEME_OPTIONS, COLOR_THEMES, IMAGE_WALLPAPERS, rerollRandomPalette,
+  THEME_OPTIONS, COLOR_THEMES, IMAGE_WALLPAPERS,
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme } from '../lib/reading-themes'
@@ -104,11 +104,6 @@ function AppearanceTab() {
   const setFontWeight = (w: FontWeight) => updateAppearance({ fontWeight: w })
   const setReadingTheme = (id: string) => updateAppearance({ readingTheme: id })
   const setWallpaperBlur = (v: boolean) => updateAppearance({ wallpaperBlur: v })
-  /** 点击「随机」按钮：切换到 random 主题并重摇一次种子，注入新的 --ds-* 集。 */
-  const pickRandom = () => {
-    rerollRandomPalette()
-    updateAppearance({ colorTheme: 'random' })
-  }
   const [themeEdit, setThemeEdit] = useState<ReadingTheme | undefined>(undefined)
   const [, themeTick] = useState(0)
 
@@ -123,14 +118,12 @@ function AppearanceTab() {
   const currentStyle =
     appearance.colorTheme === 'none'
       ? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
-      : appearance.colorTheme === 'random'
-        ? { label: '随机', preview: 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)' }
-        : appearance.colorTheme.startsWith('image-')
-          ? {
-              label: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '图片主题',
-              preview: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb ?? 'transparent'
-            }
-          : COLOR_THEMES.find((s) => s.key === appearance.colorTheme) ?? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
+      : appearance.colorTheme.startsWith('image-')
+        ? {
+            label: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '图片主题',
+            preview: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb ?? 'transparent'
+          }
+        : COLOR_THEMES.find((s) => s.key === appearance.colorTheme) ?? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
 
   return (
     <div className="set-scroll">
@@ -157,11 +150,8 @@ function AppearanceTab() {
           </button>
           {COLOR_THEMES.map((s) => (
             <button key={s.key} className={`style-opt ${appearance.colorTheme === s.key ? 'active' : ''}`}
-              onClick={(e) => {
-                if (s.key === 'random') pickRandom()
-                else { setColorTheme(s.key); e.currentTarget.focus() }
-              }}>
-              <span className="style-preview" style={{ background: s.key === 'random' ? 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)' : s.preview }} />
+              onClick={(e) => { setColorTheme(s.key); e.currentTarget.focus() }}>
+              <span className="style-preview" style={{ background: s.preview }} />
               <span className="style-name">{s.label}</span>
             </button>
           ))}
