@@ -365,7 +365,8 @@ function registerIpc() {
         fontFamily: g('font_family') ?? '',
         fontScale: Math.min(2, Math.max(0.7, Number(g('font_scale')) || 1)),
         fontWeight: (['thin', 'normal', 'bold'].includes(weight) ? weight : 'normal') as string,
-        readingTheme: g('reading_theme') ?? '__follow_ui__'
+        readingTheme: g('reading_theme') ?? '__follow_ui__',
+        wallpaperBlur: g('wallpaper_blur') === '1'
       }
       return {
         appearance,

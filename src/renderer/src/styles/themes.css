@@ -419,3 +419,19 @@ html[data-theme="vibrant"].dark {
   --ds-surface-400: #42494c;
   --ds-on-surface: rgba(0,206,201,0.06);
 }
+
+/* ============================================================
+   NewMax 图片壁纸主题（image-aqua/image-petal/image-snow）
+   —— 从 NewMax.app 提取的 aqua-curves/petal-haze/snow-cinnabar-wallpaper
+   三张壁纸作为 body 主区域背景。不重定义 ds-* 令牌（NewMax 规范 image-wallpaper
+   light/dark 为空），浅/深由 html.dark 类决定；app.css 据此应用 body::before 壁纸图层。
+   ============================================================ */
+html[data-theme="image-aqua"] {
+  --ds-wallpaper: url('../assets/wallpapers/aqua-curves.jpg');
+}
+html[data-theme="image-petal"] {
+  --ds-wallpaper: url('../assets/wallpapers/petal-haze.jpg');
+}
+html[data-theme="image-snow"] {
+  --ds-wallpaper: url('../assets/wallpapers/snow-cinnabar-wallpaper.jpg');
+}

@@ -7,7 +7,7 @@ import { TwitterBookmarkManager } from './TwitterBookmarkManager'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
 import {
-  THEME_OPTIONS, COLOR_THEMES,
+  THEME_OPTIONS, COLOR_THEMES, IMAGE_WALLPAPERS, rerollRandomPalette,
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme } from '../lib/reading-themes'
@@ -76,6 +76,12 @@ function AppearanceTab() {
   const setColorTheme = (colorTheme: ColorThemeKey | 'none') => updateAppearance({ colorTheme })
   const setFontWeight = (w: FontWeight) => updateAppearance({ fontWeight: w })
   const setReadingTheme = (id: string) => updateAppearance({ readingTheme: id })
+  const setWallpaperBlur = (v: boolean) => updateAppearance({ wallpaperBlur: v })
+  /** 点击「随机」按钮：切换到 random 主题并重摇一次种子，注入新的 --ds-* 集。 */
+  const pickRandom = () => {
+    rerollRandomPalette()
+    updateAppearance({ colorTheme: 'random' })
+  }
   const [themeEdit, setThemeEdit] = useState<ReadingTheme | undefined>(undefined)
   const [, themeTick] = useState(0)
 
@@ -121,7 +127,48 @@ function AppearanceTab() {
               <span className="style-name">{s.label}</span>
             </button>
           ))}
+          {/* 「随机」额外按钮：点击重摇一次种子并切到 random 主题 */}
+          <button className={`style-opt ${appearance.colorTheme === 'random' ? 'active' : ''}`}
+            onClick={() => pickRandom()} title="点击随机生成一套 NewMax 色板（含 WCAG 对比度校正）">
+            <span className="style-preview" style={{ background: 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)' }} />
+            <span className="style-name">随机</span>
+          </button>
         </div>
+      </div>
+
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">图片主题</p>
+          <span className="cur-chip">
+            <span className="cur-swatch" style={{
+              background: appearance.colorTheme.startsWith('image-')
+                ? IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb
+                : 'transparent'
+            }} />
+            {appearance.colorTheme.startsWith('image-')
+              ? IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '未选择'
+              : '未选择'}
+          </span>
+        </div>
+        <p className="src-hint">NewMax 壁纸主题：用图片作为主区域背景，沿用默认深色基准（不重定义色板）。</p>
+        <div className="wallpaper-grid">
+          {IMAGE_WALLPAPERS.map((w) => (
+            <button key={w.key}
+              className={`wallpaper-opt ${appearance.colorTheme === w.key ? 'active' : ''}`}
+              onClick={() => setColorTheme(w.key)}
+              title={w.label}>
+              <span className="wallpaper-thumb" style={{ backgroundImage: `url(${w.thumb})` }} />
+              <span className="wallpaper-name">{w.label}</span>
+            </button>
+          ))}
+        </div>
+        {appearance.colorTheme.startsWith('image-') && (
+          <label className="switch-row" style={{ marginTop: 4 }}>
+            <span>模糊背景</span>
+            <button className={`switch ${appearance.wallpaperBlur ? 'on' : ''}`} role="switch" aria-checked={appearance.wallpaperBlur}
+              onClick={() => setWallpaperBlur(!appearance.wallpaperBlur)}><span className="knob" /></button>
+          </label>
+        )}
       </div>
 
       <div className="set-card">
