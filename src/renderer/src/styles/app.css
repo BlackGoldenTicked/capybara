@@ -467,8 +467,6 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
   background-color: #f3efe7;
   background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2Ij48ZmlsdGVyIGlkPSJnIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PGZlQ29tcG9uZW50VHJhbnNmZXI+PGZlRnVuY0EgdHlwZT0ibGluZWFyIiBzbG9wZT0iLjA0NSIvPjwvZmVDb21wb25lbnRUcmFuc2Zlcj48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsdGVyPSJ1cmwoI2cpIi8+PC9zdmc+");
 }
-/* 容纳正文 body 的横向布局壳（TOC 浮尺现在内嵌在 body 内） */
-.reader-split { flex: 1; min-height: 0; display: flex; }
 /* Vercel 编辑规范：正文 60-68 字符行宽、1.75 行高、段落间距分隔 */
 .reader-title { font-size: 15px; font-weight: 500; line-height: 1.5; margin-bottom: 6px; }
 .reader-title-link { display: block; color: inherit; text-decoration: none; cursor: pointer; }
@@ -542,65 +540,88 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 .reader-content .embed-fallback { font-size: 0.9em; color: var(--color-text-tertiary); padding: 10px 14px; border: 0.5px dashed var(--color-border-tertiary); border-radius: 8px; margin: 1.1em 0; }
 .reader-content .embed-fallback a { color: var(--color-text-info); }
 
-/* ===== 正文右侧浮动 TOC 尺（hover 气泡显示章节摘要） ===== */
-/* 容器与 body 同滚：position:absolute 相对 .reader-body 定位（ReaderPane 已给 body 加 position:relative）。
-   容器高度 = body scrollHeight（与正文同长），tick 用 top:X% 标记章节位置。
-   容器极窄（26px），不抢正文宽度；hover/focus tick 弹气泡显示该章节首段正文摘要。 */
+/* ===== 正文左侧浮动 TOC 尺（100% 复刻 ChatGPT 对话历史「横线密度尺」） ===== */
+/* 容器挂在 .reader-body 内部 absolute，top:0 + bottom:0 让其高度与 body scrollHeight 一致，
+   这样正文中每个章节的绝对像素偏移 offsetTop 才能 1:1 对应 tick 的视觉位置。
+   不占正文宽度、不抢事件，仅 tick 自身接收 hover/focus/click，hover 弹气泡显示章节首段摘要。 */
 .reader-toc-rail {
   position: absolute;
-  top: 0; right: 12px;
-  width: 18px;
-  height: 100%; /* 跟 body.scrollHeight 对齐，使 top:X% 准确对应章节滚动位置 */
-  pointer-events: none;
+  top: 0;
+  bottom: 0;
+  left: 10px; /* 视口左缘 10px，参考 ChatGPT 对话历史尺的位置 */
+  width: 60px; /* 容纳最长横线（54px + hover 加宽 8px）+ 一点右侧留白 */
+  pointer-events: none; /* 让正文点击穿透；tick 自己开 pointer-events:auto */
   z-index: 5;
 }
-/* 一段章节对应一根短横线。top 由 ReaderPane 通过 inline style 注入（X%）。 */
+/* 一段章节对应一根横线。位置（top）由 ReaderPane 通过 inline style 注入 X%，
+   长度（宽度）由 ReaderPane 按 sectionChars clamp 到 18–54px 注入 --tick-w，
+   active / hover / focus 时高度变 3px、颜色变 accent（更粗更深），模拟 chatgpt "消息密度热力图" 高亮当前对话。 */
 .toc-tick {
   position: absolute;
   left: 0;
-  width: 14px;
+  width: var(--tick-w, 30px);
   height: 2px;
   margin-top: -1px; /* 让 top 数值正好对齐横线中心 */
   padding: 0;
   border: none;
   border-radius: 2px;
-  background: var(--color-border-tertiary);
+  background: var(--color-border-secondary);
+  opacity: .85;
   cursor: pointer;
   pointer-events: auto;
-  transition: width .12s ease, height .12s ease, background .12s ease;
+  transition: width .14s ease, height .14s ease, background .14s ease, opacity .14s ease;
   outline: none;
 }
-.toc-tick:hover { width: 22px; height: 3px; margin-top: -1.5px; background: var(--card-accent, var(--accent-info)); }
-.toc-tick:focus-visible { width: 22px; height: 3px; margin-top: -1.5px; background: var(--card-accent, var(--accent-info)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--card-accent, var(--accent-info)) 30%, transparent); }
-.toc-tick.is-active { width: 22px; height: 3px; margin-top: -1.5px; background: var(--card-accent, var(--accent-info)); }
+.toc-tick:hover {
+  width: calc(var(--tick-w, 30px) + 8px);
+  height: 3px;
+  margin-top: -1.5px;
+  background: var(--card-accent, var(--accent-info));
+  opacity: 1;
+}
+.toc-tick:focus-visible {
+  width: calc(var(--tick-w, 30px) + 8px);
+  height: 3px;
+  margin-top: -1.5px;
+  background: var(--card-accent, var(--accent-info));
+  opacity: 1;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--card-accent, var(--accent-info)) 30%, transparent);
+}
+.toc-tick.is-active {
+  width: calc(var(--tick-w, 30px) + 8px);
+  height: 3px;
+  margin-top: -1.5px;
+  background: var(--card-accent, var(--accent-info));
+  opacity: 1;
+}
 .toc-tick:active { transform: none; }
-/* hover/focus 气泡：浮在 rail 左侧、垂直居中对应当前 tick。 */
+/* hover/focus 气泡：浮在 rail 右侧（视口左缘 → 右），垂直居中对应当前 tick。 */
 .toc-rail-tooltip {
   position: absolute;
-  right: calc(100% + 10px);
+  left: calc(100% + 8px);
   transform: translateY(-50%);
   min-width: 132px;
-  max-width: 220px;
+  max-width: 240px;
   padding: 7px 10px;
   border-radius: 8px;
   background: var(--color-background-primary);
   color: var(--color-text-primary);
   border: 0.5px solid var(--color-border-secondary);
   box-shadow: 0 6px 22px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
-  pointer-events: auto; /* 允许 mouse enter 进 tooltip 后保持显示 */
+  pointer-events: auto;
   font-size: 12px;
   line-height: 1.5;
   user-select: none;
   z-index: 10;
   animation: tocTipIn .14s var(--ease-out, ease) both;
 }
-.toc-rail-tooltip::after {
-  content: ''; position: absolute; right: -5px; top: 50%;
+.toc-rail-tooltip::before {
+  content: ''; position: absolute; left: -5px; top: 50%;
   transform: translateY(-50%) rotate(45deg);
   width: 8px; height: 8px;
   background: var(--color-background-primary);
-  border-right: 0.5px solid var(--color-border-secondary);
-  border-top: 0.5px solid var(--color-border-secondary);
+  border-left: 0.5px solid var(--color-border-secondary);
+  border-bottom: 0.5px solid var(--color-border-secondary);
 }
 .toc-rail-tooltip__title {
   font-weight: 600;

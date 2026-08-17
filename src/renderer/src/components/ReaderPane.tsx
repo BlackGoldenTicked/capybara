@@ -25,7 +25,8 @@ export function ReaderPane() {
   const [cleanHtml, setCleanHtml] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
   const [activeId, setActiveId] = useState('')
-  // 章节在 body 内的位置百分比（0–100）：用于浮动 TOC 尺 tick 定位与 hover tooltip
+  // 章节在 body 内容（scrollHeight）里的绝对像素偏移：用于左侧 TOC 浮尺 tick top 定位。
+  // 直接用 el.offsetTop，浏览器自带，无需自己算 scrollHeight。
   const [positions, setPositions] = useState<Record<string, number>>({})
   // hover tooltip：当前 hover 的章节 id + 气泡应有的 top 像素
   const [tip, setTip] = useState<{ id: string; top: number } | null>(null)
@@ -101,20 +102,20 @@ export function ReaderPane() {
     return () => { body.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [toc])
 
-  // 计算每个章节在 body 内的位置百分比（章→{0–100}），用于右侧浮动 TOC 尺 tick top 定位。
+  // 计算每个 heading 在 body 内的绝对像素偏移（heading.offsetTop），用于左侧 TOC 浮尺 tick top 定位。
+  // rail 高度 = body scrollHeight（CSS: .reader-toc-rail top:0 + bottom:0），所以像素直接对位章节在正文中的真实位置；
   // 监听 body 内容变化（图片懒加载、字体加载）和视口 resize，重算后写入 positions。
   useLayoutEffect(() => {
     const body = bodyRef.current
     if (!body || toc.length === 0) { setPositions({}); return }
     const recompute = () => {
-      const sh = body.scrollHeight
-      if (!sh) return
       const out: Record<string, number> = {}
       for (const h of toc) {
         const el = body.querySelector<HTMLElement>(`#${CSS.escape(h.id)}`)
         if (!el) { out[h.id] = 0; continue }
-        const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop
-        out[h.id] = Math.max(0, Math.min(100, (top / sh) * 100))
+        // offsetTop 相对最近的定位祖先（body 是 relative），且含 body 的 padding-top。
+        // 我们的 rail 也是 relative 父下 top:0，绝对像素对位，正好。
+        out[h.id] = el.offsetTop
       }
       setPositions(out)
     }
@@ -177,8 +178,7 @@ export function ReaderPane() {
           </optgroup>
         </select>
       </div>
-      <div className="reader-split">
-        <div className="reader-body" ref={bodyRef}>
+      <div className="reader-body" ref={bodyRef}>
         <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
         <p className="reader-meta">{item.author || item.source_name}</p>
 
@@ -220,36 +220,39 @@ export function ReaderPane() {
             <span className="lightbox-hint">点击任意处关闭</span>
           </div>
         )}
+
         {toc.length > 0 && (() => {
           const tipHead = tip ? toc.find((t) => t.id === tip.id) : null
           return (
-            <nav className="reader-toc-rail" aria-label="章节快速定位">
-              {toc.map((h) => (
-                <button key={h.id} type="button"
-                  className={`toc-tick${activeId === h.id ? ' is-active' : ''}`}
-                  style={{ top: `${positions[h.id] ?? 0}%` } as React.CSSProperties}
-                  aria-label={h.text}
-                  onMouseEnter={(e) => {
-                    const btn = e.currentTarget as HTMLElement
-                    const rail = btn.parentElement as HTMLElement
-                    const br = btn.getBoundingClientRect()
-                    const rr = rail.getBoundingClientRect()
-                    setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
-                  }}
-                  onMouseLeave={() => setTip(null)}
-                  onFocus={(e) => {
-                    const btn = e.currentTarget as HTMLElement
-                    const rail = btn.parentElement as HTMLElement
-                    const br = btn.getBoundingClientRect()
-                    const rr = rail.getBoundingClientRect()
-                    setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
-                  }}
-                  onBlur={() => setTip(null)}
-                  onClick={() => { setTip(null); scrollToHeading(h.id) }} />
-              ))}
+            <nav className="reader-toc-rail" aria-label="章节快速定位" onMouseLeave={() => setTip(null)}>
+              {toc.map((h) => {
+                // 横线宽度正比于该章节内容字符数（消息密度热力图），clamp 18–54px
+                const w = Math.max(18, Math.min(54, 18 + Math.floor(h.sectionChars / 30)))
+                return (
+                  <button key={h.id} type="button"
+                    className={`toc-tick${activeId === h.id ? ' is-active' : ''}`}
+                    style={{ top: `${positions[h.id] ?? 0}px`, '--tick-w': `${w}px` } as React.CSSProperties}
+                    aria-label={h.text}
+                    onMouseEnter={(e) => {
+                      const btn = e.currentTarget as HTMLElement
+                      const rail = btn.parentElement as HTMLElement
+                      const br = btn.getBoundingClientRect()
+                      const rr = rail.getBoundingClientRect()
+                      setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
+                    }}
+                    onFocus={(e) => {
+                      const btn = e.currentTarget as HTMLElement
+                      const rail = btn.parentElement as HTMLElement
+                      const br = btn.getBoundingClientRect()
+                      const rr = rail.getBoundingClientRect()
+                      setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
+                    }}
+                    onBlur={() => setTip(null)}
+                    onClick={() => { setTip(null); scrollToHeading(h.id) }} />
+                )
+              })}
               {tipHead && (
-                <div className="toc-rail-tooltip" style={{ top: tip!.top } as React.CSSProperties}
-                  onMouseEnter={() => setTip(tip)} onMouseLeave={() => setTip(null)}>
+                <div className="toc-rail-tooltip" style={{ top: tip!.top } as React.CSSProperties}>
                   <div className="toc-rail-tooltip__title">{tipHead.text}</div>
                   {tipHead.preview && <div className="toc-rail-tooltip__preview">{tipHead.preview}</div>}
                 </div>
@@ -257,7 +260,6 @@ export function ReaderPane() {
             </nav>
           )
         })()}
-        </div>
       </div>
     </section>
   )

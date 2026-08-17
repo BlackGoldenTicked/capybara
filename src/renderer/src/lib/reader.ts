@@ -166,6 +166,8 @@ export interface TocHeading {
   level: number
   /** 该章节下首段正文摘要（≤60 字），用于 hover tooltip。空字符串表示无预览。 */
   preview: string
+  /** 该章节到下一个 heading 之间的全部可见字符数，用于 TOC 浮尺「横线长度」（消息密度热力图）。 */
+  sectionChars: number
 }
 
 /** 从一个节点抽首段可见文本（≤60 字），用于目录项 hover 气泡。 */
@@ -187,6 +189,19 @@ function extractPreviewFromHeading(h: Element): string {
   }
   const merged = parts.join(' ').trim()
   return merged.length > MAX ? merged.slice(0, MAX).trimEnd() + '…' : merged
+}
+
+/** 统计一个 heading 到下一个 heading 之间的全部可见字符数（用于 TOC 浮尺横线长度）。 */
+function extractSectionLength(h: Element): number {
+  let total = 0
+  let n: Element | null = h.nextElementSibling
+  while (n) {
+    if (/^H[1-6]$/.test(n.tagName)) break
+    const txt = (n.textContent ?? '').replace(/\s+/g, ' ').trim()
+    if (txt) total += txt.length
+    n = n.nextElementSibling
+  }
+  return total
 }
 
 /**
@@ -222,7 +237,8 @@ export function buildToc(rawHtml: string): { html: string; toc: TocHeading[] } {
     const id = `toc-${slug}`
     h.setAttribute('id', id)
     const preview = extractPreviewFromHeading(h)
-    toc.push({ id, text, level, preview })
+    const sectionChars = extractSectionLength(h)
+    toc.push({ id, text, level, preview, sectionChars })
   })
   const html = doc.body?.innerHTML ?? rawHtml
   return { html, toc }
