@@ -124,7 +124,7 @@ function AppearanceTab() {
           <p className="src-label">UI 配色</p>
           <span className="cur-chip"><span className="cur-swatch" style={{ background: currentStyle.preview }} />{currentStyle.label}</span>
         </div>
-        <p className="src-hint">NewMax 设计系统整面配色：选择后主强调色（按钮/选中态/聚焦环）随之切换。</p>
+        <p className="src-hint">界面整面配色：选择后主强调色（按钮/选中态/聚焦环）随之切换。</p>
         <div className="style-grid" ref={styleGridRef}>
           <button className={`style-opt ${appearance.colorTheme === 'none' ? 'active' : ''}`}
             onClick={(e) => { setColorTheme('none'); e.currentTarget.focus() }}>
@@ -140,7 +140,7 @@ function AppearanceTab() {
           ))}
           {/* 「随机」额外按钮：点击重摇一次种子并切到 random 主题 */}
           <button className={`style-opt ${appearance.colorTheme === 'random' ? 'active' : ''}`}
-            onClick={() => pickRandom()} title="点击随机生成一套 NewMax 色板（含 WCAG 对比度校正）">
+            onClick={() => pickRandom()} title="点击随机生成一套配色（含 WCAG 对比度校正）">
             <span className="style-preview" style={{ background: 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)' }} />
             <span className="style-name">随机</span>
           </button>
@@ -161,7 +161,7 @@ function AppearanceTab() {
               : '未选择'}
           </span>
         </div>
-        <p className="src-hint">NewMax 壁纸主题：用图片作为主区域背景，沿用默认深色基准（不重定义色板）。</p>
+        <p className="src-hint">壁纸主题：用图片作为主区域背景，沿用默认深色基准（不重定义色板）。</p>
         <div className="wallpaper-grid">
           {IMAGE_WALLPAPERS.map((w) => (
             <button key={w.key}
