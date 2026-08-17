@@ -155,17 +155,14 @@ function AppearanceTab() {
           </button>
           {COLOR_THEMES.map((s) => (
             <button key={s.key} className={`style-opt ${appearance.colorTheme === s.key ? 'active' : ''}`}
-              onClick={(e) => { setColorTheme(s.key); e.currentTarget.focus() }}>
-              <span className="style-preview" style={{ background: s.preview }} />
+              onClick={(e) => {
+                if (s.key === 'random') pickRandom()
+                else { setColorTheme(s.key); e.currentTarget.focus() }
+              }}>
+              <span className="style-preview" style={{ background: s.key === 'random' ? 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)' : s.preview }} />
               <span className="style-name">{s.label}</span>
             </button>
           ))}
-          {/* 「随机」额外按钮：点击重摇一次种子并切到 random 主题 */}
-          <button className={`style-opt ${appearance.colorTheme === 'random' ? 'active' : ''}`}
-            onClick={() => pickRandom()} title="点击随机生成一套配色（含 WCAG 对比度校正）">
-            <span className="style-preview" style={{ background: 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)' }} />
-            <span className="style-name">随机</span>
-          </button>
         </div>
       </div>
 
