@@ -268,7 +268,7 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 .set-nav:hover { background: var(--color-background-tertiary); }
 .set-nav.active { background: var(--color-background-info); color: var(--color-text-info); }
 .settings-panel { flex: 1; min-width: 0; overflow-y: auto; background: var(--color-background-primary); }
-.set-scroll { padding: 28px 32px; max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.set-scroll { padding: 28px 32px; max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
 .db-path { display: inline-block; margin-top: 6px; padding: 4px 8px; border-radius: 6px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); font-family: var(--font-ui); font-size: 12px; word-break: break-all; color: var(--color-text-secondary); }
 .db-err { margin-top: 6px; color: var(--color-danger, #e5484d); }
 .set-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
