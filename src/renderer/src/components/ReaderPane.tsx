@@ -52,8 +52,10 @@ export function ReaderPane() {
   }, [selectedId])
 
   // 正文目录：从（清洗后的）正文 HTML 抽取 h2–h6 标题，并注入锚点 id
+  // 注意：useMemo 必须在 early return 之前执行（hooks 规则），但 item 在 selectedId 切换瞬间仍为 null；
+  // 这里用 `item?.content_html` 安全访问，避免在初次渲染时崩。
   const { html, toc } = useMemo(() => {
-    const raw = cleanHtml || (item.content_html ? renderArticleHtml(item.content_html) : '')
+    const raw = cleanHtml || (item?.content_html ? renderArticleHtml(item.content_html) : '')
     if (!raw) return { html: '', toc: [] as TocHeading[] }
     return buildToc(raw)
   }, [cleanHtml, item])
