@@ -133,3 +133,7 @@ coverage/
 .readflow-userData/readflow/readflow.db
 .readflow-userData/readflow/readflow.db-shm
 .readflow-userData/readflow/readflow.db-wal
+.readflow-userData/readflow.db
+.readflow-userData/readflow.db-shm
+.readflow-userData/readflow.db-wal
+.readflow-userData/readflow.db-journal
