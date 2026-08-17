@@ -96,9 +96,17 @@ function AppearanceTab() {
     active?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [appearance.colorTheme])
 
-  const currentStyle = appearance.colorTheme === 'none'
-    ? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
-    : COLOR_THEMES.find((s) => s.key === appearance.colorTheme)!
+  const currentStyle =
+    appearance.colorTheme === 'none'
+      ? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
+      : appearance.colorTheme === 'random'
+        ? { label: '随机', preview: 'conic-gradient(from 0deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9b59b6,#ff6b6b)' }
+        : appearance.colorTheme.startsWith('image-')
+          ? {
+              label: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '图片主题',
+              preview: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb ?? 'transparent'
+            }
+          : COLOR_THEMES.find((s) => s.key === appearance.colorTheme) ?? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
 
   return (
     <div className="set-scroll">

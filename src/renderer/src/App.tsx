@@ -208,7 +208,7 @@ export default function App() {
         </div>
       </div>
       <QuickAdd />
-      {settingsOpen && <SettingsView />}
+      {settingsOpen && <ErrorBoundary><SettingsView key={settingsTab} /></ErrorBoundary>}
       {toastMsg && <div className="toast">{toastMsg}</div>}
       {developerMode && <NetPanel />}
     </div>
