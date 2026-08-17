@@ -299,11 +299,16 @@ function AppearanceTab() {
         </div>
         <div className="font-size-slider-wrap" style={{ marginBottom: 4 }}>
           <span className="fs-label-min">小</span>
-          <input type="range" className="fs-slider" aria-label="音量"
-            min={0} max={100} step={1} value={Math.round(soundVolume * 100)}
-            disabled={!soundEnabled}
-            style={{ '--value': `${Math.round(soundVolume * 100)}%` } as React.CSSProperties}
-            onChange={(e) => setSoundVolume(Number(e.target.value) / 100)} />
+          <div className="fs-slider-track">
+            <input type="range" className="fs-slider" aria-label="音量"
+              min={0} max={100} step={1} value={Math.round(soundVolume * 100)}
+              disabled={!soundEnabled}
+              style={{ '--value': `${Math.round(soundVolume * 100)}%` } as React.CSSProperties}
+              onChange={(e) => setSoundVolume(Number(e.target.value) / 100)} />
+            <div className="fs-ticks" aria-hidden="true">
+              {[0, 1, 2, 3, 4].map((i) => <span key={i} className="fs-tick" />)}
+            </div>
+          </div>
           <span className="fs-label-max">大</span>
         </div>
         <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
