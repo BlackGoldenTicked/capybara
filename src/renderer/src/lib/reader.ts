@@ -164,30 +164,28 @@ export interface TocHeading {
   id: string
   text: string
   level: number
-  /** 该章节下首段正文摘要（≤60 字），用于 hover tooltip。空字符串表示无预览。 */
+  /** 该章节下首段正文摘要（≤120 字），用于 hover tooltip 卡片。空字符串表示无预览。 */
   preview: string
   /** 该章节到下一个 heading 之间的全部可见字符数，用于 TOC 浮尺「横线长度」（消息密度热力图）。 */
   sectionChars: number
 }
 
-/** 从一个节点抽首段可见文本（≤60 字），用于目录项 hover 气泡。 */
+/** 从一个节点抽首段可见文本（≤120 字），用于目录项 hover 气泡。 */
 function extractPreviewFromHeading(h: Element): string {
-  const MAX = 60
+  const MAX = 120
   const parts: string[] = []
   let total = 0
-  let found = false
   let n: Element | null = h.nextElementSibling
-  while (n && !found) {
+  while (n && total < MAX) {
     if (/^H[1-6]$/.test(n.tagName)) break // 到了下一个标题就停
     const txt = (n.textContent ?? '').replace(/\s+/g, ' ').trim()
     if (txt) {
       parts.push(txt)
       total += txt.length
-      found = true
     }
     n = n.nextElementSibling
   }
-  const merged = parts.join(' ').trim()
+  const merged = parts.join('\n').trim()
   return merged.length > MAX ? merged.slice(0, MAX).trimEnd() + '…' : merged
 }
 
@@ -205,13 +203,11 @@ function extractSectionLength(h: Element): number {
 }
 
 /**
- * 从正文 HTML 抽取标题目录（h2–h6），为每个标题注入唯一 id，并抽取每个章节的首段摘要。
+ * 从正文 HTML 抽取标题目录（h2–h6）或正文段落区块，为每个定位点注入唯一 id，并抽取每个章节的多行摘要。
  * 返回注入 id 后的 HTML（可直接 dangerouslySetInnerHTML）。
  *
- * 用于正文阅读右侧的「浮动 TOC 尺」快速定位：每段对应一个章节，hover 显示摘要气泡，
- * 点击平滑滚动，滚动时高亮当前章节。
- *
- * 只取 h2–h6：h1 通常是文章主标题，正文顶部用 .reader-title 单独展示，避免重复。
+ * 用于正文阅读左侧的「悬浮快速跳转尺」：每段对应一个章节/区块，hover 弹出带预览的浮动卡片，
+ * 点击平滑滚动，滚动时高亮当前所在横杠。
  */
 export function buildToc(rawHtml: string): { html: string; toc: TocHeading[] } {
   if (!rawHtml || !rawHtml.trim()) return { html: rawHtml, toc: [] }
@@ -224,22 +220,60 @@ export function buildToc(rawHtml: string): { html: string; toc: TocHeading[] } {
   const heads = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'))
   const toc: TocHeading[] = []
   const seen = new Map<string, number>()
-  heads.forEach((h, i) => {
-    const text = (h.textContent ?? '').replace(/\s+/g, ' ').trim()
-    if (!text) return
-    const level = Number(h.tagName[1]) || 1
-    if (level < 2) return // 跳过 h1（文章主标题）
-    let base = text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '')
-    if (!base) base = `h${i}`
-    const used = seen.get(base) ?? 0
-    const slug = used > 0 ? `${base}-${used}` : base
-    seen.set(base, used + 1)
-    const id = `toc-${slug}`
-    h.setAttribute('id', id)
-    const preview = extractPreviewFromHeading(h)
-    const sectionChars = extractSectionLength(h)
-    toc.push({ id, text, level, preview, sectionChars })
-  })
+
+  if (heads.length >= 2) {
+    heads.forEach((h, i) => {
+      const text = (h.textContent ?? '').replace(/\s+/g, ' ').trim()
+      if (!text) return
+      const level = Number(h.tagName[1]) || 1
+      if (level < 2 && heads.length > 2) return // 若有多个 h2-h6，跳过顶层 h1 避免与文章主标题重复
+      let base = text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '')
+      if (!base) base = `h${i}`
+      const used = seen.get(base) ?? 0
+      const slug = used > 0 ? `${base}-${used}` : base
+      seen.set(base, used + 1)
+      const id = `toc-${slug}`
+      h.setAttribute('id', id)
+      const preview = extractPreviewFromHeading(h)
+      const sectionChars = extractSectionLength(h)
+      toc.push({ id, text, level, preview, sectionChars })
+    })
+  }
+
+  // 若文章没有足够 heading，则自动从正文段落/代码块/引用等区块中提取跳转定位点
+  if (toc.length < 2) {
+    toc.length = 0
+    const blocks = Array.from(doc.querySelectorAll('p, blockquote, pre, li, article > div, section > div'))
+    const validBlocks = blocks.filter((b) => {
+      const t = (b.textContent ?? '').replace(/\s+/g, ' ').trim()
+      return t.length >= 18
+    })
+
+    // 段落较多时按步长抽样，保持 6-24 个适度横杠阵列
+    const step = validBlocks.length > 20 ? Math.ceil(validBlocks.length / 16) : 1
+
+    validBlocks.forEach((b, i) => {
+      if (i % step !== 0 && i !== validBlocks.length - 1) return
+      const fullText = (b.textContent ?? '').replace(/\s+/g, ' ').trim()
+      if (!fullText) return
+
+      const firstSentenceMatch = fullText.match(/^([^。！？.!?\n]{6,38}[。！？.!?\n]?)/)
+      const title = firstSentenceMatch ? firstSentenceMatch[1].trim() : fullText.slice(0, 32).trim() + (fullText.length > 32 ? '…' : '')
+      const rest = fullText.slice(title.length).trim() || fullText
+      const preview = rest.length > 120 ? rest.slice(0, 120).trimEnd() + '…' : rest
+
+      const id = `toc-p-${i}`
+      b.setAttribute('id', id)
+      toc.push({
+        id,
+        text: title,
+        level: 2,
+        preview: preview !== title ? preview : '',
+        sectionChars: fullText.length
+      })
+    })
+  }
+
   const html = doc.body?.innerHTML ?? rawHtml
   return { html, toc }
 }

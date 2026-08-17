@@ -25,9 +25,6 @@ export function ReaderPane() {
   const [cleanHtml, setCleanHtml] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
   const [activeId, setActiveId] = useState('')
-  // 章节在 body 内容（scrollHeight）里的绝对像素偏移：用于左侧 TOC 浮尺 tick top 定位。
-  // 直接用 el.offsetTop，浏览器自带，无需自己算 scrollHeight。
-  const [positions, setPositions] = useState<Record<string, number>>({})
   // hover tooltip：当前 hover 的章节 id + 气泡应有的 top 像素
   const [tip, setTip] = useState<{ id: string; top: number } | null>(null)
 
@@ -56,7 +53,7 @@ export function ReaderPane() {
     void (window.readflow.invoke('settings:get', 'reader_noimg') as Promise<string>).then((r) => setNoImg(r === '1'))
   }, [selectedId])
 
-  // 正文目录：从（清洗后的）正文 HTML 抽取 h2–h6 标题，并注入锚点 id
+  // 正文目录：从（清洗后的）正文 HTML 抽取标题或段落区块，并注入锚点 id
   // 注意：useMemo 必须在 early return 之前执行（hooks 规则），但 item 在 selectedId 切换瞬间仍为 null；
   // 这里用 `item?.content_html` 安全访问，避免在初次渲染时崩。
   const { html, toc } = useMemo(() => {
@@ -65,13 +62,13 @@ export function ReaderPane() {
     return buildToc(raw)
   }, [cleanHtml, item])
 
-  // 点击目录项：平滑滚动到对应章节（与正文顶部留 14px 余白）
+  // 点击目录项：平滑滚动到对应章节（与正文顶部留 18px 余白）
   const scrollToHeading = (id: string) => {
     const body = bodyRef.current
     if (!body) return
     const el = body.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
     if (!el) return
-    const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 14
+    const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 18
     body.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
     setActiveId(id)
   }
@@ -85,8 +82,8 @@ export function ReaderPane() {
     const compute = () => {
       raf = 0
       const bTop = body.getBoundingClientRect().top
-      const threshold = 96
-      let cur = toc[0].id
+      const threshold = 110
+      let cur = toc[0]?.id || ''
       for (const h of toc) {
         const el = body.querySelector<HTMLElement>(`#${CSS.escape(h.id)}`)
         if (!el) continue
@@ -101,31 +98,6 @@ export function ReaderPane() {
     compute()
     return () => { body.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [toc])
-
-  // 计算每个 heading 在 body 内的绝对像素偏移（heading.offsetTop），用于左侧 TOC 浮尺 tick top 定位。
-  // rail 高度 = body scrollHeight（CSS: .reader-toc-rail top:0 + bottom:0），所以像素直接对位章节在正文中的真实位置；
-  // 监听 body 内容变化（图片懒加载、字体加载）和视口 resize，重算后写入 positions。
-  useLayoutEffect(() => {
-    const body = bodyRef.current
-    if (!body || toc.length === 0) { setPositions({}); return }
-    const recompute = () => {
-      const out: Record<string, number> = {}
-      for (const h of toc) {
-        const el = body.querySelector<HTMLElement>(`#${CSS.escape(h.id)}`)
-        if (!el) { out[h.id] = 0; continue }
-        // offsetTop 相对最近的定位祖先（body 是 relative），且含 body 的 padding-top。
-        // 我们的 rail 也是 relative 父下 top:0，绝对像素对位，正好。
-        out[h.id] = el.offsetTop
-      }
-      setPositions(out)
-    }
-    recompute()
-    // 图片懒加载 / 自定义字体加载可能改变正文高度 → 用 ResizeObserver 自动重算
-    const ro = 'ResizeObserver' in window ? new ResizeObserver(() => recompute()) : null
-    ro?.observe(body)
-    window.addEventListener('resize', recompute)
-    return () => { ro?.disconnect(); window.removeEventListener('resize', recompute) }
-  }, [toc, html])
 
   if (selectedId == null || !item) {
     return (<section className="reader"><div className="reader-empty">选择左侧条目开始阅读 · J/K 快速浏览{loading ? ' · 加载中…' : ''}</div></section>)
@@ -178,81 +150,97 @@ export function ReaderPane() {
           </optgroup>
         </select>
       </div>
-      <div className="reader-body" ref={bodyRef}>
-        <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
-        <p className="reader-meta">{item.author || item.source_name}</p>
+      <div className="reader-body-wrap">
+        <div className="reader-body" ref={bodyRef}>
+          <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
+          <p className="reader-meta">{item.author || item.source_name}</p>
 
-        {item.kind === 'podcast' ? (
-          <div className="media-podcast">
-            {item.media_url
-              ? <audio controls src={item.media_url} className="podcast-player" preload="none" />
-              : <p className="media-empty">该期暂无音频链接</p>}
-            {item.duration > 0 && <div className="podcast-meta">时长 {fmtDuration(item.duration)}</div>}
-            {html && <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />}
-            {item.transcript && (
-              <details className="podcast-transcript">
-                <summary>转录文稿（ASR）</summary>
-                <div className="podcast-transcript-body">{item.transcript}</div>
-              </details>
-            )}
-          </div>
-        ) : item.kind === 'video' ? (
-          <div className="media-video">
-            {item.media_url ? (
-              <div className="video-frame">
-                <iframe src={item.media_url} title={item.title} allowFullScreen
-                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" referrerPolicy="no-referrer" />
-              </div>
-            ) : (
-              <a className="video-fallback" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }}>无法内嵌播放，用浏览器打开</a>
-            )}
-            {html && <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />}
-          </div>
-        ) : (
-          html
-            ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />
-            : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>
-        )}
+          {item.kind === 'podcast' ? (
+            <div className="media-podcast">
+              {item.media_url
+                ? <audio controls src={item.media_url} className="podcast-player" preload="none" />
+                : <p className="media-empty">该期暂无音频链接</p>}
+              {item.duration > 0 && <div className="podcast-meta">时长 {fmtDuration(item.duration)}</div>}
+              {html && <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />}
+              {item.transcript && (
+                <details className="podcast-transcript">
+                  <summary>转录文稿（ASR）</summary>
+                  <div className="podcast-transcript-body">{item.transcript}</div>
+                </details>
+              )}
+            </div>
+          ) : item.kind === 'video' ? (
+            <div className="media-video">
+              {item.media_url ? (
+                <div className="video-frame">
+                  <iframe src={item.media_url} title={item.title} allowFullScreen
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" referrerPolicy="no-referrer" />
+                </div>
+              ) : (
+                <a className="video-fallback" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }}>无法内嵌播放，用浏览器打开</a>
+              )}
+              {html && <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />}
+            </div>
+          ) : (
+            html
+              ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />
+              : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>
+          )}
 
-        {lightbox && (
-          <div className="lightbox" onClick={() => setLightbox(null)}>
-            <img src={lightbox} alt="" onClick={(e) => e.stopPropagation()} />
-            <span className="lightbox-hint">点击任意处关闭</span>
-          </div>
-        )}
+          {lightbox && (
+            <div className="lightbox" onClick={() => setLightbox(null)}>
+              <img src={lightbox} alt="" onClick={(e) => e.stopPropagation()} />
+              <span className="lightbox-hint">点击任意处关闭</span>
+            </div>
+          )}
+        </div>
 
         {toc.length > 0 && (() => {
           const tipHead = tip ? toc.find((t) => t.id === tip.id) : null
           return (
-            <nav className="reader-toc-rail" aria-label="章节快速定位" onMouseLeave={() => setTip(null)}>
-              {toc.map((h) => {
-                // 横线宽度正比于该章节内容字符数（消息密度热力图），clamp 18–54px
-                const w = Math.max(18, Math.min(54, 18 + Math.floor(h.sectionChars / 30)))
-                return (
-                  <button key={h.id} type="button"
-                    className={`toc-tick${activeId === h.id ? ' is-active' : ''}`}
-                    style={{ top: `${positions[h.id] ?? 0}px`, '--tick-w': `${w}px` } as React.CSSProperties}
-                    aria-label={h.text}
-                    onMouseEnter={(e) => {
-                      const btn = e.currentTarget as HTMLElement
-                      const rail = btn.parentElement as HTMLElement
-                      const br = btn.getBoundingClientRect()
-                      const rr = rail.getBoundingClientRect()
-                      setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
-                    }}
-                    onFocus={(e) => {
-                      const btn = e.currentTarget as HTMLElement
-                      const rail = btn.parentElement as HTMLElement
-                      const br = btn.getBoundingClientRect()
-                      const rr = rail.getBoundingClientRect()
-                      setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
-                    }}
-                    onBlur={() => setTip(null)}
-                    onClick={() => { setTip(null); scrollToHeading(h.id) }} />
-                )
-              })}
+            <nav className="reader-toc-rail" aria-label="正文快速跳转" onMouseLeave={() => setTip(null)}>
+              <div className="reader-toc-track">
+                {toc.map((h) => {
+                  // 横线宽度正比于该章节内容字符数（消息密度热力图），clamp 16–46px
+                  const w = Math.max(16, Math.min(46, 16 + Math.floor(h.sectionChars / 30)))
+                  const isActive = activeId === h.id
+                  return (
+                    <button
+                      key={h.id}
+                      type="button"
+                      className={`toc-tick ${isActive ? 'is-active' : ''}`}
+                      style={{ '--tick-w': `${w}px` } as React.CSSProperties}
+                      aria-label={h.text}
+                      aria-current={isActive ? 'true' : undefined}
+                      onMouseEnter={(e) => {
+                        const btn = e.currentTarget as HTMLElement
+                        const rail = btn.closest('.reader-toc-rail') as HTMLElement
+                        if (btn && rail) {
+                          const br = btn.getBoundingClientRect()
+                          const rr = rail.getBoundingClientRect()
+                          setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
+                        }
+                      }}
+                      onFocus={(e) => {
+                        const btn = e.currentTarget as HTMLElement
+                        const rail = btn.closest('.reader-toc-rail') as HTMLElement
+                        if (btn && rail) {
+                          const br = btn.getBoundingClientRect()
+                          const rr = rail.getBoundingClientRect()
+                          setTip({ id: h.id, top: br.top - rr.top + br.height / 2 })
+                        }
+                      }}
+                      onBlur={() => setTip(null)}
+                      onClick={() => {
+                        setTip(null)
+                        scrollToHeading(h.id)
+                      }}
+                    />
+                  )
+                })}
+              </div>
               {tipHead && (
-                <div className="toc-rail-tooltip" style={{ top: tip!.top } as React.CSSProperties}>
+                <div className="toc-rail-tooltip" style={{ top: `${tip!.top}px` } as React.CSSProperties}>
                   <div className="toc-rail-tooltip__title">{tipHead.text}</div>
                   {tipHead.preview && <div className="toc-rail-tooltip__preview">{tipHead.preview}</div>}
                 </div>
