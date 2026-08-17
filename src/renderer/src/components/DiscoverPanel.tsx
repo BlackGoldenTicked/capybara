@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import type { DiscoverFeed, DiscoverRole, MediaKind } from '../env'
 import { Icon } from './icons'
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 5
 const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
 
 /** 信源发现：从预置 2242 条 RSS 源库按角色/分类筛选，一键订阅 */
@@ -203,7 +203,6 @@ export function DiscoverPanel() {
         {loaded && rows.length === 0 && <p className="src-hint">无匹配结果，试试放宽筛选条件。</p>}
         {rows.map((f) => (
           <div key={f.id} className={`feed-row2 ${f.subscribed ? 'added' : ''}`}>
-            <span className={`tier-dot tier-${f.tier.toLowerCase()}`} title={`权威等级 ${f.tier}`} />
             <div className="feed-info">
               <span className="feed-title">{f.title}</span>
               <span className="feed-url">{f.xml_url}</span>
