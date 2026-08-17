@@ -345,6 +345,35 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 .soon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .soon-item { padding: 10px 12px; border: 0.5px dashed var(--color-border-secondary); border-radius: 8px; color: var(--color-text-tertiary); font-size: 13px; }
 
+/* ===== 致谢页 ThanksTab ===== */
+.thanks-hero { flex-direction: row; align-items: center; gap: 16px; }
+.thanks-hero-icon { flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--card-accent) 12%, transparent); color: var(--card-accent); }
+.thanks-hero-text { display: flex; flex-direction: column; gap: 6px; }
+.thanks-title { margin: 0; font-size: 17px; font-weight: 600; color: var(--color-text-primary); }
+.thanks-sub { margin: 0; font-size: 13px; line-height: 1.6; color: var(--color-text-secondary); }
+
+.thanks-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .thanks-cards { grid-template-columns: 1fr; } }
+.thanks-card { display: flex; gap: 12px; padding: 14px; border: 0.5px solid var(--color-border-tertiary); border-radius: 12px; background: var(--color-background-primary); }
+.thanks-card-icon { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
+.thanks-card-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.thanks-card-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text-primary); }
+.thanks-card-desc { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--color-text-secondary); }
+.thanks-card-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-text-info); text-decoration: none; width: fit-content; }
+.thanks-card-link:hover { text-decoration: underline; }
+
+.oss-list { display: flex; flex-direction: column; gap: 14px; }
+.oss-group { display: flex; flex-direction: column; gap: 6px; }
+.oss-group-title { margin: 0; font-size: 12px; font-weight: 500; color: var(--color-text-tertiary); }
+.oss-table { display: flex; flex-direction: column; border: 0.5px solid var(--color-border-tertiary); border-radius: 10px; overflow: hidden; }
+.oss-row { display: grid; grid-template-columns: 1.6fr 0.9fr 1fr 1.6fr; gap: 10px; padding: 8px 12px; font-size: 12.5px; align-items: center; }
+.oss-row:not(:last-child) { border-bottom: 0.5px solid var(--color-border-tertiary); }
+.oss-row:nth-child(even) { background: var(--color-background-tertiary); }
+.oss-name { font-weight: 500; color: var(--color-text-primary); }
+.oss-ver { color: var(--color-text-secondary); font-family: var(--font-ui); }
+.oss-lic { color: var(--color-text-secondary); }
+.oss-role { color: var(--color-text-tertiary); }
+
 /* GitHub ★ / Twitter 书签 来源徽标沿用上方中性 badge，靠 src-dot 区分来源色 */
 .card-time { font-size: 11px; color: var(--color-text-tertiary); }
 .card-title { font-size: 15px; font-weight: 600; line-height: 1.45; margin-bottom: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

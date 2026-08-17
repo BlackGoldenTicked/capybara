@@ -46,7 +46,8 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'actions', label: '数据管理', icon: 'archived' },
   { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
   { key: 'data', label: '数据查看', icon: 'book' },
-  { key: 'diag', label: '刷新诊断', icon: 'activity' }
+  { key: 'diag', label: '刷新诊断', icon: 'activity' },
+  { key: 'thanks', label: '致谢', icon: 'heart' }
 ]
 
 export function SettingsView() {
@@ -73,6 +74,7 @@ export function SettingsView() {
             {settingsTab === 'shortcuts' && <ShortcutsTab />}
             {settingsTab === 'data' && <DbView />}
             {settingsTab === 'diag' && <DiagPanel />}
+            {settingsTab === 'thanks' && <ThanksTab />}
           </TabErrorBoundary>
         </div>
         <button className="settings-close" title="关闭设置" onClick={closeSettings}><Icon name="close" size={16} /></button>
@@ -527,5 +529,147 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _
       {renderGroup('暗色', darkThemes, true)}
       {renderGroup('亮色', lightThemes, false)}
     </>
+  )
+}
+
+/* ===================== 致谢 ===================== */
+// 设计风格致谢卡片（仅作界面/交互参考的鸣谢，无商业关联）
+const THANKS_CARDS: Array<{ icon: IconName; accent: string; title: string; desc: string; url: string }> = [
+  {
+    icon: 'sparkles',
+    accent: '#10a37f',
+    title: 'ChatGPT · OpenAI',
+    desc: '感谢 OpenAI ChatGPT 在交互思路、文案润色与开发过程中的启发与协作——大量界面决策与自动化脚本受益于与其的对话。',
+    url: 'https://openai.com/chatgpt'
+  },
+  {
+    icon: 'palette',
+    accent: '#6c5ce7',
+    title: 'NewMax',
+    desc: '感谢 NewMax 的设计语言参考：配色体系、间距节奏与组件规范为 ReadFlow 的视觉风格提供了重要借鉴。',
+    url: ''
+  }
+]
+
+// 开源软件清单（按用途分组；版本号取自 package.json，许可证以各项目官方声明为准）
+const OSS_GROUPS: Array<{ title: string; items: Array<{ name: string; version: string; license: string; role: string }> }> = [
+  {
+    title: '运行时框架',
+    items: [
+      { name: 'Electron', version: '^37.2.0', license: 'MIT', role: '跨平台桌面运行时' },
+      { name: 'Node.js · node:sqlite', version: '内置', license: 'MIT', role: '本地数据库存储' }
+    ]
+  },
+  {
+    title: '界面与状态',
+    items: [
+      { name: 'React', version: '^18.3.1', license: 'MIT', role: 'UI 框架' },
+      { name: 'React DOM', version: '^18.3.1', license: 'MIT', role: 'DOM 渲染' },
+      { name: 'react-window', version: '^1.8.11', license: 'MIT', role: '长列表虚拟滚动' },
+      { name: 'zustand', version: '^4.5.5', license: 'MIT', role: '轻量状态管理' },
+      { name: 'lucide-react', version: '^1.28.0', license: 'ISC', role: '线性图标集' }
+    ]
+  },
+  {
+    title: '内容解析',
+    items: [
+      { name: 'rss-parser', version: '^3.13.0', license: 'MIT', role: 'RSS / Atom 订阅解析' },
+      { name: '@mozilla/readability', version: '^0.6.0', license: 'Apache-2.0', role: '正文内容提取' },
+      { name: 'cheerio', version: '^1.2.0', license: 'MIT', role: '服务端 HTML 解析' },
+      { name: 'linkedom', version: '^0.18.13', license: 'MIT', role: '轻量 DOM 实现' },
+      { name: 'dompurify', version: '^3.4.13', license: 'MPL-2.0', role: 'HTML 安全净化' }
+    ]
+  },
+  {
+    title: '富文本编辑',
+    items: [
+      { name: '@tiptap/core', version: '^3.29.2', license: 'MIT', role: '富文本编辑器内核' },
+      { name: '@tiptap/pm', version: '^3.29.2', license: 'MIT', role: 'ProseMirror 适配' },
+      { name: '@tiptap/react', version: '^3.29.2', license: 'MIT', role: 'React 绑定' },
+      { name: '@tiptap/starter-kit', version: '^3.29.2', license: 'MIT', role: '基础功能套件' }
+    ]
+  },
+  {
+    title: '构建与开发',
+    items: [
+      { name: 'electron-vite', version: '^2.3.0', license: 'MIT', role: 'Electron 构建管线' },
+      { name: 'vite', version: '^5.4.11', license: 'MIT', role: '前端构建工具' },
+      { name: 'typescript', version: '^5.6.3', license: 'Apache-2.0', role: '类型系统' },
+      { name: 'electron-builder', version: '^25.1.8', license: 'MIT', role: '应用打包 / DMG' },
+      { name: 'sharp', version: '^0.35.3', license: 'Apache-2.0', role: '图片处理' },
+      { name: '@vitejs/plugin-react', version: '^4.3.4', license: 'MIT', role: 'React 插件' }
+    ]
+  }
+]
+
+function ThanksTab() {
+  const [ver, setVer] = useState('')
+  useEffect(() => {
+    window.readflow.invoke('app:version').then((v) => setVer((v as string) || '')).catch(() => {})
+  }, [])
+
+  return (
+    <div className="set-scroll">
+      <div className="set-card thanks-hero">
+        <div className="thanks-hero-icon"><Icon name="heart" size={22} /></div>
+        <div className="thanks-hero-text">
+          <h2 className="thanks-title">致谢</h2>
+          <p className="thanks-sub">
+            ReadFlow 是一款个人知识管线桌面客户端{ver ? `，当前版本 ${ver}` : ''}。它站在开源社区与优秀产品设计者的肩膀之上。
+            本页列出构建它所用的开源软件，并向给予设计启发与开发辅助的产品致以谢意。
+          </p>
+        </div>
+      </div>
+
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">设计风格致谢</p>
+        </div>
+        <p className="src-hint">以下产品的设计语言为 ReadFlow 的界面与交互提供了重要参考。</p>
+        <div className="thanks-cards">
+          {THANKS_CARDS.map((c) => (
+            <div className="thanks-card" key={c.title}>
+              <div className="thanks-card-icon" style={{ background: `color-mix(in srgb, ${c.accent} 14%, transparent)`, color: c.accent }}>
+                <Icon name={c.icon} size={20} />
+              </div>
+              <div className="thanks-card-body">
+                <p className="thanks-card-title">{c.title}</p>
+                <p className="thanks-card-desc">{c.desc}</p>
+                {c.url && (
+                  <a className="thanks-card-link" href={c.url}
+                    onClick={(e) => { e.preventDefault(); void window.readflow.invoke('shell:openExternal', c.url) }}>
+                    <Icon name="external" size={13} /> 访问官网 ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">开源软件清单</p>
+        </div>
+        <p className="src-hint">ReadFlow 基于以下开源项目构建（按用途分组）。许可证信息以各项目官方声明为准。</p>
+        <div className="oss-list">
+          {OSS_GROUPS.map((g) => (
+            <div className="oss-group" key={g.title}>
+              <p className="oss-group-title">{g.title}</p>
+              <div className="oss-table">
+                {g.items.map((it) => (
+                  <div className="oss-row" key={it.name}>
+                    <span className="oss-name">{it.name}</span>
+                    <span className="oss-ver">{it.version}</span>
+                    <span className="oss-lic">{it.license}</span>
+                    <span className="oss-role">{it.role}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
