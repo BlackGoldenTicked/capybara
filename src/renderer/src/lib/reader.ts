@@ -157,3 +157,50 @@ export function renderArticleHtml(raw: string): string {
     ADD_ATTR: ['target', 'rel', 'loading', 'decoding', 'referrerpolicy', 'data-zoom'],
   })
 }
+
+// ---- 正文目录（TOC）抽取 ----
+
+export interface TocHeading {
+  id: string
+  text: string
+  level: number
+}
+
+/**
+ * 从正文 HTML 抽取标题目录（h2–h6），为每个标题注入唯一 id，
+ * 并返回注入 id 后的 HTML（可直接 dangerouslySetInnerHTML）。
+ *
+ * 用于正文阅读左侧的「目录 / 快速定位」导航：点击目录项即可平滑滚动到对应章节，
+ * 滚动时高亮当前所在章节（scroll-spy）。
+ *
+ * 只取 h2–h6：h1 通常是文章主标题，而正文顶部已用 .reader-title 单独展示，
+ * 再纳入目录会造成重复。
+ */
+export function buildToc(rawHtml: string): { html: string; toc: TocHeading[] } {
+  if (!rawHtml || !rawHtml.trim()) return { html: rawHtml, toc: [] }
+  let doc: Document
+  try {
+    doc = new DOMParser().parseFromString(rawHtml, 'text/html')
+  } catch {
+    return { html: rawHtml, toc: [] }
+  }
+  const heads = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+  const toc: TocHeading[] = []
+  const seen = new Map<string, number>()
+  heads.forEach((h, i) => {
+    const text = (h.textContent ?? '').replace(/\s+/g, ' ').trim()
+    if (!text) return
+    const level = Number(h.tagName[1]) || 1
+    if (level < 2) return // 跳过 h1（文章主标题）
+    let base = text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '')
+    if (!base) base = `h${i}`
+    const used = seen.get(base) ?? 0
+    const slug = used > 0 ? `${base}-${used}` : base
+    seen.set(base, used + 1)
+    const id = `toc-${slug}`
+    h.setAttribute('id', id)
+    toc.push({ id, text, level })
+  })
+  const html = doc.body?.innerHTML ?? rawHtml
+  return { html, toc }
+}

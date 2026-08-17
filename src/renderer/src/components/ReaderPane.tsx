@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { Item } from '../env'
 import { Icon } from './icons'
-import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml } from '../lib/reader'
+import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml, buildToc, type TocHeading } from '../lib/reader'
 import { getAllReadingThemes, FOLLOW_UI_ID } from '../lib/reading-themes'
 
 /** 秒数 → "mm:ss" / "h:mm:ss" */
@@ -23,6 +23,8 @@ export function ReaderPane() {
   const [noImg, setNoImg] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [cleanHtml, setCleanHtml] = useState('')
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [activeId, setActiveId] = useState('')
 
   // 按需取单条完整数据（含正文），列表不再全量传正文（性能优化 #1）
   useEffect(() => {
@@ -49,6 +51,50 @@ export function ReaderPane() {
     void (window.readflow.invoke('settings:get', 'reader_noimg') as Promise<string>).then((r) => setNoImg(r === '1'))
   }, [selectedId])
 
+  // 正文目录：从（清洗后的）正文 HTML 抽取 h2–h6 标题，并注入锚点 id
+  const { html, toc } = useMemo(() => {
+    const raw = cleanHtml || (item.content_html ? renderArticleHtml(item.content_html) : '')
+    if (!raw) return { html: '', toc: [] as TocHeading[] }
+    return buildToc(raw)
+  }, [cleanHtml, item])
+
+  // 点击目录项：平滑滚动到对应章节（与正文顶部留 14px 余白）
+  const scrollToHeading = (id: string) => {
+    const body = bodyRef.current
+    if (!body) return
+    const el = body.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
+    if (!el) return
+    const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 14
+    body.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    setActiveId(id)
+  }
+
+  // scroll-spy：正文滚动时高亮当前所在章节
+  useEffect(() => {
+    const body = bodyRef.current
+    if (!body) return
+    if (toc.length === 0) { setActiveId(''); return }
+    let raf = 0
+    const compute = () => {
+      raf = 0
+      const bTop = body.getBoundingClientRect().top
+      const threshold = 96
+      let cur = toc[0].id
+      for (const h of toc) {
+        const el = body.querySelector<HTMLElement>(`#${CSS.escape(h.id)}`)
+        if (!el) continue
+        const rel = el.getBoundingClientRect().top - bTop
+        if (rel - threshold <= 0) cur = h.id
+        else break
+      }
+      setActiveId((prev) => (prev === cur ? prev : cur))
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
+    body.addEventListener('scroll', onScroll, { passive: true })
+    compute()
+    return () => { body.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
+  }, [toc])
+
   if (selectedId == null || !item) {
     return (<section className="reader"><div className="reader-empty">选择左侧条目开始阅读 · J/K 快速浏览{loading ? ' · 加载中…' : ''}</div></section>)
   }
@@ -71,7 +117,6 @@ export function ReaderPane() {
   }
 
   const contentClass = `reader-content ${noImg ? 'no-img' : ''}`
-  const html = cleanHtml || (item.content_html ? renderArticleHtml(item.content_html) : '')
 
   const allThemes = getAllReadingThemes()
   const darkThemes = allThemes.filter((t) => t.mode === 'dark')
@@ -101,7 +146,23 @@ export function ReaderPane() {
           </optgroup>
         </select>
       </div>
-      <div className="reader-body">
+      <div className="reader-split">
+        {toc.length > 0 && (
+          <nav className="reader-toc" aria-label="正文目录">
+            <div className="toc-head">目录 · {toc.length}</div>
+            <div className="toc-list" role="listbox" aria-label="快速定位章节">
+              {toc.map((h) => (
+                <button key={h.id} type="button" role="option" aria-selected={activeId === h.id}
+                  className={`toc-row lvl-${h.level}${activeId === h.id ? ' is-active' : ''}`}
+                  style={{ '--lvl-indent': `${(h.level - 2) * 12}px` } as React.CSSProperties}
+                  onClick={() => scrollToHeading(h.id)}>
+                  <span className="toc-row__text">{h.text}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+        )}
+        <div className="reader-body" ref={bodyRef}>
         <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
         <p className="reader-meta">{item.author || item.source_name}</p>
 
@@ -143,6 +204,7 @@ export function ReaderPane() {
             <span className="lightbox-hint">点击任意处关闭</span>
           </div>
         )}
+      </div>
       </div>
     </section>
   )
