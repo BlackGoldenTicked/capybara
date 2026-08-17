@@ -244,8 +244,8 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 .card:hover { --card-bg: color-mix(in srgb, var(--ds-on-surface) 70%, var(--color-background-primary)); border-color: var(--color-border-secondary); }
 /* 选中：复刻 NewMax skill-pill 悬浮 —— 极淡 brand 背景叠加 + 0.5px brand 发丝边框 + 柔和抬升阴影，告别粗 ring 毛刺 */
 .card.selected { --card-bg: color-mix(in srgb, var(--card-accent) 5%, var(--color-background-primary)); background: var(--card-bg); border-color: color-mix(in srgb, var(--card-accent) 22%, transparent); box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--card-accent) 22%, transparent), 0 1px 4px color-mix(in srgb, var(--color-text-primary) 5%, transparent); }
-/* 未读强化：卡片左侧 accent 竖条（inset，不挤占布局），与已读一眼区分；标题不再前置圆点，避免已读/未读标题错位 */
-.card.unread:not(.selected) { box-shadow: inset 2px 0 0 var(--color-border-info); }
+/* 未读强化：与列表视图保持一致 —— 仅加粗标题（不再用左侧 accent 竖条），已读/未读一眼区分且卡片/列表两种视图表现统一 */
+.card.unread .card-title { font-weight: 700; }
 .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
 .badge { font-size: 11px; border-radius: 4px; padding: 1px 6px; white-space: nowrap; background: var(--color-background-tertiary); color: var(--color-text-secondary); border: 0.5px solid var(--color-border-tertiary); }
 /* 来源徽标前的订阅源配色圆点（与第四栏圆点同源，作为该源唯一稳定色标识，避免徽标底色与圆点双重配色语义冲突） */
