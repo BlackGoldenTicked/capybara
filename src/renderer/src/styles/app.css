@@ -1302,16 +1302,21 @@ button:focus-visible,
   background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .16s var(--ease-out);
 }
 .switch.on .knob { transform: translateX(18px); }
+/* 开关是「圆点滑动」控件：禁止全局 button 的按下缩放与悬停换色，否则点击/悬停会给整颗开关带来不该有的动效与轨道变色 */
+.switch:hover { background: color-mix(in srgb, var(--color-text-primary) 14%, var(--color-background-secondary)); }
+.switch.on:hover { background: var(--accent-info); }
+.switch:active { transform: none; }
 
-input[type="range"] { -webkit-appearance: none; appearance: none; width: 160px; height: 4px; border-radius: 999px; background: var(--color-border-secondary); outline: none; cursor: pointer; accent-color: var(--accent-info); }
-input[type="range"]:disabled { opacity: .45; cursor: default; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-info); border: 2px solid var(--color-background-primary); box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 22%, transparent); }
-input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 2px solid var(--color-background-primary); border-radius: 50%; background: var(--accent-info); }
+input[type="range"]:not(.fs-slider) { -webkit-appearance: none; appearance: none; width: 160px; height: 4px; border-radius: 999px; background: var(--color-border-secondary); outline: none; cursor: pointer; accent-color: var(--accent-info); }
+input[type="range"]:not(.fs-slider):disabled { opacity: .45; cursor: default; }
+input[type="range"]:not(.fs-slider)::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-info); border: 2px solid var(--color-background-primary); box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 22%, transparent); }
+input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14px; border: 2px solid var(--color-background-primary); border-radius: 50%; background: var(--accent-info); }
 
 /* 数字输入与通用行间距微调 */
 .set-card input[type="number"] { width: 96px; }
 .src-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--color-text-tertiary); }
-.src-row input[type="range"] { flex: 1; }
+.src-row input[type="range"]:not(.fs-slider) { flex: 1; }
+.fs-slider:disabled { opacity: .45; cursor: default; }
 
 /* ====== Border Beam: 彩色脉动边框光效 ======
    参考 border-beam (JakubAntalik)，纯 CSS 实现 pulse-inner + colorful。

@@ -288,11 +288,19 @@ function AppearanceTab() {
           <button className={`switch ${soundEnabled ? 'on' : ''}`} role="switch" aria-checked={soundEnabled}
             onClick={() => setSoundEnabled(!soundEnabled)}><span className="knob" /></button>
         </label>
-        <label className="src-row" style={{ marginTop: 4 }}>
-          音量 {Math.round(soundVolume * 100)}%
-          <input type="range" min={0} max={100} value={Math.round(soundVolume * 100)}
-            disabled={!soundEnabled} onChange={(e) => setSoundVolume(Number(e.target.value) / 100)} />
-        </label>
+        <div className="src-row" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
+          <span>音量</span>
+          <span className="fs-pill" aria-live="polite">{Math.round(soundVolume * 100)}%</span>
+        </div>
+        <div className="font-size-slider-wrap" style={{ marginBottom: 4 }}>
+          <span className="fs-label-min">小</span>
+          <input type="range" className="fs-slider" aria-label="音量"
+            min={0} max={100} step={1} value={Math.round(soundVolume * 100)}
+            disabled={!soundEnabled}
+            style={{ '--value': `${Math.round(soundVolume * 100)}%` } as React.CSSProperties}
+            onChange={(e) => setSoundVolume(Number(e.target.value) / 100)} />
+          <span className="fs-label-max">大</span>
+        </div>
         <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
       </div>
     </div>
