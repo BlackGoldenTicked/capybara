@@ -7,6 +7,7 @@ import { QuickAdd } from './components/QuickAdd'
 import { BoardView } from './components/BoardView'
 import { SettingsView } from './components/SettingsView'
 import { FeedsPanel } from './components/FeedsPanel'
+import { Icon } from './components/icons'
 import { playSound, primeAudio } from './lib/sound'
 import { eventToCombo, isGlobalCombo, type ShortcutAction } from './lib/shortcuts'
 
@@ -183,7 +184,7 @@ export default function App() {
       <div className="titlebar">
         <button className="titlebar-hamburger" title={sideHidden ? '展开侧边栏' : '收起侧边栏'}
           onClick={() => setSideHidden((v) => !v)}>
-          <span className="hamburger-line" /><span className="hamburger-line" /><span className="hamburger-line" />
+          <Icon name={sideHidden ? 'panelLeftOpen' : 'panelLeftClose'} size={16} />
         </button>
         <span className="hint">{version || 'v0.7.6'}</span>
       </div>

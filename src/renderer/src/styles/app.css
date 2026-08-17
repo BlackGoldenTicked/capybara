@@ -86,15 +86,14 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
   border-bottom: 0.5px solid var(--color-border-tertiary);
 }
 .titlebar .hint { font-size: 12px; color: var(--color-text-tertiary); -webkit-app-region: no-drag; margin-left: auto; }
-/* 侧边栏完全收起/展开按钮（汉堡）：位于红绿灯右侧 */
+/* 侧边栏完全收起/展开按钮：位于红绿灯右侧，用 PanelLeftClose/Open 图标表达意图 */
 .titlebar-hamburger {
-  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  display: inline-flex; align-items: center; justify-content: center;
   width: 28px; height: 26px; padding: 0; border: none; border-radius: 6px; background: transparent;
-  cursor: pointer; -webkit-app-region: no-drag;
-  transition: background .12s var(--ease-out);
+  color: var(--color-text-secondary); cursor: pointer; -webkit-app-region: no-drag;
+  transition: background .12s var(--ease-out), color .12s var(--ease-out);
 }
-.titlebar-hamburger:hover { background: var(--color-on-surface, var(--color-background-tertiary)); }
-.hamburger-line { display: block; width: 14px; height: 1.5px; border-radius: 1px; background: var(--color-text-secondary); }
+.titlebar-hamburger:hover { background: var(--color-on-surface, var(--color-background-tertiary)); color: var(--color-text-primary); }
 
 .main { display: flex; flex: 1; min-height: 0; }
 
