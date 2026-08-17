@@ -10,8 +10,7 @@ import {
   THEME_OPTIONS, COLOR_THEMES, IMAGE_WALLPAPERS,
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
-import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme } from '../lib/reading-themes'
-import { ThemeEditor } from './ThemeEditor'
+import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
 import {
   SHORTCUT_GROUPS, DEFAULT_SHORTCUTS, formatCombo, eventToCombo,
   type ShortcutAction
@@ -116,7 +115,6 @@ function AppearanceTab() {
     const clamped = Math.min(FONT_MAX_PX, Math.max(FONT_MIN_PX, px))
     updateAppearance({ fontScale: clamped / FONT_BASE_PX })
   }
-  const [themeEdit, setThemeEdit] = useState<ReadingTheme | undefined>(undefined)
   const [, themeTick] = useState(0)
 
   // Feature1：选中颜色主题后，把焦点与可视区域移到该卡片上
@@ -246,9 +244,23 @@ function AppearanceTab() {
         <div className="src-head-row">
           <p className="src-label">阅读配色</p>
         </div>
-        <p className="src-hint">选择后仅改变正文阅读区域的配色，不影响左侧列表和设置等界面。</p>
+        <p className="src-hint">选择后仅改变正文阅读区域的配色，不影响左侧列表和设置等界面。新增配色只能通过「导入配色」加载 JSON 文件（含 name / mode / colors）。</p>
+        <div className="src-actions" style={{ marginBottom: 10 }}>
+          <button onClick={async () => {
+            const r = await window.readflow.invoke('readingTheme:import') as {
+              ok: boolean; error?: string;
+              theme?: { name: string; mode: 'dark' | 'light'; colors: Record<string, string> }
+            }
+            if (!r.ok) { if (r.error && r.error !== '已取消') showToast('导入失败：' + r.error); return }
+            const id = `custom-${Date.now()}`
+            upsertCustomReadingTheme({ id, name: r.theme!.name, mode: r.theme!.mode, colors: r.theme!.colors })
+            setReadingTheme(id)
+            themeTick((t) => t + 1)
+            showToast('已导入配色：' + r.theme!.name)
+          }}><Icon name="upload" size={14} /> 导入配色</button>
+        </div>
         <div className="reading-theme-grid">
-          {renderReadingThemes(appearance.readingTheme, (id) => setReadingTheme(id), (t) => setThemeEdit(t))}
+          {renderReadingThemes(appearance.readingTheme, (id) => setReadingTheme(id))}
         </div>
       </div>
 
@@ -286,11 +298,6 @@ function AppearanceTab() {
         </label>
         <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
       </div>
-      {themeEdit && (
-        <ThemeEditor source={themeEdit}
-          onClose={() => setThemeEdit(undefined)}
-          onSaved={() => { setThemeEdit(undefined); setTick((t: number) => t + 1) }} />
-      )}
     </div>
   )
 }
@@ -491,7 +498,7 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
 }
 
 /* ===================== 阅读配色色块渲染 ===================== */
-function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _onEdit?: (theme?: ReadingTheme) => void) {
+function renderReadingThemes(activeId: string, onSelect: (id: string) => void) {
   const all = getAllReadingThemes()
   const darkThemes = all.filter((t) => t.mode === 'dark')
   const lightThemes = all.filter((t) => t.mode === 'light')
@@ -526,7 +533,6 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void, _
               <span className="rt-name">{t.name.replace(/\(.*\)/, '').trim()}</span>
             </button>
             <span className="rt-chip-actions">
-              <button title="创建副本并编辑" onClick={(e) => { e.stopPropagation(); _onEdit?.({ ...t, id: '', name: t.name + ' 副本' } as ReadingTheme) }}><Icon name="plus" size={14} /></button>
               {isCustom(t.id) && (
                 <button className="danger" title="删除" onClick={(e) => { e.stopPropagation(); deleteCustomReadingTheme(t.id); onSelect(FOLLOW_UI_ID) }}><Icon name="trash" size={14} /></button>
               )}

@@ -472,6 +472,30 @@ function registerIpc() {
         return { ok: true, imported }
       } catch (e) { return { ok: false, error: (e as Error).message } }
     }) as never,
+    // 导入单套阅读配色：仅打开文件对话框并解析校验，不持久化（自定义主题存于渲染端 localStorage）
+    'readingTheme:import': (async () => {
+      const r = await dialog.showOpenDialog(mainWindow!, {
+        title: '导入阅读配色',
+        properties: ['openFile'],
+        filters: [{ name: 'JSON', extensions: ['json'] }]
+      })
+      if (r.canceled || r.filePaths.length === 0) return { ok: false, error: '已取消' }
+      try {
+        const raw = await fs.promises.readFile(r.filePaths[0], 'utf-8')
+        const data = JSON.parse(raw) as Record<string, unknown>
+        if (!data || typeof data !== 'object') return { ok: false, error: '无效的配色文件：根不是对象' }
+        const colors = data.colors
+        if (!colors || typeof colors !== 'object') return { ok: false, error: '无效的配色文件：缺少 colors 颜色对象' }
+        const safeColors: Record<string, string> = {}
+        for (const [k, v] of Object.entries(colors as Record<string, unknown>)) {
+          if (typeof v === 'string') safeColors[k] = v
+        }
+        if (Object.keys(safeColors).length === 0) return { ok: false, error: '无效的配色文件：colors 为空' }
+        const name = typeof data.name === 'string' && data.name.trim() ? data.name.trim() : '导入的配色'
+        const mode = data.mode === 'light' ? 'light' : 'dark'
+        return { ok: true, theme: { name, mode, colors: safeColors } }
+      } catch (e) { return { ok: false, error: (e as Error).message } }
+    }) as never,
     // 开发者模式：立即开关 DevTools（store 同时持久化 developer_mode 设置）
     'devtools:toggle': (() => {
       if (!mainWindow) return
