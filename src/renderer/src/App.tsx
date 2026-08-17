@@ -28,7 +28,7 @@ type DividerWhich = 'side' | 'feed' | 'list'
 interface DragState { which: DividerWhich; startX: number; startW: number }
 
 export default function App() {
-  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, toast: toastMsg, view, activeSourceType, developerMode, zenMode, exitZenMode } = useStore()
+  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, toast: toastMsg, view, activeSourceType, developerMode, zenMode, exitZenMode, settingsOpen, closeSettings } = useStore()
   const searchRef = useRef<HTMLInputElement>(null)
   const dragRef = useRef<DragState | null>(null)
 
@@ -36,6 +36,7 @@ export default function App() {
   const [listW, setListW] = useState(320)
   const [feedW, setFeedW] = useState(188)
   const [sideCollapsed, setSideCollapsed] = useState(false)
+  const [sideHidden, setSideHidden] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [version, setVersion] = useState('')
 
@@ -98,7 +99,7 @@ export default function App() {
         case 'help': st.openSettings('shortcuts'); break
         case 'close':
           (document.activeElement as HTMLElement | null)?.blur?.()
-          if (st.screen === 'settings') st.setScreen('library')
+          if (st.settingsOpen) st.closeSettings()
           if (st.quickAddOpen) st.setQuickAddOpen(false)
           break
       }
@@ -108,12 +109,12 @@ export default function App() {
       const target = e.target as HTMLElement
       const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
 
-      // Esc：优先退出 Zen 模式，其次失焦/关闭弹层
+      // Esc：优先退出 Zen 模式，其次关闭设置模态 / 弹层
       if (e.key === 'Escape') {
         ;(target as HTMLElement).blur?.()
         const st = useStore.getState()
         if (st.zenMode) { st.exitZenMode(); e.preventDefault(); return }
-        if (st.screen === 'settings') st.setScreen('library')
+        if (st.settingsOpen) st.closeSettings()
         if (st.quickAddOpen) st.setQuickAddOpen(false)
         e.preventDefault()
         return
@@ -180,11 +181,15 @@ export default function App() {
   return (
     <div className="app">
       <div className="titlebar">
+        <button className="titlebar-hamburger" title={sideHidden ? '展开侧边栏' : '收起侧边栏'}
+          onClick={() => setSideHidden((v) => !v)}>
+          <span className="hamburger-line" /><span className="hamburger-line" /><span className="hamburger-line" />
+        </button>
         <span className="hint">{version || 'v0.7.6'}</span>
       </div>
       <div className="main">
-        {!isZen && <Sidebar collapsed={sideCollapsed} style={sidebarStyle} dragging={dragging} searchRef={searchRef} />}
-        {!isZen && <div className="divider v" onPointerDown={onDividerDown('side')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />}
+        {!isZen && !sideHidden && <Sidebar collapsed={sideCollapsed} style={sidebarStyle} dragging={dragging} searchRef={searchRef} />}
+        {!isZen && !sideHidden && <div className="divider v" onPointerDown={onDividerDown('side')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />}
         <div className="content">
           <ErrorBoundary>
             {screen === 'library' && (
@@ -199,11 +204,11 @@ export default function App() {
               </>
             )}
             {screen === 'board' && <BoardView />}
-            {screen === 'settings' && <SettingsView />}
           </ErrorBoundary>
         </div>
       </div>
       <QuickAdd />
+      {settingsOpen && <SettingsView />}
       {toastMsg && <div className="toast">{toastMsg}</div>}
       {developerMode && <NetPanel />}
     </div>

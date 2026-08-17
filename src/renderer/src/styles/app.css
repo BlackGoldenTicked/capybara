@@ -86,6 +86,15 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
   border-bottom: 0.5px solid var(--color-border-tertiary);
 }
 .titlebar .hint { font-size: 12px; color: var(--color-text-tertiary); -webkit-app-region: no-drag; margin-left: auto; }
+/* 侧边栏完全收起/展开按钮（汉堡）：位于红绿灯右侧 */
+.titlebar-hamburger {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  width: 28px; height: 26px; padding: 0; border: none; border-radius: 6px; background: transparent;
+  cursor: pointer; -webkit-app-region: no-drag;
+  transition: background .12s var(--ease-out);
+}
+.titlebar-hamburger:hover { background: var(--color-on-surface, var(--color-background-tertiary)); }
+.hamburger-line { display: block; width: 14px; height: 1.5px; border-radius: 1px; background: var(--color-text-secondary); }
 
 .main { display: flex; flex: 1; min-height: 0; }
 
@@ -291,8 +300,32 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 
 @keyframes rf-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* ===== 系统配置 SettingsView ===== */
-.settings { flex: 1; display: flex; min-height: 0; background: var(--color-background-tertiary); }
+/* ===== 系统配置 SettingsView（2/3 模态窗口） ===== */
+.settings-modal-mask {
+  position: fixed; inset: 0; z-index: 90;
+  background: var(--ds-overlay);
+  display: flex; align-items: center; justify-content: center;
+  animation: maskIn var(--dur-slow) var(--ease-out) both;
+}
+.settings-modal {
+  position: relative;
+  width: 66vw; height: 66vh; max-width: 1280px;
+  border-radius: var(--border-radius-lg);
+  border: 0.5px solid var(--color-border-tertiary);
+  box-shadow: var(--ds-elevation-300);
+  overflow: hidden;
+  animation: modalIn var(--dur-slow) var(--ease-out) both;
+}
+.settings-close {
+  position: absolute; top: 12px; right: 14px; z-index: 6;
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 7px;
+  background: transparent; color: var(--color-text-tertiary);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background .12s var(--ease-out), color .12s var(--ease-out);
+}
+.settings-close:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
+
+.settings { width: 100%; height: 100%; display: flex; min-height: 0; background: var(--color-background-tertiary); }
 .settings-nav { width: 168px; flex-shrink: 0; padding: 16px 10px; border-right: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); display: flex; flex-direction: column; gap: 4px; }
 .set-nav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: none; background: transparent; color: var(--color-text-secondary); font-size: 13px; border-radius: 8px; cursor: pointer; text-align: left; }
 .set-nav:hover { background: var(--color-background-tertiary); }

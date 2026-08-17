@@ -30,29 +30,32 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
 ]
 
 export function SettingsView() {
-  const { settingsTab, setSettingsTab, refreshAll } = useStore()
+  const { settingsTab, setSettingsTab, refreshAll, closeSettings } = useStore()
 
   return (
-    <section className="settings">
-      <nav className="settings-nav">
-        {TABS.map((t) => (
-          <button key={t.key} className={`set-nav ${settingsTab === t.key ? 'active' : ''}`} onClick={() => setSettingsTab(t.key)}>
-            <Icon name={t.icon} size={16} />
-            <span>{t.label}</span>
-          </button>
-        ))}
-      </nav>
-      <div className="settings-panel">
-        {settingsTab === 'appearance' && <AppearanceTab />}
-        {settingsTab === 'rss' && <RssManager />}
-        {settingsTab === 'github' && <GithubStarManager />}
-        {settingsTab === 'twitter' && <TwitterBookmarkManager />}
-        {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
-        {settingsTab === 'shortcuts' && <ShortcutsTab />}
-        {settingsTab === 'data' && <DbView />}
-        {settingsTab === 'diag' && <DiagPanel />}
-      </div>
-    </section>
+    <div className="settings-modal-mask" onClick={closeSettings}>
+      <section className="settings settings-modal" onClick={(e) => e.stopPropagation()}>
+        <nav className="settings-nav">
+          {TABS.map((t) => (
+            <button key={t.key} className={`set-nav ${settingsTab === t.key ? 'active' : ''}`} onClick={() => setSettingsTab(t.key)}>
+              <Icon name={t.icon} size={16} />
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="settings-panel">
+          {settingsTab === 'appearance' && <AppearanceTab />}
+          {settingsTab === 'rss' && <RssManager />}
+          {settingsTab === 'github' && <GithubStarManager />}
+          {settingsTab === 'twitter' && <TwitterBookmarkManager />}
+          {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
+          {settingsTab === 'shortcuts' && <ShortcutsTab />}
+          {settingsTab === 'data' && <DbView />}
+          {settingsTab === 'diag' && <DiagPanel />}
+        </div>
+        <button className="settings-close" title="关闭设置" onClick={closeSettings}><Icon name="close" size={16} /></button>
+      </section>
+    </div>
   )
 }
 

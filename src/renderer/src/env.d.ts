@@ -44,7 +44,7 @@ export interface ItemRow {
 }
 
 export type View = 'rss' | 'podcast' | 'video' | 'later' | 'favorite' | 'archived' | 'all'
-export type Screen = 'library' | 'board' | 'settings'
+export type Screen = 'library' | 'board'
 
 export interface Feed { id: number; type: string; name: string; url: string; schedule_min: number; last_fetched_at: string; error_count: number; last_error: string; enabled: number; etag: string; last_modified: string; kind: MediaKind }
 export interface Board { id: number; name: string; updated_at: string }

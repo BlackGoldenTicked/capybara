@@ -50,7 +50,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
   dragging?: boolean
   searchRef?: RefObject<HTMLInputElement>
 }) {
-  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, search, setSearch } = useStore()
+  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, search, setSearch, openSettings, settingsOpen } = useStore()
   const [editingBoard, setEditingBoard] = useState<number | null>(null)
   const [boardName, setBoardName] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
@@ -99,7 +99,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
         <button className={`rail-btn ${screen === 'board' ? 'active' : ''}`} title="白板" onClick={() => setScreen('board')}><span className="rail-icon"><Icon name="board" size={19} /></span></button>
         <button className="rail-btn" title="新建白板" onClick={() => void createBoard()}><span className="rail-icon"><Icon name="plus" size={19} /></span></button>
         <div className="rail-sep" />
-        <button className={`rail-btn ${screen === 'settings' ? 'active' : ''}`} title="系统配置" onClick={() => setScreen('settings')}><span className="rail-icon"><Icon name="settings" size={19} /></span></button>
+        <button className={`rail-btn ${settingsOpen ? 'active' : ''}`} title="系统配置" onClick={() => openSettings()}><span className="rail-icon"><Icon name="settings" size={19} /></span></button>
       </aside>
     )
   }
@@ -194,9 +194,9 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
       </Section>
 
       {/* 系统设置（底部，常驻，不折叠） */}
-      <div className={`side-item sys-item ${screen === 'settings' ? 'active' : ''}`} role="button" tabIndex={0}
-        onClick={() => setScreen('settings')}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setScreen('settings') } }}>
+      <div className={`side-item sys-item ${settingsOpen ? 'active' : ''}`} role="button" tabIndex={0}
+        onClick={() => openSettings()}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSettings() } }}>
         <span className="side-ico"><Icon name="settings" size={16} /></span>
         <span>系统设置</span>
       </div>

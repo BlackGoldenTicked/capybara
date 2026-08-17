@@ -42,6 +42,7 @@ interface State {
   setDbPath: (path: string) => Promise<{ ok: boolean; error?: string }>
 
   settingsTab: SettingsTab
+  settingsOpen: boolean
   shortcuts: Record<ShortcutAction, string>
 
   setScreen: (s: Screen) => void
@@ -93,6 +94,7 @@ interface State {
   setSoundEnabled: (enabled: boolean) => void
   setSettingsTab: (t: SettingsTab) => void
   openSettings: (tab?: SettingsTab) => void
+  closeSettings: () => void
   setShortcuts: (next: Record<ShortcutAction, string>) => void
   resetShortcuts: () => void
   setSoundVolume: (volume: number) => void
@@ -122,12 +124,12 @@ export const useStore = create<State>((set, get) => ({
   dbPath: '',
 
   settingsTab: 'appearance',
+  settingsOpen: false,
   shortcuts: { ...DEFAULT_SHORTCUTS },
 
   setScreen: (screen) => {
     set({ screen })
     if (screen === 'board') void get().loadBoards()
-    if (screen === 'settings') void get().loadFeeds()
   },
   setView: (view) => { set({ view, selectedId: null, activeSourceType: null, activeFeed: null, screen: 'library' }); void get().load() },
   setSourceType: (t) => {
@@ -449,8 +451,9 @@ export const useStore = create<State>((set, get) => ({
   setSettingsTab: (t) => set({ settingsTab: t }),
   openSettings: (tab) => {
     if (tab) set({ settingsTab: tab })
-    set({ screen: 'settings' })
+    set({ settingsOpen: true })
   },
+  closeSettings: () => set({ settingsOpen: false }),
   setShortcuts: (next) => {
     void window.readflow.invoke('settings:set', 'shortcuts', JSON.stringify(next))
     set({ shortcuts: next })
