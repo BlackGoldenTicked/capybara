@@ -4,23 +4,6 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https:; frame-src https://www.youtube-nocookie.com https://player.bilibili.com;" />
     <title>阅流 ReadFlow</title>
-    <script>
-      // 首帧防闪烁（FOUC）：在样式表与 React 加载前，同步铺好亮暗类与颜色主题，
-      // 避免「默认主题 → 用户主题」的启动闪烁（NewMax §4 启动流程对齐）。
-      (function () {
-        var root = document.documentElement;
-        try {
-          var a = JSON.parse(localStorage.getItem('readflow:appearance') || 'null') || {};
-          var theme = a.theme || 'system';
-          var dark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          root.classList.toggle('dark', dark);
-          root.style.colorScheme = dark ? 'dark' : 'light';
-          var ct = a.colorTheme;
-          if (ct && ct !== 'none') root.setAttribute('data-theme', ct);
-          else root.removeAttribute('data-theme');
-        } catch (e) { /* 忽略，交由 bootAppearance 兜底 */ }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
