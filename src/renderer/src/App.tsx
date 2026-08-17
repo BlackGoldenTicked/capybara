@@ -28,7 +28,7 @@ type DividerWhich = 'side' | 'feed' | 'list'
 interface DragState { which: DividerWhich; startX: number; startW: number }
 
 export default function App() {
-  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, toast: toastMsg, view, activeSourceType, developerMode, zenMode, exitZenMode, settingsOpen, settingsTab, closeSettings } = useStore()
+  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, toast: toastMsg, view, activeSourceType, developerMode, zenMode, exitZenMode, settingsOpen, closeSettings } = useStore()
   const searchRef = useRef<HTMLInputElement>(null)
   const dragRef = useRef<DragState | null>(null)
 
@@ -208,7 +208,7 @@ export default function App() {
         </div>
       </div>
       <QuickAdd />
-      {settingsOpen && <ErrorBoundary><SettingsView key={settingsTab} /></ErrorBoundary>}
+      {settingsOpen && <ErrorBoundary><SettingsView /></ErrorBoundary>}
       {toastMsg && <div className="toast">{toastMsg}</div>}
       {developerMode && <NetPanel />}
     </div>

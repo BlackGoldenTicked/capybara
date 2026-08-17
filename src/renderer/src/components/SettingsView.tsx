@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useStore, type SettingsTab } from '../store'
 import { Icon, type IconName } from './icons'
 import { RssManager } from './RssManager'
@@ -17,6 +17,26 @@ import {
   type ShortcutAction
 } from '../lib/shortcuts'
 import { playSound } from '../lib/sound'
+
+// 仅包裹右侧面板内容：切换左侧子菜单时随 settingsTab 重挂载（重置该 tab 内部状态 + 错误隔离），
+// 但外层 .settings-modal 容器保持稳定，从而不会重播 modalIn 进入动画（无感切换）。
+class TabErrorBoundary extends Component<{ children: ReactNode }, { err: Error | null }> {
+  state = { err: null as Error | null }
+  static getDerivedStateFromError(err: Error) { return { err } }
+  render() {
+    if (this.state.err) {
+      return (
+        <div className="set-scroll">
+          <div className="set-card">
+            <p className="src-warn">该设置项加载出错：{this.state.err.message}</p>
+            <button className="mini-btn" onClick={() => this.setState({ err: null })}>重试</button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'appearance', label: '外观', icon: 'palette' },
@@ -44,14 +64,16 @@ export function SettingsView() {
           ))}
         </nav>
         <div className="settings-panel">
-          {settingsTab === 'appearance' && <AppearanceTab />}
-          {settingsTab === 'rss' && <RssManager />}
-          {settingsTab === 'github' && <GithubStarManager />}
-          {settingsTab === 'twitter' && <TwitterBookmarkManager />}
-          {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
-          {settingsTab === 'shortcuts' && <ShortcutsTab />}
-          {settingsTab === 'data' && <DbView />}
-          {settingsTab === 'diag' && <DiagPanel />}
+          <TabErrorBoundary key={settingsTab}>
+            {settingsTab === 'appearance' && <AppearanceTab />}
+            {settingsTab === 'rss' && <RssManager />}
+            {settingsTab === 'github' && <GithubStarManager />}
+            {settingsTab === 'twitter' && <TwitterBookmarkManager />}
+            {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
+            {settingsTab === 'shortcuts' && <ShortcutsTab />}
+            {settingsTab === 'data' && <DbView />}
+            {settingsTab === 'diag' && <DiagPanel />}
+          </TabErrorBoundary>
         </div>
         <button className="settings-close" title="关闭设置" onClick={closeSettings}><Icon name="close" size={16} /></button>
       </section>
