@@ -854,7 +854,8 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
    去掉原本 9px 灰色通道被误读成的“宽边框”。 */
 .divider.v { width: 0; cursor: col-resize; position: relative; touch-action: none; }
 .divider.v::before { content: ''; position: absolute; left: -5px; right: -5px; top: 0; bottom: 0; transition: background 0.15s; }
-.divider.v::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--ds-divider); }
+/* 真·发丝线：1px 逻辑经 scaleX(0.5) 在 Retina(DPR=2) 上 = 1 物理像素，复刻 NewMax 原生发丝线（此前 1px CSS = 2 物理像素，粗一倍） */
+.divider.v::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--ds-divider); transform: scaleX(0.5); transform-origin: left center; }
 .divider.v:hover::before { background: color-mix(in srgb, var(--card-accent) 16%, transparent); }
 .divider.v:hover::after { background: var(--color-border-info); }
 

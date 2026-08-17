@@ -198,7 +198,7 @@ html.dark {
   --ds-on-surface-active: rgba(255, 255, 255, 0.1);
   --ds-surface-input: #2a2b2b;
   --ds-popover: #2a2b2b;
-  --ds-divider: color-mix(in srgb, #e6e6e2 8%, transparent);
+  --ds-divider: color-mix(in srgb, #f2f2f3 12%, transparent);
   --ds-overlay: rgba(0, 0, 0, 0.6);
 
   --ds-elevation-100:
