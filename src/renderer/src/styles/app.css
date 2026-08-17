@@ -233,15 +233,18 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 
 .card {
   position: relative;
-  background: var(--color-background-primary);
+  --card-bg: var(--color-background-primary);
+  background: var(--card-bg);
   border: 0.5px solid var(--color-border-tertiary);
   border-radius: var(--border-radius-md);
   padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
 }
 /* 虚拟列表内的卡片：撑满行高（ITEM_SIZE 决定外层 row 高度），避免内容挤压；保留行高统一 */
 .feed-list .card { height: calc(100% - 8px); overflow: hidden; display: flex; flex-direction: column; gap: 6px; }
-.card:hover { border-color: var(--color-border-secondary); }
-.card.selected { border-color: var(--card-accent); box-shadow: 0 0 0 1.5px var(--card-accent), 0 0 0 4px color-mix(in srgb, var(--card-accent) 12%, transparent); }
+/* hover：NewMax 通用项悬浮风格 —— 仅一层极淡的 on-surface 叠加，不改边框粗细 */
+.card:hover { --card-bg: color-mix(in srgb, var(--ds-on-surface) 70%, var(--color-background-primary)); border-color: var(--color-border-secondary); }
+/* 选中：复刻 NewMax skill-pill 悬浮 —— 极淡 brand 背景叠加 + 0.5px brand 发丝边框 + 柔和抬升阴影，告别粗 ring 毛刺 */
+.card.selected { --card-bg: color-mix(in srgb, var(--card-accent) 5%, var(--color-background-primary)); background: var(--card-bg); border-color: color-mix(in srgb, var(--card-accent) 22%, transparent); box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--card-accent) 22%, transparent), 0 1px 4px color-mix(in srgb, var(--color-text-primary) 5%, transparent); }
 /* 未读强化：卡片左侧 accent 竖条（inset，不挤占布局），与已读一眼区分；标题不再前置圆点，避免已读/未读标题错位 */
 .card.unread:not(.selected) { box-shadow: inset 2px 0 0 var(--color-border-info); }
 .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
@@ -354,7 +357,7 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 /* 卡片操作图标：悬停 / 选中时显示在右上角，点击执行打开 / 已读 / 稍后读 / 收藏 / 删除 */
 .card-actions {
   position: absolute; top: 6px; right: 6px; display: flex; gap: 2px;
-  padding: 2px; border-radius: 8px; background: var(--color-background-primary);
+  padding: 2px; border-radius: 8px; background: var(--card-bg);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 22%, transparent);
   opacity: 0; transform: translateY(-2px); transition: opacity .12s var(--ease-out), transform .12s var(--ease-out);
   z-index: 2;
@@ -379,14 +382,17 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
   padding: 10px 12px;
   border: 0.5px solid var(--color-border-tertiary);
   border-radius: var(--border-radius-md);
-  background: var(--color-background-primary);
+  --list-row-bg: var(--color-background-primary);
+  background: var(--list-row-bg);
   cursor: pointer; position: relative;
   overflow: hidden;
 }
-.list-row:hover { border-color: var(--color-border-secondary); }
+.list-row:hover { --list-row-bg: color-mix(in srgb, var(--ds-on-surface) 70%, var(--color-background-primary)); border-color: var(--color-border-secondary); }
 .list-row.selected {
-  border-color: var(--card-accent);
-  box-shadow: 0 0 0 1.5px var(--card-accent), 0 0 0 4px color-mix(in srgb, var(--card-accent) 12%, transparent);
+  --list-row-bg: color-mix(in srgb, var(--card-accent) 5%, var(--color-background-primary));
+  background: var(--list-row-bg);
+  border-color: color-mix(in srgb, var(--card-accent) 22%, transparent);
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--card-accent) 22%, transparent), 0 1px 4px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
 }
 .list-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .list-badge {
@@ -395,7 +401,7 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
   background: var(--color-background-tertiary); color: var(--color-text-secondary);
   border: 0.5px solid var(--color-border-tertiary);
 }
-.list-row.selected .list-badge { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); }
+.list-row.selected .list-badge { background: color-mix(in srgb, var(--card-accent) 10%, transparent); color: var(--color-text-primary); border-color: color-mix(in srgb, var(--card-accent) 22%, transparent); }
 .list-title {
   font-size: 13px; line-height: 1.45;
   color: var(--color-text-primary);
@@ -403,14 +409,14 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
   overflow: hidden; word-break: break-word;
 }
 .list-row.unread .list-title { font-weight: 600; }
-.list-row.selected .list-title { color: var(--color-text-info); }
+.list-row.selected .list-title { color: var(--color-text-primary); }
 .list-time { flex: none; font-size: 12px; color: var(--color-text-tertiary); white-space: nowrap; transition: opacity .12s var(--ease-out); }
 /* 操作按钮绝对定位悬浮（不占布局宽度，避免挤压标题）；hover 时时间淡出、按钮淡入，覆盖在行右上角 */
 .list-actions {
   position: absolute; right: 8px; top: 8px;
   display: flex; gap: 2px;
   padding: 2px; border-radius: 6px;
-  background: var(--color-background-primary);
+  background: var(--list-row-bg);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 22%, transparent);
   opacity: 0; pointer-events: none;
   transition: opacity .12s var(--ease-out);
