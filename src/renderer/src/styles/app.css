@@ -309,7 +309,7 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 }
 .settings-modal {
   position: relative;
-  width: 66vw; height: 66vh; max-width: 1280px;
+  width: 66vw; height: 60vh; max-width: 1280px;
   border-radius: var(--border-radius-lg);
   border: 0.5px solid var(--color-border-tertiary);
   box-shadow: var(--ds-elevation-300);
@@ -848,11 +848,13 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .content { flex: 1; display: flex; min-width: 0; min-height: 0; }
 .list-pane { display: flex; flex-shrink: 0; height: 100%; }
 .divider { flex-shrink: 0; }
-.divider.v { width: 9px; cursor: col-resize; background: transparent; position: relative; touch-action: none; transition: background 0.15s; }
-/* 扩大命中区：中间一条可见细线，两侧透明区也可抓取（修复 #18） */
-.divider.v::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); background: var(--color-border-tertiary); }
-.divider.v:hover { background: color-mix(in srgb, var(--card-accent) 18%, transparent); }
-.divider.v:hover::after { background: var(--color-border-info); width: 2px; }
+/* NewMax 风格：列间仅 1px 发丝分隔线；命中区用透明伪元素向两侧外扩，不占布局宽度，
+   去掉原本 9px 灰色通道被误读成的“宽边框”。 */
+.divider.v { width: 0; cursor: col-resize; position: relative; touch-action: none; }
+.divider.v::before { content: ''; position: absolute; left: -5px; right: -5px; top: 0; bottom: 0; transition: background 0.15s; }
+.divider.v::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--ds-divider); }
+.divider.v:hover::before { background: color-mix(in srgb, var(--card-accent) 16%, transparent); }
+.divider.v:hover::after { background: var(--color-border-info); }
 
 /* ===== 折叠态左侧图标栏 ===== */
 .sidebar.collapsed {
