@@ -724,51 +724,6 @@ html.dark .reader-body {
   gap: 8px;
 }
 .src-hint { font-size: 12px; color: var(--color-text-tertiary); }
-/* ===== 字号步进器（100% 复刻 NewMax 字号调整组件 .red-font-size-group） ===== */
-.red-font-size-group {
-  height: 36px;
-  width: 148px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--color-background-primary);
-  border: 1px solid var(--color-border-secondary);
-  border-radius: 8px;
-  padding: 0;
-  overflow: hidden;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
-}
-.fs-step-btn {
-  flex: 0 0 auto;
-  width: 38px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
-}
-.fs-step-btn:hover {
-  background: var(--color-background-tertiary);
-  color: var(--color-text-primary);
-}
-.fs-step-btn:active { transform: none; background: var(--color-background-tertiary); }
-.fs-step-btn:disabled { opacity: .35; cursor: default; }
-.fs-step-btn:disabled:hover { background: transparent; color: var(--color-text-secondary); }
-.fs-step-value {
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-variant-numeric: tabular-nums;
-  user-select: none;
-}
 /* ===== 字号滑轨（复刻 NewMax：浮丸显示 px +「小/大」range slider，填充色随 --card-accent；音量滑块复用） ===== */
 .font-size-slider-wrap { display: flex; align-items: center; gap: 10px; }
 .fs-label-min, .fs-label-max {
@@ -783,10 +738,18 @@ html.dark .reader-body {
   color: var(--color-text-secondary);
   font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;
 }
+.fs-slider-track {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 16px;
+}
 .fs-slider {
+  position: relative; z-index: 1;
   flex: 1;
   -webkit-appearance: none; appearance: none;
-  width: 100%; height: 6px;
+  width: 100%; height: 8px;
   border-radius: 999px;
   background: linear-gradient(to right,
     var(--card-accent) 0%,
@@ -794,6 +757,7 @@ html.dark .reader-body {
     var(--color-border-tertiary) var(--value, 0%),
     var(--color-border-tertiary) 100%);
   outline: none; cursor: pointer;
+  margin: 0;
 }
 .fs-slider::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
@@ -801,10 +765,22 @@ html.dark .reader-body {
   background: var(--color-background-primary);
   border: 0.5px solid var(--color-border-secondary);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 14%, transparent);
-  margin-top: -5px;
+  margin-top: -4px;
 }
 .fs-slider:focus::-webkit-slider-thumb {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent) 25%, transparent), 0 1px 4px color-mix(in srgb, var(--color-text-primary) 14%, transparent);
+}
+.fs-ticks {
+  position: absolute; inset: 0; z-index: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  pointer-events: none;
+  padding: 0 8px;
+}
+.fs-tick {
+  width: 1px; height: 6px;
+  background: var(--color-border-secondary);
+  opacity: .55;
+  border-radius: 1px;
 }
 .src-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 0 2px; border-top: 0.5px solid var(--color-border-tertiary); }
 /* 顶部两个平级段控件（类型 / 方式）：全宽 segmented，与下方表单输入框左边缘对齐 */

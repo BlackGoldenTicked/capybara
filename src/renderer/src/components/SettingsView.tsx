@@ -213,21 +213,22 @@ function AppearanceTab() {
             {systemFonts.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </label>
-        <div className="src-row" style={{ marginBottom: 10, justifyContent: 'space-between' }}>
+        <div className="src-row" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
           <span>字号</span>
-          <div className="red-font-size-group">
-            <button type="button" className="fs-step-btn" aria-label="减小字号"
-              disabled={fontPx <= FONT_MIN_PX}
-              onClick={() => setFontPx(fontPx - 1)}>
-              <Icon name="minus" size={16} />
-            </button>
-            <span className="fs-step-value" aria-live="polite">{fontPx}px</span>
-            <button type="button" className="fs-step-btn" aria-label="增大字号"
-              disabled={fontPx >= FONT_MAX_PX}
-              onClick={() => setFontPx(fontPx + 1)}>
-              <Icon name="plus" size={16} />
-            </button>
+          <span className="fs-pill" aria-live="polite">{fontPx}px</span>
+        </div>
+        <div className="font-size-slider-wrap" style={{ marginBottom: 10 }}>
+          <span className="fs-label-min">小</span>
+          <div className="fs-slider-track">
+            <input type="range" className="fs-slider font-slider" aria-label="字号"
+              min={FONT_MIN_PX} max={FONT_MAX_PX} step={1} value={fontPx}
+              style={{ '--value': `${((fontPx - FONT_MIN_PX) / (FONT_MAX_PX - FONT_MIN_PX)) * 100}%` } as React.CSSProperties}
+              onChange={(e) => setFontPx(Number(e.target.value))} />
+            <div className="fs-ticks" aria-hidden="true">
+              {[0, 1, 2, 3, 4].map((i) => <span key={i} className="fs-tick" />)}
+            </div>
           </div>
+          <span className="fs-label-max">大</span>
         </div>
         <label className="src-row">字重
           <div className="seg">
