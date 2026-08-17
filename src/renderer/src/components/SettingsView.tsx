@@ -17,8 +17,8 @@ import {
 } from '../lib/shortcuts'
 import { playSound } from '../lib/sound'
 
-// 字号滑轨：以「基础字号(px)」显示（10–24px），替代百分比滑块；复刻 NewMax 截图样式：
-// 标签行右侧浮丸显示当前 px，下方「小 [range] 大」滑轨，填充色随 --card-accent。
+// 字号步进器：以「基础字号(px)」显示（10–24px），替代百分比滑块；100% 复刻 NewMax 字号调整组件 .red-font-size-group。
+// 结构：左侧「−」按钮、中间数值（px）、右侧「＋」按钮，圆角 8px 边框组，点击步进 ±1。
 // 内部仍用 --font-scale 乘子持久化，基础字号 13px 对应 scale=1.0。
 const FONT_BASE_PX = 13
 const FONT_MIN_PX = 10
@@ -213,17 +213,21 @@ function AppearanceTab() {
             {systemFonts.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </label>
-        <div className="src-row" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
+        <div className="src-row" style={{ marginBottom: 10, justifyContent: 'space-between' }}>
           <span>字号</span>
-          <span className="fs-pill" aria-live="polite">{fontPx}px</span>
-        </div>
-        <div className="font-size-slider-wrap" style={{ marginBottom: 10 }}>
-          <span className="fs-label-min">小</span>
-          <input type="range" className="fs-slider" aria-label="字号"
-            min={FONT_MIN_PX} max={FONT_MAX_PX} step={1} value={fontPx}
-            style={{ '--value': `${((fontPx - FONT_MIN_PX) / (FONT_MAX_PX - FONT_MIN_PX)) * 100}%` } as React.CSSProperties}
-            onChange={(e) => setFontPx(Number(e.target.value))} />
-          <span className="fs-label-max">大</span>
+          <div className="red-font-size-group">
+            <button type="button" className="fs-step-btn" aria-label="减小字号"
+              disabled={fontPx <= FONT_MIN_PX}
+              onClick={() => setFontPx(fontPx - 1)}>
+              <Icon name="minus" size={16} />
+            </button>
+            <span className="fs-step-value" aria-live="polite">{fontPx}px</span>
+            <button type="button" className="fs-step-btn" aria-label="增大字号"
+              disabled={fontPx >= FONT_MAX_PX}
+              onClick={() => setFontPx(fontPx + 1)}>
+              <Icon name="plus" size={16} />
+            </button>
+          </div>
         </div>
         <label className="src-row">字重
           <div className="seg">
