@@ -17,8 +17,9 @@ import {
 } from '../lib/shortcuts'
 import { playSound } from '../lib/sound'
 
-// 字号步进器：以「基础字号(px)」为步进来复刻 NewMax 字号组件（显示 12px 这类数字，而非百分比）。
-// 内部仍用 --font-scale 乘子持久化，基础字号 13px 对应 scale=1.0，乘子 = px / FONT_BASE_PX。
+// 字号滑轨：以「基础字号(px)」显示（10–24px），替代百分比滑块；复刻 NewMax 截图样式：
+// 标签行右侧浮丸显示当前 px，下方「小 [range] 大」滑轨，填充色随 --card-accent。
+// 内部仍用 --font-scale 乘子持久化，基础字号 13px 对应 scale=1.0。
 const FONT_BASE_PX = 13
 const FONT_MIN_PX = 10
 const FONT_MAX_PX = 24
@@ -212,21 +213,17 @@ function AppearanceTab() {
             {systemFonts.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </label>
-        <div className="src-row" style={{ marginBottom: 10, justifyContent: 'space-between' }}>
+        <div className="src-row" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
           <span>字号</span>
-          <div className="font-size-stepper" role="group" aria-label="字号">
-            <button type="button" className="fs-btn" aria-label="减小字号"
-              disabled={fontPx <= FONT_MIN_PX}
-              onClick={() => setFontPx(fontPx - 1)}>
-              <Icon name="minus" size={15} />
-            </button>
-            <span className="fs-value">{fontPx}px</span>
-            <button type="button" className="fs-btn" aria-label="增大字号"
-              disabled={fontPx >= FONT_MAX_PX}
-              onClick={() => setFontPx(fontPx + 1)}>
-              <Icon name="plus" size={15} />
-            </button>
-          </div>
+          <span className="fs-pill" aria-live="polite">{fontPx}px</span>
+        </div>
+        <div className="font-size-slider-wrap" style={{ marginBottom: 10 }}>
+          <span className="fs-label-min">小</span>
+          <input type="range" className="fs-slider" aria-label="字号"
+            min={FONT_MIN_PX} max={FONT_MAX_PX} step={1} value={fontPx}
+            style={{ '--value': `${((fontPx - FONT_MIN_PX) / (FONT_MAX_PX - FONT_MIN_PX)) * 100}%` } as React.CSSProperties}
+            onChange={(e) => setFontPx(Number(e.target.value))} />
+          <span className="fs-label-max">大</span>
         </div>
         <label className="src-row">字重
           <div className="seg">
