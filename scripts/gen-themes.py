@@ -8,7 +8,7 @@ with open(src, encoding="utf-8") as f:
 
 lines = []
 lines.append("/* ============================================================")
-lines.append("   NewMax 预设主题色板 —— 自动生成自 theme_tokens.json")
+lines.append("   预设主题色板 —— 自动生成自 theme_tokens.json")
 lines.append("   - light 态：html[data-theme=\"X\"]")
 lines.append("   - dark 态：html[data-theme=\"X\"].dark")
 lines.append("   - image-wallpaper 依赖背景图资源（aqua-curves/petal-haze），")

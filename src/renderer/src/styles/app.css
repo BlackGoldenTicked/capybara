@@ -240,9 +240,9 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 }
 /* 虚拟列表内的卡片：撑满行高（ITEM_SIZE 决定外层 row 高度），避免内容挤压；保留行高统一 */
 .feed-list .card { height: calc(100% - 8px); overflow: hidden; display: flex; flex-direction: column; gap: 6px; }
-/* hover：NewMax 通用项悬浮风格 —— 仅一层极淡的 on-surface 叠加，不改边框粗细 */
+/* hover：通用项悬浮风格 —— 仅一层极淡的 on-surface 叠加，不改边框粗细 */
 .card:hover { --card-bg: color-mix(in srgb, var(--ds-on-surface) 70%, var(--color-background-primary)); border-color: var(--color-border-secondary); }
-/* 选中：复刻 NewMax skill-pill 悬浮 —— 极淡 brand 背景叠加 + 0.5px brand 发丝边框 + 柔和抬升阴影，告别粗 ring 毛刺 */
+/* 选中：极淡 brand 背景叠加 + 0.5px brand 发丝边框 + 柔和抬升阴影，告别粗 ring 毛刺 */
 .card.selected { --card-bg: color-mix(in srgb, var(--card-accent) 5%, var(--color-background-primary)); background: var(--card-bg); border-color: color-mix(in srgb, var(--card-accent) 22%, transparent); box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--card-accent) 22%, transparent), 0 1px 4px color-mix(in srgb, var(--color-text-primary) 5%, transparent); }
 /* 未读强化：与列表视图保持一致 —— 仅加粗标题（不再用左侧 accent 竖条），已读/未读一眼区分且卡片/列表两种视图表现统一 */
 .card.unread .card-title { font-weight: 700; }
@@ -872,7 +872,7 @@ html.dark .reader-body {
   gap: 8px;
 }
 .src-hint { font-size: 12px; color: var(--color-text-tertiary); }
-/* ===== 字号滑轨（复刻 NewMax：浮丸显示 px +「小/大」range slider，填充色随 --card-accent；音量滑块复用） ===== */
+/* ===== 字号滑轨：浮丸显示 px +「小/大」range slider，填充色随 --card-accent；音量滑块复用 ===== */
 .font-size-slider-wrap { display: flex; align-items: center; gap: 10px; }
 .fs-label-min, .fs-label-max {
   flex: 0 0 auto; font-size: 12px; color: var(--color-text-tertiary);
@@ -1090,11 +1090,11 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .content { flex: 1; display: flex; min-width: 0; min-height: 0; }
 .list-pane { display: flex; flex-shrink: 0; height: 100%; }
 .divider { flex-shrink: 0; }
-/* NewMax 风格：列间仅 1px 发丝分隔线；命中区用透明伪元素向两侧外扩，不占布局宽度，
+/* 列间仅 1px 发丝分隔线；命中区用透明伪元素向两侧外扩，不占布局宽度，
    去掉原本 9px 灰色通道被误读成的“宽边框”。 */
 .divider.v { width: 0; cursor: col-resize; position: relative; touch-action: none; }
 .divider.v::before { content: ''; position: absolute; left: -5px; right: -5px; top: 0; bottom: 0; transition: background 0.15s; }
-/* 真·发丝线：1px 逻辑经 scaleX(0.5) 在 Retina(DPR=2) 上 = 1 物理像素，复刻 NewMax 原生发丝线（此前 1px CSS = 2 物理像素，粗一倍） */
+/* 真·发丝线：1px 逻辑经 scaleX(0.5) 在 Retina(DPR=2) 上 = 1 物理像素（此前 1px CSS = 2 物理像素，粗一倍） */
 .divider.v::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--ds-divider); transform: scaleX(0.5); transform-origin: left center; }
 .divider.v:hover::before { background: color-mix(in srgb, var(--card-accent) 16%, transparent); }
 .divider.v:hover::after { background: var(--color-border-info); }
@@ -1373,7 +1373,7 @@ button:focus-visible,
 .style-name { font-size: 11px; font-weight: 500; text-align: center; color: var(--color-text-secondary); }
 .style-opt.active .style-name { color: var(--color-text-info); }
 
-/* 图片壁纸主题（NewMax image-wallpaper）：3 列网格，每张壁纸一张预览图 */
+/* 图片壁纸主题（image-wallpaper）：3 列网格，每张壁纸一张预览图 */
 .wallpaper-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .wallpaper-opt {
   display: flex; flex-direction: column; gap: 5px; padding: 0; border: 1px solid transparent; border-radius: 9px;

@@ -15,14 +15,11 @@ import {
   SHORTCUT_GROUPS, DEFAULT_SHORTCUTS, formatCombo, eventToCombo,
   type ShortcutAction
 } from '../lib/shortcuts'
-import { playSound } from '../lib/sound'
+import { DsSlider } from './DsSlider'
 
-// 字号步进器：以「基础字号(px)」显示（10–24px），替代百分比滑块；100% 复刻 NewMax 字号调整组件 .red-font-size-group。
-// 结构：左侧「−」按钮、中间数值（px）、右侧「＋」按钮，圆角 8px 边框组，点击步进 ±1。
-// 内部仍用 --font-scale 乘子持久化，基础字号 13px 对应 scale=1.0。
-const FONT_BASE_PX = 13
-const FONT_MIN_PX = 10
-const FONT_MAX_PX = 24
+const FONT_BASE_PX = 14
+const FONT_MIN_PX = 13
+const FONT_MAX_PX = 18
 
 // 仅包裹右侧面板内容：切换左侧子菜单时随 settingsTab 重挂载（重置该 tab 内部状态 + 错误隔离），
 // 但外层 .settings-modal 容器保持稳定，从而不会重播 modalIn 进入动画（无感切换）。
@@ -217,18 +214,37 @@ function AppearanceTab() {
           <span>字号</span>
           <span className="fs-pill" aria-live="polite">{fontPx}px</span>
         </div>
-        <div className="font-size-slider-wrap" style={{ marginBottom: 10 }}>
+        <div className="font-size-slider-wrap" style={{ marginBottom: 12 }}>
           <span className="fs-label-min">小</span>
-          <div className="fs-slider-track">
-            <input type="range" className="fs-slider font-slider" aria-label="字号"
-              min={FONT_MIN_PX} max={FONT_MAX_PX} step={1} value={fontPx}
-              style={{ '--value': `${((fontPx - FONT_MIN_PX) / (FONT_MAX_PX - FONT_MIN_PX)) * 100}%` } as React.CSSProperties}
-              onChange={(e) => setFontPx(Number(e.target.value))} />
-            <div className="fs-ticks" aria-hidden="true">
-              {[0, 1, 2, 3, 4].map((i) => <span key={i} className="fs-tick" />)}
-            </div>
-          </div>
+          <DsSlider
+            min={FONT_MIN_PX}
+            max={FONT_MAX_PX}
+            step={1}
+            value={fontPx}
+            onChange={setFontPx}
+            formatValue={(v) => `${v}px`}
+            showTicks={true}
+            className="flex-1"
+            aria-label="字号"
+          />
           <span className="fs-label-max">大</span>
+        </div>
+        <div
+          className="font-preview-box"
+          style={{
+            padding: '10px 14px',
+            borderRadius: 'var(--ds-radius-md, 12px)',
+            backgroundColor: 'var(--ds-on-surface, rgba(127, 127, 127, 0.06))',
+            fontSize: `${fontPx}px`,
+            fontFamily: appearance.fontFamily || 'inherit',
+            fontWeight: appearance.fontWeight === 'thin' ? 300 : appearance.fontWeight === 'bold' ? 700 : 400,
+            marginBottom: 10,
+            transition: 'font-size var(--ds-motion-soft, 240ms ease)'
+          }}
+        >
+          <p style={{ color: 'var(--ds-text-primary)', lineHeight: 1.6, margin: 0 }}>
+            这是字号预览效果：敏捷捕获，从容阅读。沉淀个人知识管道。
+          </p>
         </div>
         <label className="src-row">字重
           <div className="seg">
@@ -239,7 +255,7 @@ function AppearanceTab() {
             ))}
           </div>
         </label>
-        <p className="src-hint">全局字体从系统已安装的全部字体中选择，字号为全局基础字号（10–24px），作用于全部界面文字。</p>
+        <p className="src-hint">全局字体从系统已安装的全部字体中选择，字号为全局基础字号（13–18px，默认 14px），作用于全部界面与阅读正文。</p>
       </div>
 
       <div className="set-card">
@@ -299,16 +315,18 @@ function AppearanceTab() {
         </div>
         <div className="font-size-slider-wrap" style={{ marginBottom: 4 }}>
           <span className="fs-label-min">小</span>
-          <div className="fs-slider-track">
-            <input type="range" className="fs-slider" aria-label="音量"
-              min={0} max={100} step={1} value={Math.round(soundVolume * 100)}
-              disabled={!soundEnabled}
-              style={{ '--value': `${Math.round(soundVolume * 100)}%` } as React.CSSProperties}
-              onChange={(e) => setSoundVolume(Number(e.target.value) / 100)} />
-            <div className="fs-ticks" aria-hidden="true">
-              {[0, 1, 2, 3, 4].map((i) => <span key={i} className="fs-tick" />)}
-            </div>
-          </div>
+          <DsSlider
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(soundVolume * 100)}
+            disabled={!soundEnabled}
+            onChange={(v) => setSoundVolume(v / 100)}
+            formatValue={(v) => `${v}%`}
+            showTicks={false}
+            className="flex-1"
+            aria-label="音量"
+          />
           <span className="fs-label-max">大</span>
         </div>
         <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>

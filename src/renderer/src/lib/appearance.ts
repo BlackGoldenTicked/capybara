@@ -1,14 +1,14 @@
 /**
  * ReadFlow 外观 / 配色 / 主题系统
  *
- * 对齐 NewMax 自研 Design System（DS）：
- * - 主题：跟随系统 / 亮 / 暗（亮暗通过 html.dark 类切换，NewMax 约定）
+ * 自研 Design System（DS）：
+ * - 主题：跟随系统 / 亮 / 暗（亮暗通过 html.dark 类切换）
  * - 颜色主题（colorTheme）：
- *   - 11 套 NewMax 实色预设色板（azure/claude/dusk/elegant/luxury/nature/ocean/
+ *   - 11 套实色预设色板（azure/claude/dusk/elegant/luxury/nature/ocean/
  *     professional/retro/snow-cinnabar/vibrant），themes.css 中定义浅/深双态；
- *   - 3 套 NewMax 图片壁纸主题（image-aqua/image-petal/image-snow），从
- *     /Users/zhangyu/Desktop/NewMax.app 提取 aqua-curves/petal-haze/snow-cinnabar
- *     三张壁纸作为 body 主区域背景，不重定义 ds-* 令牌（沿用默认深色基准）。
+ *   - 3 套图片壁纸主题（image-aqua/image-petal/image-snow），以
+ *     aqua-curves/petal-haze/snow-cinnabar 三张壁纸作为 body 主区域背景，
+ *     不重定义 ds-* 令牌（沿用默认深色基准）。
  * - 阅读字体：从系统已安装的全部字体中任选（通过 app:fontList IPC 动态获取），
  *   字号缩放 70%–200%，字重 细(300) / 正常(400) / 粗(700) 全局生效。
  *
@@ -32,7 +32,7 @@ export const DEFAULT_MONO_STACK = "ui-monospace, SFMono-Regular, 'SF Mono', Menl
 
 export interface Appearance {
   theme: ThemeMode
-  /** NewMax 颜色主题（整面色板）；'none' 表示使用默认基准（深绿松石品牌）。 */
+  /** 颜色主题（整面色板）；'none' 表示使用默认基准（深绿松石品牌）。 */
   colorTheme: ColorThemeKey | 'none'
   /** UI 全文字体族名；空字符串表示使用系统默认（DEFAULT_UI_STACK）。 */
   fontFamily: string
@@ -72,7 +72,7 @@ export const THEME_OPTIONS: Array<{ key: ThemeMode; label: string }> = [
   { key: 'dark', label: '暗色' }
 ]
 
-/** NewMax 实色颜色主题（11 套），对应 themes.css 中的 html[data-theme]。 */
+/** 实色颜色主题（11 套），对应 themes.css 中的 html[data-theme]。 */
 export const COLOR_THEMES: Array<{ key: ColorThemeKey; label: string; preview: string }> = [
   { key: 'azure', label: '天蓝', preview: 'linear-gradient(135deg,#0a64d6,#7fc3ff)' },
   { key: 'claude', label: 'Claude', preview: 'linear-gradient(135deg,#d97757,#faf9f5)' },
@@ -87,7 +87,7 @@ export const COLOR_THEMES: Array<{ key: ColorThemeKey; label: string; preview: s
   { key: 'vibrant', label: '活力', preview: 'linear-gradient(135deg,#2d3436,#3aaba6)' }
 ]
 
-/** NewMax 图片壁纸主题（image-*），对应 app.css 中 body::before 壁纸图层。 */
+/** 图片壁纸主题（image-*），对应 app.css 中 body::before 壁纸图层。 */
 export const IMAGE_WALLPAPERS: Array<{ key: ColorThemeKey; label: string; thumb: string }> = [
   { key: 'image-aqua', label: '晴空蓝构', thumb: new URL('../assets/wallpapers/aqua-curves.jpg', import.meta.url).href },
   { key: 'image-petal', label: '雾花柔光', thumb: new URL('../assets/wallpapers/petal-haze.jpg', import.meta.url).href },
@@ -163,7 +163,7 @@ export function resolveDark(theme: ThemeMode): boolean {
 export function applyAppearance(a: Appearance): void {
   const root = document.documentElement
 
-  // 主题模式：亮暗通过 html.dark 类切换（NewMax 约定）
+  // 主题模式：亮暗通过 html.dark 类切换
   root.classList.toggle('dark', resolveDark(a.theme))
   root.style.colorScheme = resolveDark(a.theme) ? 'dark' : 'light'
 

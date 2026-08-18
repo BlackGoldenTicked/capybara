@@ -1,5 +1,5 @@
 /* ============================================================
-   NewMax 预设主题色板 —— 自动生成自 theme_tokens.json
+   预设主题色板 —— 自动生成自 theme_tokens.json
    - light 态：html[data-theme="X"]
    - dark 态：html[data-theme="X"].dark
    - image-wallpaper 依赖背景图资源（aqua-curves/petal-haze），
@@ -421,9 +421,9 @@ html[data-theme="vibrant"].dark {
 }
 
 /* ============================================================
-   NewMax 图片壁纸主题（image-aqua/image-petal/image-snow）
-   —— 从 NewMax.app 提取的 aqua-curves/petal-haze/snow-cinnabar-wallpaper
-   三张壁纸作为 body 主区域背景。不重定义 ds-* 令牌（NewMax 规范 image-wallpaper
+   图片壁纸主题（image-aqua/image-petal/image-snow）
+   —— aqua-curves/petal-haze/snow-cinnabar-wallpaper
+   三张壁纸作为 body 主区域背景。不重定义 ds-* 令牌（规范 image-wallpaper
    light/dark 为空），浅/深由 html.dark 类决定；app.css 据此应用 body::before 壁纸图层。
    ============================================================ */
 html[data-theme="image-aqua"] {

@@ -1,9 +1,9 @@
 /* ============================================================
-   ReadFlow 设计令牌 —— 对齐 NewMax 自研 Design System（DS）
+   ReadFlow 设计令牌 —— 自研 Design System（DS）
    - 令牌前缀统一为 --ds-*（text / brand / surface / icon / radius /
-     elevation / motion / font），源自 NewMax globals.css 取证。
-   - 浅色基准定义于 :root，深色基准定义于 html.dark（NewMax 约定，
-     深色用 .dark 类后缀而非 data-theme="dark"）。
+     elevation / motion / font）。
+   - 浅色基准定义于 :root，深色基准定义于 html.dark（深色用 .dark
+     类后缀而非 data-theme="dark"）。
    - 12 套预设主题色板见 themes.css（html[data-theme="X"] 与
      html[data-theme="X"].dark）。
    - 为兼容既有组件样式，保留 ReadFlow 旧令牌（--color-* / --border-* /
@@ -19,7 +19,7 @@
 }
 
 /* ============================================================
-   NewMax DS 基准令牌（浅色）—— 深绿松石品牌 + 暖金强调
+   DS 基准令牌（浅色）—— 深绿松石品牌 + 暖金强调
    ============================================================ */
 :root {
   /* ---- 文本 ---- */
@@ -171,7 +171,7 @@
 }
 
 /* ============================================================
-   NewMax DS 基准令牌（深色）—— 亮绿品牌，用 .dark 类切换
+   DS 基准令牌（深色）—— 亮绿品牌，用 .dark 类切换
    ============================================================ */
 html.dark {
   --ds-text-primary: #e6e6e2;
