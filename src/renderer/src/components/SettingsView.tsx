@@ -19,7 +19,7 @@ import { DsSlider } from './DsSlider'
 
 const FONT_BASE_PX = 14
 const FONT_MIN_PX = 13
-const FONT_MAX_PX = 18
+const FONT_MAX_PX = 24
 
 // 仅包裹右侧面板内容：切换左侧子菜单时随 settingsTab 重挂载（重置该 tab 内部状态 + 错误隔离），
 // 但外层 .settings-modal 容器保持稳定，从而不会重播 modalIn 进入动画（无感切换）。
@@ -94,12 +94,12 @@ function AppearanceTab() {
   const styleGridRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    window.readflow.invoke('app:fontList').then((list) => setSystemFonts(list as string[])).catch(() => {})
+    window.readflow.invoke('app:fontList').then((list) => setSystemFonts(list as string[])).catch(() => { })
   }, [])
 
   // 加载内置 logo 列表（应用图标切换）
   useEffect(() => {
-    window.readflow.invoke('app:logoList').then((list) => setLogos(list as Array<{ id: string; name: string; thumb: string }>)).catch(() => {})
+    window.readflow.invoke('app:logoList').then((list) => setLogos(list as Array<{ id: string; name: string; thumb: string }>)).catch(() => { })
   }, [])
 
   const setTheme = (theme: ThemeMode) => updateAppearance({ theme })
@@ -128,9 +128,9 @@ function AppearanceTab() {
       ? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
       : appearance.colorTheme.startsWith('image-')
         ? {
-            label: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '图片主题',
-            preview: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb ?? 'transparent'
-          }
+          label: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '图片主题',
+          preview: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb ?? 'transparent'
+        }
         : COLOR_THEMES.find((s) => s.key === appearance.colorTheme) ?? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
 
   return (
@@ -657,7 +657,7 @@ const OSS_GROUPS: Array<{ title: string; items: Array<{ name: string; version: s
 function ThanksTab() {
   const [ver, setVer] = useState('')
   useEffect(() => {
-    window.readflow.invoke('app:version').then((v) => setVer((v as string) || '')).catch(() => {})
+    window.readflow.invoke('app:version').then((v) => setVer((v as string) || '')).catch(() => { })
   }, [])
 
   return (

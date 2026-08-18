@@ -74,24 +74,24 @@ export const THEME_OPTIONS: Array<{ key: ThemeMode; label: string }> = [
 
 /** 实色颜色主题（11 套），对应 themes.css 中的 html[data-theme]。 */
 export const COLOR_THEMES: Array<{ key: ColorThemeKey; label: string; preview: string }> = [
-  { key: 'azure', label: '天蓝', preview: 'linear-gradient(135deg,#0a64d6,#7fc3ff)' },
-  { key: 'claude', label: 'Claude', preview: 'linear-gradient(135deg,#d97757,#faf9f5)' },
-  { key: 'dusk', label: '暮色', preview: 'linear-gradient(135deg,#706b3a,#cfd0a0)' },
-  { key: 'elegant', label: '雅致', preview: 'linear-gradient(135deg,#57606f,#d4a64d)' },
-  { key: 'luxury', label: '奢华', preview: 'linear-gradient(135deg,#1e1e1e,#b8993a)' },
-  { key: 'nature', label: '自然', preview: 'linear-gradient(135deg,#2d5a27,#c05850)' },
-  { key: 'ocean', label: '海洋', preview: 'linear-gradient(135deg,#0b6a9e,#7dd3fc)' },
-  { key: 'professional', label: '商务', preview: 'linear-gradient(135deg,#0056b3,#3d9e8e)' },
-  { key: 'retro', label: '复古', preview: 'linear-gradient(135deg,#b45309,#e4bf6a)' },
-  { key: 'snow-cinnabar', label: '雪映朱砂', preview: 'linear-gradient(135deg,#984933,#c36a50)' },
-  { key: 'vibrant', label: '活力', preview: 'linear-gradient(135deg,#2d3436,#3aaba6)' }
+  { key: 'azure', label: '晴空蓝', preview: 'linear-gradient(135deg,#0a64d6,#7fc3ff)' },
+  { key: 'claude', label: '陶土暖', preview: 'linear-gradient(135deg,#d97757,#faf9f5)' },
+  { key: 'dusk', label: '暮橄榄', preview: 'linear-gradient(135deg,#706b3a,#cfd0a0)' },
+  { key: 'elegant', label: '黛金灰', preview: 'linear-gradient(135deg,#57606f,#d4a64d)' },
+  { key: 'luxury', label: '墨金黑', preview: 'linear-gradient(135deg,#1e1e1e,#b8993a)' },
+  { key: 'nature', label: '森野红', preview: 'linear-gradient(135deg,#2d5a27,#c05850)' },
+  { key: 'ocean', label: '碧海青', preview: 'linear-gradient(135deg,#0b6a9e,#7dd3fc)' },
+  { key: 'professional', label: '靛青蓝', preview: 'linear-gradient(135deg,#0056b3,#3d9e8e)' },
+  { key: 'retro', label: '琥珀橙', preview: 'linear-gradient(135deg,#b45309,#e4bf6a)' },
+  { key: 'snow-cinnabar', label: '朱砂赤', preview: 'linear-gradient(135deg,#984933,#c36a50)' },
+  { key: 'vibrant', label: '青碧绿', preview: 'linear-gradient(135deg,#2d3436,#3aaba6)' }
 ]
 
 /** 图片壁纸主题（image-*），对应 app.css 中 body::before 壁纸图层。 */
 export const IMAGE_WALLPAPERS: Array<{ key: ColorThemeKey; label: string; thumb: string }> = [
-  { key: 'image-aqua', label: '晴空蓝构', thumb: new URL('../assets/wallpapers/aqua-curves.jpg', import.meta.url).href },
-  { key: 'image-petal', label: '雾花柔光', thumb: new URL('../assets/wallpapers/petal-haze.jpg', import.meta.url).href },
-  { key: 'image-snow', label: '雪映朱砂', thumb: new URL('../assets/wallpapers/snow-cinnabar-wallpaper.jpg', import.meta.url).href }
+  { key: 'image-aqua', label: '晴空水波', thumb: new URL('../assets/wallpapers/aqua-curves.jpg', import.meta.url).href },
+  { key: 'image-petal', label: '雾花柔粉', thumb: new URL('../assets/wallpapers/petal-haze.jpg', import.meta.url).href },
+  { key: 'image-snow', label: '雪映朱砂壁', thumb: new URL('../assets/wallpapers/snow-cinnabar-wallpaper.jpg', import.meta.url).href }
 ]
 
 /** 所有合法 colorTheme 取值（实色 + 图片壁纸），用于持久化校验与启动兜底。 */
