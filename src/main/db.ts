@@ -485,13 +485,15 @@ function migrateDiscover() {
       match_reason TEXT,
       PRIMARY KEY (role_id, source_id)
     );
-    CREATE INDEX IF NOT EXISTS idx_rsm_source ON role_source_map(source_id);
-    CREATE INDEX IF NOT EXISTS idx_rsm_role   ON role_source_map(role_id);
+  CREATE INDEX IF NOT EXISTS idx_rsm_source ON role_source_map(source_id);
+  CREATE INDEX IF NOT EXISTS idx_rsm_role   ON role_source_map(role_id);
   `)
   seedDiscover()
+  // 增量合并：把最新打包内的候选源同步进老用户库（见下方函数说明）
+  syncDiscoverSources()
 }
 
-/** 首次启动一次性导入 2242 条候选源 + 65 角色 + 角色映射（settings 标记防重复） */
+/** 首次启动一次性导入候选源 + 65 角色 + 角色映射（settings 标记防重复） */
 function seedDiscover() {
   if (getSetting('discover_seeded') === '1') return
   const existing = (db.prepare('SELECT COUNT(*) c FROM rss_sources').get() as { c: number }).c
@@ -516,6 +518,38 @@ function seedDiscover() {
   } catch (e) {
     db.exec('ROLLBACK')
     console.error('[seedDiscover] 失败：', (e as Error).message)
+  }
+}
+
+/**
+ * 增量同步（幂等，可每次启动调用）：把打包内最新候选源合并进运行时库。
+ * - 按 xml_url 做 INSERT OR IGNORE，绝不删除 / 覆盖用户已有订阅与已导入候选源；
+ * - roles 按 name 去重；role_source_map 按 (role_id, source_id) 去重；
+ * - 新版本打包后，老用户首次启动即可在「信源发现」看到新增候选源，无需清库重置。
+ * 这样「默认 app 打包」的信源数据更新后，已安装用户也能同步拿到，而不只是全新安装。
+ */
+function syncDiscoverSources() {
+  const insRole = db.prepare('INSERT OR IGNORE INTO roles (name, domain, description) VALUES (?, ?, ?)')
+  const insSrc = db.prepare('INSERT OR IGNORE INTO rss_sources (title, xml_url, html_url, source_type, tier, stars, tags, language, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+  const getSrcId = db.prepare('SELECT id FROM rss_sources WHERE xml_url = ?')
+  const insMap = db.prepare('INSERT OR IGNORE INTO role_source_map (role_id, source_id, priority) VALUES (?, ?, ?)')
+  db.exec('BEGIN')
+  try {
+    for (const r of DISCOVER_ROLES) insRole.run(r.name, r.domain, r.description)
+    for (const s of DISCOVER_SOURCES) {
+      insSrc.run(s[0], s[1], s[2], s[3], s[4], s[5], JSON.stringify(s[6]), s[7], s[8])
+    }
+    for (const [ri, si, prio] of ROLE_SOURCE_MAP) {
+      const row = getSrcId.get(DISCOVER_SOURCES[si][1]) as { id: number } | undefined
+      if (row) insMap.run(ri + 1, row.id, prio)
+    }
+    db.exec('COMMIT')
+    setSetting('discover_seeded', '1')
+    const total = (db.prepare('SELECT COUNT(*) c FROM rss_sources').get() as { c: number }).c
+    console.log(`[syncDiscoverSources] 已合并候选源，rss_sources 现共 ${total} 条`)
+  } catch (e) {
+    db.exec('ROLLBACK')
+    console.error('[syncDiscoverSources] 失败：', (e as Error).message)
   }
 }
 
