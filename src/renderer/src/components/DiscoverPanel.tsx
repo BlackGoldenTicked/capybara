@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import type { DiscoverFeed, DiscoverRole, MediaKind } from '../env'
 import { Icon } from './icons'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 9
 const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
 
 /** 信源发现：从预置 2242 条 RSS 源库按角色/分类筛选，一键订阅 */
