@@ -59,22 +59,13 @@ echo "==> [4/4] 安装并打开程序"
 # 把刚构建的 app 覆盖安装到 /Applications，保证「运行的」就是「刚构建的」版本
 # （彻底杜绝之前反复出现的「旧二进制 / 旧副本」问题）
 if [ -d "$PROJECT_DIR/release/mac/ReadFlow.app" ]; then
-  echo "    安装最新构建 → $APP"
-  # 多等一会，确保进程完全释放文件句柄，否则 rm 会失败并在 /Applications/ReadFlow.app 下嵌套一层 ReadFlow.app
+  echo "    安装最新构建 → $APP (ditto 合并覆盖，避免 bulk-delete 弹窗)"
+  # 先彻底退出运行中的实例，释放文件句柄，否则 ditto 写入可能失败
+  pkill -9 -f readflow 2>/dev/null || true
   sleep 2
-  rm -rf "$APP" 2>/dev/null || true
-  if [ -d "$APP" ]; then
-    echo "    ⚠ 首次删除失败，再杀一次进程并重试 ..."
-    pkill -9 -f readflow 2>/dev/null || true
-    sleep 2
-    rm -rf "$APP" 2>/dev/null || true
-  fi
-  if [ -d "$APP" ]; then
-    echo "    ⚠ 无法删除旧版 $APP，请手动关闭/删除后重试"
-  else
-    cp -R "$PROJECT_DIR/release/mac/ReadFlow.app" "$APP"
-    xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
-  fi
+  /usr/bin/ditto "$PROJECT_DIR/release/mac/ReadFlow.app" "$APP"
+  xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
+  echo "    ditto 安装完成"
 else
   echo "    ⚠ 未找到刚构建的 $PROJECT_DIR/release/mac/ReadFlow.app（第三步构建可能失败）"
 fi

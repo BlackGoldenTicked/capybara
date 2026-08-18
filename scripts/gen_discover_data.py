@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ReadFlow 信源发现数据生成脚本（可复现）。
-从 feeds 工作空间解析 rss_sources_insert.sql（2242 条源）+ schema.sql（65 角色），
+从项目 feeds/ 目录解析 rss_sources_insert.sql（RSS 源）+ ddl.sql（65 角色），
 生成 src/main/discover/data.ts（紧凑 TS 模块），并推导 role_source_map 角色映射。
 
 用法：
@@ -11,14 +11,16 @@ ReadFlow 信源发现数据生成脚本（可复现）。
 """
 import re
 import json
+import os
 from collections import OrderedDict
 
-FEEDS_DIR = "/Users/zhangyu/Desktop/feeds"
-SQL_PATH = f"{FEEDS_DIR}/rss_sources_insert.sql"
-SCHEMA_PATH = f"{FEEDS_DIR}/schema.sql"
-OUT_PATH = "/Users/zhangyu/WorkBuddy/root/readflow/src/main/discover/data.ts"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FEEDS_DIR = os.path.join(ROOT, "feeds")
+SQL_PATH = os.path.join(FEEDS_DIR, "rss_sources_insert.sql")
+SCHEMA_PATH = os.path.join(FEEDS_DIR, "ddl.sql")
+OUT_PATH = os.path.join(ROOT, "src", "main", "discover", "data.ts")
 
-# ==================== 一、解析 schema.sql 的 65 角色 ====================
+# ==================== 一、解析 ddl.sql 的 65 角色 ====================
 schema = open(SCHEMA_PATH, encoding="utf-8").read()
 role_rows = re.findall(
     r"\('([^']+)',\s*'([^']+)',\s*'((?:[^']|'')*)'\)",
@@ -126,7 +128,7 @@ def ts_str(s: str) -> str:
     return json.dumps(s, ensure_ascii=False)
 
 lines = []
-lines.append("// 自动生成，勿手改。来源：feeds 工作空间 rss_sources_insert.sql + schema.sql")
+lines.append("// 自动生成，勿手改。来源：项目 feeds/ 目录 rss_sources_insert.sql + ddl.sql")
 lines.append("// 重新生成：python3 scripts/gen_discover_data.py")
 lines.append("")
 lines.append("export interface DiscoverRole { name: string; domain: string; description: string }")
