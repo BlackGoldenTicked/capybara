@@ -311,7 +311,7 @@ input:focus { border-color: var(--color-border-info); box-shadow: var(--ds-input
 }
 .settings-modal {
   position: relative;
-  width: 66vw; height: 60vh; max-width: 1280px;
+  width: 99vw; height: 90vh; max-width: 1920px;
   border-radius: var(--border-radius-lg);
   border: 0.5px solid var(--color-border-tertiary);
   box-shadow: var(--ds-elevation-300);
