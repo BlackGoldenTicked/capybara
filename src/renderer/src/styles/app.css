@@ -1271,6 +1271,15 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .feed-row2:not(.added) { cursor: pointer; }
 .feed-row2:not(.added):hover { background: var(--color-background-secondary); border-color: var(--color-border-info); }
 .feed-row2.added { opacity: 0.62; }
+/* 信源发现：双列卡片（每列 5 条 / 每页 10） */
+.disc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 400px; overflow-y: auto; align-content: start; }
+.disc-card { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 0.5px solid var(--color-border-tertiary); border-radius: 8px; background: var(--color-background-primary); transition: background .12s var(--ease-out), border-color .12s var(--ease-out); }
+.disc-card:not(.added):hover { background: var(--color-background-secondary); border-color: var(--color-border-info); }
+.disc-card.added { opacity: 0.62; }
+.disc-card .feed-info { gap: 3px; }
+.disc-card .discover-pick { flex-wrap: wrap; gap: 6px; }
+.disc-card .discover-pick .seg-3way { min-width: 0; flex: 1 1 100%; }
+.disc-card .discover-pick button { flex: 1; min-width: 0; }
 .feed-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .feed-title { font-size: 12.5px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .feed-url, .feed-host { font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

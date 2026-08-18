@@ -1165,10 +1165,16 @@ export function discoverFeeds(opts: DiscoverFilter): { rows: DiscoverFeed[]; tot
   if (opts.tiers && opts.tiers.length) { where.push(`s.tier IN (${inClause(opts.tiers.length)})`); params.push(...opts.tiers) }
   if (opts.sourceTypes && opts.sourceTypes.length) { where.push(`s.source_type IN (${inClause(opts.sourceTypes.length)})`); params.push(...opts.sourceTypes) }
   if (opts.languages && opts.languages.length) { where.push(`s.language IN (${inClause(opts.languages.length)})`); params.push(...opts.languages) }
+  let relevanceOrder = ''
+  const relevanceParams: SQLInputValue[] = []
   if (opts.keyword) {
     const kw = `%${opts.keyword}%`
-    where.push('(s.title LIKE ? OR s.xml_url LIKE ?)')
-    params.push(kw, kw)
+    // 字段覆盖补全：标题 / feed URL / 站点 URL / 描述 / 标签 全部可搜
+    where.push('(s.title LIKE ? OR s.xml_url LIKE ? OR s.html_url LIKE ? OR s.description LIKE ? OR s.tags LIKE ?)')
+    params.push(kw, kw, kw, kw, kw)
+    // 相关性排序：标题命中优先，其次 feed URL / 站点 URL / 描述
+    relevanceOrder = 'CASE WHEN s.title LIKE ? THEN 0 WHEN s.xml_url LIKE ? THEN 1 WHEN s.html_url LIKE ? THEN 2 WHEN s.description LIKE ? THEN 3 ELSE 4 END, '
+    relevanceParams.push(kw, kw, kw, kw)
   }
 
   const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : ''
@@ -1182,9 +1188,9 @@ export function discoverFeeds(opts: DiscoverFilter): { rows: DiscoverFeed[]; tot
     FROM rss_sources s
     LEFT JOIN feeds f ON f.url = s.xml_url
     ${whereSql}
-    ORDER BY s.stars DESC, s.tier ASC, s.id ASC
+    ORDER BY ${relevanceOrder}s.stars DESC, s.tier ASC, s.id ASC
     LIMIT ? OFFSET ?
-  `).all(...params, size, page * size) as Array<Omit<DiscoverFeed, 'tags'> & { tags: string }>
+  `).all(...params, ...relevanceParams, size, page * size) as Array<Omit<DiscoverFeed, 'tags'> & { tags: string }>
 
   return {
     total,

@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import type { DiscoverFeed, DiscoverRole, MediaKind } from '../env'
 import { Icon } from './icons'
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
 
 /** 信源发现：从预置 2242 条 RSS 源库按角色/分类筛选，一键订阅 */
@@ -170,7 +170,7 @@ export function DiscoverPanel() {
           <div className="disc-search">
             <input
               id="discover-keyword"
-              placeholder="标题或 URL 关键词"
+              placeholder="标题 / 网址 / 描述关键词"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') void query(0) }}
@@ -198,11 +198,11 @@ export function DiscoverPanel() {
         </div>
       </div>
 
-      <div className="feed-rows discover-list">
+      <div className="disc-grid">
         {!loaded && <p className="src-hint">加载中…</p>}
         {loaded && rows.length === 0 && <p className="src-hint">无匹配结果，试试放宽筛选条件。</p>}
         {rows.map((f) => (
-          <div key={f.id} className={`feed-row2 ${f.subscribed ? 'added' : ''}`}>
+          <div key={f.id} className={`disc-card ${f.subscribed ? 'added' : ''}`}>
             <div className="feed-info">
               <span className="feed-title">{f.title}</span>
               <span className="feed-url">{f.xml_url}</span>
