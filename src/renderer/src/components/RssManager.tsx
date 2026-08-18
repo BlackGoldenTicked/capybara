@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useStore } from '../store'
 import type { Feed, MediaKind } from '../env'
 import { Icon } from './icons'
 import { DiscoverPanel } from './DiscoverPanel'
 
-const PAGE_SIZE = 100
 const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播客', video: '视频' }
 
 export function RssManager() {
@@ -17,23 +16,6 @@ export function RssManager() {
   const [opmlMsg, setOpmlMsg] = useState('')
   const [validating, setValidating] = useState(false)
 
-  // 分页
-  const [page, setPage] = useState(0)
-  const [totalFeeds, setTotalFeeds] = useState(0)
-  const [pagedFeeds, setPagedFeeds] = useState<Feed[]>([])
-  const totalPages = Math.ceil(totalFeeds / PAGE_SIZE)
-
-  const loadPage = async (p: number) => {
-    const [list, count] = await Promise.all([
-      window.readflow.invoke('feeds:listPage', p, PAGE_SIZE) as Promise<Feed[]>,
-      window.readflow.invoke('feeds:count') as Promise<number>
-    ])
-    setPagedFeeds(list)
-    setTotalFeeds(count)
-  }
-
-  useEffect(() => { void loadPage(0) }, [])
-
   const submit = async () => {
     if (!url.trim()) { showToast('请填写 RSS 地址'); return }
     setValidating(true)
@@ -43,8 +25,7 @@ export function RssManager() {
       const finalName = name.trim() || v.title || url.trim()
       await addFeed('rss', finalName, url.trim(), schedule, kind)
       showToast('已添加「' + finalName + '」')
-      setName(''); setUrl(''); setSchedule(120); setKind('article'); setPage(0)
-      void loadPage(0)
+      setName(''); setUrl(''); setSchedule(120); setKind('article')
     } catch (e) { showToast('添加失败：' + (e as Error).message) }
     finally { setValidating(false) }
   }
@@ -56,7 +37,6 @@ export function RssManager() {
       if (r.total === 0) { setOpmlMsg('已取消或未选择文件'); return }
       await useStore.getState().loadFeeds()
       setOpmlMsg(`导入完成：新增 ${r.added} / 跳过重复 ${r.skipped}（共 ${r.total}）`)
-      void loadPage(page)
     } catch (e) { setOpmlMsg('失败：' + (e as Error).message) }
   }
 
@@ -125,57 +105,48 @@ export function RssManager() {
         )}
       </div>
 
-      {/* 信源发现：从预置源库按角色/分类筛选订阅 */}
-      <DiscoverPanel />
-
-      {/* 已订阅列表（分页） */}
+      {/* 已订阅列表（两列网格，固定高度滚动） */}
       <div className="set-card">
-        <p className="src-label">已订阅（{totalFeeds}）</p>
-        {pagedFeeds.length === 0 && <p className="src-hint">暂无订阅源。手动粘贴 RSS feed 地址或导入 OPML 文件。</p>}
-        {pagedFeeds.map((f) => (
-          <div key={f.id} className="feed-row">
-            <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
-            <div className="fr-info">
-              <span className="fr-name">{f.name || f.url}</span>
-              <span className="fr-url">{f.url}</span>
-            </div>
-            <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '错误') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
-            {f.error_count > 0 && (
-              <span className="feed-err-wrap">
-                <button className="feed-err-info" title="查看错误详情" onClick={() => setErrId(errId === f.id ? null : f.id)}>
-                  <Icon name="info" size={14} />
-                </button>
-                {errId === f.id && (
-                  <div className="feed-err-pop" onClick={(e) => e.stopPropagation()}>
-                    <div className="feed-err-head"><span>抓取错误详情</span><button className="feed-err-x" onClick={() => setErrId(null)}>×</button></div>
-                    <div className="feed-err-row"><span className="feed-err-k">源名称</span><span className="feed-err-v">{f.name || f.url}</span></div>
-                    <div className="feed-err-row"><span className="feed-err-k">URL</span><span className="feed-err-v feed-err-url">{f.url}</span></div>
-                    <div className="feed-err-row"><span className="feed-err-k">失败次数</span><span className="feed-err-v">{f.error_count}</span></div>
-                    <div className="feed-err-msg">{f.last_error || '（无具体错误信息）'}</div>
+        <p className="src-label">已订阅（{feeds.length}）</p>
+        {feeds.length === 0 && <p className="src-hint">暂无订阅源。手动粘贴 RSS feed 地址或导入 OPML 文件。</p>}
+        {feeds.length > 0 && (
+          <div className="subs-wrap">
+            <div className="subs-grid">
+              {feeds.map((f) => (
+                <div key={f.id} className="feed-row">
+                  <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
+                  <div className="fr-info">
+                    <span className="fr-name">{f.name || f.url}</span>
+                    <span className="fr-url">{f.url}</span>
                   </div>
-                )}
-              </span>
-            )}
-            <button onClick={() => void refreshFeed(f.id)}>刷新</button>
-            <button onClick={async () => {
-              await deleteFeed(f.id)
-              // 删除后重载当前页；若当前页已空则回退一页
-              const newCount = await window.readflow.invoke('feeds:count') as number
-              const newTotalPages = Math.max(1, Math.ceil(newCount / PAGE_SIZE))
-              const nextPage = page >= newTotalPages ? Math.max(0, newTotalPages - 1) : page
-              setPage(nextPage)
-              void loadPage(nextPage)
-            }}>删除</button>
-          </div>
-        ))}
-        {totalPages > 1 && (
-          <div className="feed-pager">
-            <button disabled={page <= 0} onClick={() => { const p = page - 1; setPage(p); void loadPage(p) }}>上一页</button>
-            <span>{page + 1} / {totalPages}</span>
-            <button disabled={page >= totalPages - 1} onClick={() => { const p = page + 1; setPage(p); void loadPage(p) }}>下一页</button>
+                  <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '错误') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
+                  {f.error_count > 0 && (
+                    <span className="feed-err-wrap">
+                      <button className="feed-err-info" title="查看错误详情" onClick={() => setErrId(errId === f.id ? null : f.id)}>
+                        <Icon name="info" size={14} />
+                      </button>
+                      {errId === f.id && (
+                        <div className="feed-err-pop" onClick={(e) => e.stopPropagation()}>
+                          <div className="feed-err-head"><span>抓取错误详情</span><button className="feed-err-x" onClick={() => setErrId(null)}>×</button></div>
+                          <div className="feed-err-row"><span className="feed-err-k">源名称</span><span className="feed-err-v">{f.name || f.url}</span></div>
+                          <div className="feed-err-row"><span className="feed-err-k">URL</span><span className="feed-err-v feed-err-url">{f.url}</span></div>
+                          <div className="feed-err-row"><span className="feed-err-k">失败次数</span><span className="feed-err-v">{f.error_count}</span></div>
+                          <div className="feed-err-msg">{f.last_error || '（无具体错误信息）'}</div>
+                        </div>
+                      )}
+                    </span>
+                  )}
+                  <button onClick={() => void refreshFeed(f.id)}>刷新</button>
+                  <button onClick={() => void deleteFeed(f.id)}>删除</button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
+
+      {/* 信源发现：从预置源库按角色/分类筛选订阅 */}
+      <DiscoverPanel />
     </div>
   )
 }
