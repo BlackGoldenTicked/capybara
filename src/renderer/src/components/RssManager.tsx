@@ -44,8 +44,9 @@ export function RssManager() {
 
   return (
     <div className="set-scroll">
-      <div className="set-card">
-        <p className="src-label">RSS 订阅管理</p>
+      <div className="subs-row">
+        <div className="set-card">
+          <p className="src-label">RSS 订阅管理</p>
 
         {/* 类型选择：放最前，全宽 segmented，与下方方式选择视觉对齐 */}
         <div className="src-3way">
@@ -105,15 +106,14 @@ export function RssManager() {
         )}
       </div>
 
-      {/* 已订阅列表（两列网格，固定高度滚动） */}
+      {/* 已订阅列表（单列，与左侧等高，数据过多滚屏） */}
       <div className="set-card">
         <p className="src-label">已订阅（{feeds.length}）</p>
         {feeds.length === 0 && <p className="src-hint">暂无订阅源。手动粘贴 RSS feed 地址或导入 OPML 文件。</p>}
         {feeds.length > 0 && (
           <div className="subs-wrap">
-            <div className="subs-grid">
-              {feeds.map((f) => (
-                <div key={f.id} className="feed-row">
+            {feeds.map((f) => (
+              <div key={f.id} className="feed-row">
                   <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
                   <div className="fr-info">
                     <span className="fr-name">{f.name || f.url}</span>
@@ -140,9 +140,9 @@ export function RssManager() {
                   <button onClick={() => void deleteFeed(f.id)}>删除</button>
                 </div>
               ))}
-            </div>
           </div>
         )}
+      </div>
       </div>
 
       {/* 信源发现：从预置源库按角色/分类筛选订阅 */}
