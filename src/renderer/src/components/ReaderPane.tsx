@@ -201,8 +201,8 @@ export function ReaderPane() {
             <nav className="reader-toc-rail" aria-label="正文快速跳转" onMouseLeave={() => setTip(null)}>
               <div className="reader-toc-track">
                 {toc.map((h) => {
-                  // 横线宽度正比于该章节内容字符数（消息密度热力图），clamp 16–46px
-                  const w = Math.max(16, Math.min(46, 16 + Math.floor(h.sectionChars / 30)))
+                  // 横线宽度正比于该章节内容字符数（消息密度热力图），clamp 12–30px
+                  const w = Math.max(12, Math.min(30, 12 + Math.floor(h.sectionChars / 60)))
                   const isActive = activeId === h.id
                   return (
                     <button
