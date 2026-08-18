@@ -21,7 +21,8 @@ echo "==> [1/4] 关闭所有运行中的 ReadFlow / dev 进程"
 # 优雅退出（若已安装并正在运行）
 osascript -e 'tell application "ReadFlow" to quit' 2>/dev/null || true
 # 强杀残留（含 dev server：electron-vite / vite）
-pkill -f readflow       2>/dev/null || true
+# 注意：进程名是 "ReadFlow"（大写 R），pkill -f readflow 小写匹配不到，必须大写
+pkill -9 -f "ReadFlow"  2>/dev/null || true
 pkill -f electron-vite  2>/dev/null || true
 pkill -f "vite"         2>/dev/null || true
 sleep 1
@@ -61,7 +62,7 @@ echo "==> [4/4] 安装并打开程序"
 if [ -d "$PROJECT_DIR/release/mac/ReadFlow.app" ]; then
   echo "    安装最新构建 → $APP (ditto 合并覆盖，避免 bulk-delete 弹窗)"
   # 先彻底退出运行中的实例，释放文件句柄，否则 ditto 写入可能失败
-  pkill -9 -f readflow 2>/dev/null || true
+  pkill -9 -f "ReadFlow" 2>/dev/null || true
   sleep 2
   /usr/bin/ditto "$PROJECT_DIR/release/mac/ReadFlow.app" "$APP"
   xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
