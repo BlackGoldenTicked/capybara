@@ -17,6 +17,8 @@ leser-master/
 .DS_Store
 coverage/
 .rss_cache/
+scripts/clean_rss_sources.py
+feeds/rss_cleaning_report.json
 
 # 本地配置（如有）
 .env
