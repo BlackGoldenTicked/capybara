@@ -7,7 +7,7 @@ import { TwitterBookmarkManager } from './TwitterBookmarkManager'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
 import {
-  THEME_OPTIONS, COLOR_THEMES, IMAGE_WALLPAPERS,
+  THEME_OPTIONS, COLOR_THEMES,
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
@@ -106,7 +106,6 @@ function AppearanceTab() {
   const setColorTheme = (colorTheme: ColorThemeKey | 'none') => updateAppearance({ colorTheme })
   const setFontWeight = (w: FontWeight) => updateAppearance({ fontWeight: w })
   const setReadingTheme = (id: string) => updateAppearance({ readingTheme: id })
-  const setWallpaperBlur = (v: boolean) => updateAppearance({ wallpaperBlur: v })
   // 当前显示为「基础字号(px)」，并夹紧到可选区间；写入时换算回 --font-scale 乘子。
   const fontPx = Math.min(FONT_MAX_PX, Math.max(FONT_MIN_PX, Math.round(appearance.fontScale * FONT_BASE_PX)))
   const setFontPx = (px: number) => {
@@ -126,12 +125,7 @@ function AppearanceTab() {
   const currentStyle =
     appearance.colorTheme === 'none'
       ? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
-      : appearance.colorTheme.startsWith('image-')
-        ? {
-          label: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '图片主题',
-          preview: IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb ?? 'transparent'
-        }
-        : COLOR_THEMES.find((s) => s.key === appearance.colorTheme) ?? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
+      : COLOR_THEMES.find((s) => s.key === appearance.colorTheme) ?? { label: '默认', preview: 'linear-gradient(135deg,#f1f0eb,#d8d6ce)' }
 
   return (
     <div className="set-scroll">
@@ -164,41 +158,6 @@ function AppearanceTab() {
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="set-card">
-        <div className="src-head-row">
-          <p className="src-label">图片主题</p>
-          <span className="cur-chip">
-            <span className="cur-swatch" style={{
-              background: appearance.colorTheme.startsWith('image-')
-                ? IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.thumb
-                : 'transparent'
-            }} />
-            {appearance.colorTheme.startsWith('image-')
-              ? IMAGE_WALLPAPERS.find((w) => w.key === appearance.colorTheme)?.label ?? '未选择'
-              : '未选择'}
-          </span>
-        </div>
-        <p className="src-hint">壁纸主题：用图片作为主区域背景，沿用默认深色基准（不重定义色板）。</p>
-        <div className="wallpaper-grid">
-          {IMAGE_WALLPAPERS.map((w) => (
-            <button key={w.key}
-              className={`wallpaper-opt ${appearance.colorTheme === w.key ? 'active' : ''}`}
-              onClick={() => setColorTheme(w.key)}
-              title={w.label}>
-              <span className="wallpaper-thumb" style={{ backgroundImage: `url(${w.thumb})` }} />
-              <span className="wallpaper-name">{w.label}</span>
-            </button>
-          ))}
-        </div>
-        {appearance.colorTheme.startsWith('image-') && (
-          <label className="switch-row" style={{ marginTop: 4 }}>
-            <span>模糊背景</span>
-            <button className={`switch ${appearance.wallpaperBlur ? 'on' : ''}`} role="switch" aria-checked={appearance.wallpaperBlur}
-              onClick={() => setWallpaperBlur(!appearance.wallpaperBlur)}><span className="knob" /></button>
-          </label>
-        )}
       </div>
 
       <div className="set-card">

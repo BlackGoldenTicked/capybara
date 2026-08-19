@@ -3,12 +3,8 @@
  *
  * 自研 Design System（DS）：
  * - 主题：跟随系统 / 亮 / 暗（亮暗通过 html.dark 类切换）
- * - 颜色主题（colorTheme）：
- *   - 11 套实色预设色板（azure/claude/dusk/elegant/luxury/nature/ocean/
- *     professional/retro/snow-cinnabar/vibrant），themes.css 中定义浅/深双态；
- *   - 3 套图片壁纸主题（image-aqua/image-petal/image-snow），以
- *     aqua-curves/petal-haze/snow-cinnabar 三张壁纸作为 body 主区域背景，
- *     不重定义 ds-* 令牌（沿用默认深色基准）。
+ * - 颜色主题（colorTheme）：5 套实色预设色板（azure/claude/ocean/
+ *   snow-cinnabar/vibrant），themes.css 中定义浅/深双态。
  * - 阅读字体：从系统已安装的全部字体中任选（通过 app:fontList IPC 动态获取），
  *   字号缩放 70%–200%，字重 细(300) / 正常(400) / 粗(700) 全局生效。
  *
@@ -20,7 +16,6 @@ import { getReadingThemeById, FOLLOW_UI_ID, DEFAULT_READING_THEME_ID } from './r
 export type ThemeMode = 'system' | 'light' | 'dark'
 export type ColorThemeKey =
   | 'azure' | 'claude' | 'ocean' | 'snow-cinnabar' | 'vibrant'
-  | 'image-aqua' | 'image-petal' | 'image-snow'
 export type FontWeight = 'thin' | 'normal' | 'bold'
 
 /** 系统默认 UI 字体栈（全局文字兜底）。 */
@@ -41,8 +36,6 @@ export interface Appearance {
   fontWeight: FontWeight
   /** 阅读正文配色主题 ID；`__follow_ui__` 表示跟随 UI 界面配色。 */
   readingTheme: string
-  /** 图片壁纸主题时是否对背景壁纸应用模糊。 */
-  wallpaperBlur: boolean
 }
 
 export const SETTING_KEYS = {
@@ -51,8 +44,7 @@ export const SETTING_KEYS = {
   fontFamily: 'font_family',
   fontScale: 'font_scale',
   fontWeight: 'font_weight',
-  readingTheme: 'reading_theme',
-  wallpaperBlur: 'wallpaper_blur'
+  readingTheme: 'reading_theme'
 } as const
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -61,8 +53,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   fontFamily: '',
   fontScale: 1,
   fontWeight: 'normal',
-  readingTheme: FOLLOW_UI_ID,
-  wallpaperBlur: false
+  readingTheme: FOLLOW_UI_ID
 }
 
 export const THEME_OPTIONS: Array<{ key: ThemeMode; label: string }> = [
@@ -80,17 +71,9 @@ export const COLOR_THEMES: Array<{ key: ColorThemeKey; label: string; preview: s
   { key: 'vibrant', label: '青碧绿', preview: 'linear-gradient(135deg,#2d3436,#3aaba6)' }
 ]
 
-/** 图片壁纸主题（image-*），对应 app.css 中 body::before 壁纸图层。 */
-export const IMAGE_WALLPAPERS: Array<{ key: ColorThemeKey; label: string; thumb: string }> = [
-  { key: 'image-aqua', label: '晴空水波', thumb: new URL('../assets/wallpapers/aqua-curves.jpg', import.meta.url).href },
-  { key: 'image-petal', label: '雾花柔粉', thumb: new URL('../assets/wallpapers/petal-haze.jpg', import.meta.url).href },
-  { key: 'image-snow', label: '雪映朱砂壁', thumb: new URL('../assets/wallpapers/snow-cinnabar-wallpaper.jpg', import.meta.url).href }
-]
-
-/** 所有合法 colorTheme 取值（实色 + 图片壁纸），用于持久化校验与启动兜底。 */
+/** 所有合法 colorTheme 取值（实色），用于持久化校验与启动兜底。 */
 export const KNOWN_COLOR_THEME_KEYS = new Set<string>([
-  ...COLOR_THEMES.map((s) => s.key),
-  ...IMAGE_WALLPAPERS.map((s) => s.key)
+  ...COLOR_THEMES.map((s) => s.key)
 ])
 
 const FONT_WEIGHTS: Record<FontWeight, number> = { thin: 300, normal: 400, bold: 700 }
@@ -104,14 +87,12 @@ export function uiFontStack(family: string): string {
 }
 
 const asString = (v: unknown, fallback: string): string => (typeof v === 'string' && v ? v : fallback)
-const asBool = (v: unknown, fallback: boolean): boolean => (typeof v === 'string' ? v === '1' : typeof v === 'boolean' ? v : fallback)
 
 export async function loadAppearance(): Promise<Appearance> {
   const get = (k: string) => window.readflow.invoke('settings:get', k) as Promise<string | null | undefined>
-  const [theme, colorTheme, ff, fs, fw, wb] = await Promise.all([
+  const [theme, colorTheme, ff, fs, fw] = await Promise.all([
     get(SETTING_KEYS.theme), get(SETTING_KEYS.colorTheme),
-    get(SETTING_KEYS.fontFamily), get(SETTING_KEYS.fontScale), get(SETTING_KEYS.fontWeight),
-    get(SETTING_KEYS.wallpaperBlur)
+    get(SETTING_KEYS.fontFamily), get(SETTING_KEYS.fontScale), get(SETTING_KEYS.fontWeight)
   ])
   const validTheme = (asString(colorTheme, DEFAULT_APPEARANCE.colorTheme) as ColorThemeKey | 'none')
   const scale = Number(asString(fs, String(DEFAULT_APPEARANCE.fontScale)))
@@ -123,8 +104,7 @@ export async function loadAppearance(): Promise<Appearance> {
     fontFamily: asString(ff, DEFAULT_APPEARANCE.fontFamily),
     fontScale: Number.isFinite(scale) ? Math.min(2, Math.max(0.7, scale)) : DEFAULT_APPEARANCE.fontScale,
     fontWeight: (['thin', 'normal', 'bold'].includes(weight) ? weight : DEFAULT_APPEARANCE.fontWeight) as FontWeight,
-    readingTheme: asString(undefined, FOLLOW_UI_ID),
-    wallpaperBlur: asBool(wb, DEFAULT_APPEARANCE.wallpaperBlur)
+    readingTheme: asString(undefined, FOLLOW_UI_ID)
   }
 }
 
@@ -162,16 +142,12 @@ export function applyAppearance(a: Appearance): void {
 
   // 颜色主题：
   //   - 'none'   → 使用默认基准（themes.css :root）
-  //   - 其他     → themes.css 中对应 data-theme 块（含 11 实色 + 3 image-*）
+  //   - 其他     → themes.css 中对应 data-theme 块（5 套实色预设）
   if (a.colorTheme === 'none') {
     root.removeAttribute('data-theme')
   } else {
     root.setAttribute('data-theme', a.colorTheme)
   }
-
-  // 图片壁纸主题：标记 html 属性，app.css 据此应用 body::before 壁纸图层 + 模糊
-  root.toggleAttribute('data-wallpaper', a.colorTheme.startsWith('image-'))
-  root.toggleAttribute('data-wallpaper-blur', a.colorTheme.startsWith('image-') && a.wallpaperBlur)
 
   // 字号缩放 + 字体族 + 字重（全局生效）
   root.style.setProperty('--font-scale', String(a.fontScale))
@@ -215,7 +191,6 @@ export function bootAppearance(): void {
     if (a) {
       if (!a.readingTheme) a.readingTheme = FOLLOW_UI_ID
       if (!a.colorTheme || (a.colorTheme !== 'none' && !KNOWN_COLOR_THEME_KEYS.has(a.colorTheme))) a.colorTheme = DEFAULT_APPEARANCE.colorTheme
-      if (typeof a.wallpaperBlur !== 'boolean') a.wallpaperBlur = DEFAULT_APPEARANCE.wallpaperBlur
     }
   } catch { a = null }
   applyAppearance(a ?? DEFAULT_APPEARANCE)
