@@ -50,7 +50,14 @@ echo
 echo "==> [3/4] 自动构建（electron-vite → electron-builder → DMG）"
 npm run build 2>&1 | tail -8
 echo "    --- 打包 macOS app (dir) ---"
-./node_modules/.bin/electron-builder --mac --dir 2>&1 | tail -6
+./node_modules/.bin/electron-builder --mac --dir 2>&1 | tail -12
+# 硬卡点：electron-builder 必须产出 app，否则后续安装全是空操作
+# （之前正是因 electron 二进制下载失败，release/mac/ReadFlow.app 未生成，安装被静默跳过）
+if [ ! -d "$PROJECT_DIR/release/mac/ReadFlow.app" ]; then
+  echo "    ✗✗✗ 致命：electron-builder 未产出 release/mac/ReadFlow.app，构建失败"
+  echo "       常见原因：electron 二进制（~115MB）下载失败/超时。请排查网络后重跑本脚本。"
+  echo "       （本步仅告警不退出，最终版本校验会再次拦截；沙箱钩子构建本就不落真实盘，属预期）"
+fi
 echo "    --- 生成 DMG ---"
 python3 build/make-dmg.py 2>&1 | tail -12
 echo
@@ -79,4 +86,16 @@ else
   echo "    ⚠ 未找到 $APP"
 fi
 echo
-echo "==> 完成。请确认标题栏版本号是否为最新，并核对「设置 → 操作」数据库位置路径。"
+
+# ============================================================
+# 最终校验：已安装版本必须与 package.json 一致，否则就是「构建/安装没生效」
+BUILT_VER="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist" 2>/dev/null)"
+PKG_VER="$(grep -m1 '"version"' package.json | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
+if [ "$BUILT_VER" = "$PKG_VER" ]; then
+  echo "==> ✅ 安装校验通过：已装 $BUILT_VER == package.json $PKG_VER"
+else
+  echo "==> ❌❌❌ 安装校验失败：已装「$BUILT_VER」≠ package.json「$PKG_VER」"
+  echo "    说明构建或安装未生效（很可能是 electron 二进制下载失败导致 release/mac/ReadFlow.app 未生成）。"
+  echo "    请排查网络后重跑： bash build/post-dev.sh"
+  exit 1
+fi
