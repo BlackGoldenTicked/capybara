@@ -117,7 +117,12 @@ export function RssManager() {
                   <span className={`badge ${f.kind ?? 'article'}`}>{KIND_LABEL[f.kind ?? 'article']}</span>
                   <div className="fr-info">
                     <span className="fr-name">{f.name || f.url}</span>
-                    <span className="fr-url">{f.url}</span>
+                    <span className="fr-url-line">
+                      <span className="fr-url">{f.url}</span>
+                      <button className="fr-open" type="button" title="在浏览器中打开" onClick={() => void window.readflow.invoke('shell:openExternal', f.url)}>
+                        <Icon name="external" size={13} />
+                      </button>
+                    </span>
                   </div>
                   <span className="fr-state" title={f.error_count > 0 ? (f.last_error || '未知错误') : ''} style={f.error_count > 0 ? { color: 'var(--card-accent)' } : undefined}>{f.error_count > 0 ? (f.last_error || '错误') : (f.last_fetched_at ? '正常' : '未抓取')}</span>
                   {f.error_count > 0 && (

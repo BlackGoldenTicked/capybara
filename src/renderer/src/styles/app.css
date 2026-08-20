@@ -929,7 +929,14 @@ html.dark .reader-body {
 .feed-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
 .feed-row .fr-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .feed-row .fr-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.feed-row .fr-url { font-size: 11px; color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+.feed-row .fr-url-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.feed-row .fr-url { flex: 1 1 auto; min-width: 0; font-size: 11px; color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+.feed-row .fr-open {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; padding: 0; border: 0; border-radius: var(--border-radius-sm);
+  background: transparent; color: var(--color-text-tertiary); cursor: pointer;
+}
+.feed-row .fr-open:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
 .feed-row .fr-state { font-size: 11px; color: var(--color-text-tertiary); }
 
 /* 已订阅：两列网格 + 固定高度滚动 */
