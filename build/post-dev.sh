@@ -74,6 +74,30 @@ if [ -d "$PROJECT_DIR/release/mac/ReadFlow.app" ]; then
   /usr/bin/ditto "$PROJECT_DIR/release/mac/ReadFlow.app" "$APP"
   xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
   echo "    ditto 安装完成"
+
+  # ============================================================
+  # Dock 图标缓存失效（无需手动 killall Dock）
+  # macOS 按「应用路径 + 图标路径」缓存 Dock/Cmd+Tab 渲染结果；
+  # 改了 logo PNG 的「字节」但文件名不变时，系统不重新读取 → 显示旧图标。
+  # 这里做变更感知：仅当 build/logos 内容真的变了才刷新缓存（重启 Dock），
+  # 无关构建不打扰用户。重启 Dock <1s，已打开窗口不受影响。
+  LOGO_SRC="$PROJECT_DIR/build/logos"
+  HASH_FILE="$PROJECT_DIR/.logo_cache_hash"
+  if [ -d "$LOGO_SRC" ]; then
+    NEW_HASH="$(find "$LOGO_SRC" -type f -name '*.png' -exec md5 -q {} \; 2>/dev/null | md5 -q 2>/dev/null || echo none)"
+  else
+    NEW_HASH="none"
+  fi
+  OLD_HASH="$(cat "$HASH_FILE" 2>/dev/null || echo none)"
+  if [ "$NEW_HASH" != "$OLD_HASH" ]; then
+    echo "    检测到 logo 图标变更 → 刷新系统图标缓存（重启 Dock）"
+    touch "$APP" 2>/dev/null || true
+    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" >/dev/null 2>&1 || true
+    killall Dock 2>/dev/null || true
+    echo "$NEW_HASH" > "$HASH_FILE"
+  else
+    echo "    logo 未变更，跳过图标缓存刷新"
+  fi
 else
   echo "    ⚠ 未找到刚构建的 $PROJECT_DIR/release/mac/ReadFlow.app（第三步构建可能失败）"
 fi

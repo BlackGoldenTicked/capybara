@@ -19,6 +19,8 @@ coverage/
 .rss_cache/
 scripts/clean_rss_sources.py
 feeds/rss_cleaning_report.json
+# 构建状态（logo 图标缓存失效用的哈希快照，勿入库）
+.logo_cache_hash
 
 # 本地配置（如有）
 .env
