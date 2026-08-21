@@ -142,3 +142,6 @@ feeds/rss_cleaning_report.json
 .readflow-userData/readflow.db-shm
 .readflow-userData/readflow.db-wal
 .readflow-userData/readflow.db-journal
+
+# 文档仅本地留存，不纳入版本控制
+docs/
