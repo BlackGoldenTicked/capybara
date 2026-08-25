@@ -1,4 +1,4 @@
-# 阅流 ReadFlow
+# 水豚 Capybara
 
 > 个人知识流桌面客户端 —— 收集 → 速读 → 分类 → 组织 → 沉淀。
 > 本地优先 · 键盘驱动 · 整面配色 · 白板连线 · Electron + React。
@@ -26,7 +26,7 @@
 
 ## 1. 产品定位
 
-信息入口越来越多（RSS、热榜、GitHub Star、X/Twitter 书签、手动收集），但看完就忘、无法沉淀。**阅流**把所有这些来源统一抽象为「条目卡片」，并用一条强制流动的 Pipeline 把每条内容推向下一个动作，而不是让它们躺在收集箱里「收藏即冷藏」：
+信息入口越来越多（RSS、热榜、GitHub Star、X/Twitter 书签、手动收集），但看完就忘、无法沉淀。**水豚**把所有这些来源统一抽象为「条目卡片」，并用一条强制流动的 Pipeline 把每条内容推向下一个动作，而不是让它们躺在收集箱里「收藏即冷藏」：
 
 ```
 收集(RSS未读) → 速读(Triage) → 分类(稍后/收藏/归档) → 白板组织 → 沉淀输出
@@ -99,7 +99,7 @@
 ```
 ┌─ 渲染进程 (React + Zustand) ───────────────────────────────┐
 │  侧栏 · 订阅源栏 · 信息流 · 阅读面板 · 白板 · 系统配置         │
-│         ↕  window.readflow.invoke(...) / onXxx(回调)         │
+│         ↕  window.capybara.invoke(...) / onXxx(回调)         │
 │  preload/index.ts —— contextBridge 类型安全 IPC 桥           │
 ├─ 主进程 (Main) ───────────────────────────────────────────┤
 │  采集调度 scheduler（按源频率、失败计数、last_error）          │
@@ -107,7 +107,7 @@
 │  GitHub★ / Twitter 书签 导入 / OPML / 发现 Discover          │
 │  网络诊断 netlog；本地 HTTP 摄入服务 ingest                   │
 │         ↕                                                     │
-│  node:sqlite —— userData/readflow.db (WAL)                   │
+│  node:sqlite —— userData/capybara.db (WAL)                   │
 │  本地仓：images/（封面）· board-assets/（白板附件）· backups/ │
 └────────────────────────────────────────────────────────────┘
 ```
@@ -275,7 +275,7 @@ npm run dev                      # electron-vite 热重载
 
 # 构建 + 打包（固定流水线）
 npx electron-vite build                             # 编译 main / preload / renderer → out/
-npx electron-builder --mac --dir                    # 产出 release/mac/ReadFlow.app
+npx electron-builder --mac --dir                    # 产出 release/mac/Capybara.app
 python3 build/make-dmg.py                           # 自定义 DMG
 
 # 一键（推荐）
@@ -294,7 +294,7 @@ npm run dist                    # electron-vite build && electron-builder（产�
 ## 11. 目录结构
 
 ```
-readflow/
+capybara/
 ├── src/
 │   ├── main/                      # 主进程
 │   │   ├── index.ts               # 窗口、IPC 注册、Twitter/GitHub/OPML 导入、协议
@@ -345,12 +345,12 @@ readflow/
 - **v0.7.27** 重构 RSS 数据流程逻辑（结合完整流程图审查）：①「全部刷新」改为**强制刷新全部已启用源**（`refreshAllFeeds`，忽略到期判断），后台定时仍走 `runDue`（仅到期源），职责分离——此前「全部刷新」因到期限制对刚抓过的源点了没反应；② 新增 RSS **添加即抓取**（store.addFeed 捕获新源 id 立即 `refreshFeed`，无需等 ≤60s 调度），Discover 一键批量添加后也强制刷新全部；③ `feeds:add` 改为**幂等**（UNIQUE(url) 冲突不再抛错，返回已有源），手动添加重复源会提示「已存在，已跳过」，与 Discover 批量行为一致；④ 退出前 `checkpoint()` 截断 WAL，避免 `.db-wal` 无限增长、重启/更新后启动回放变慢。
 - **v0.7.28** 修复「安装后信息流一片空白、像没数据」：v0.7.18 起砍掉全部内置预置源后，全新安装或来源列表为空的库**没有任何订阅源**，打开只剩一条欢迎引导卡，看起来像没数据；若从带预置源的更早版本升级，老预置源被一次性清理、新版又不补，源列表同样为空。现改为 `seedIfEmpty()` 在 **feeds 表为空**（全新安装 / 已装但无源）时自动预置一组精选 RSS（Hacker News / 少数派 / 酷壳 / 虎嗅 / V2EX / GitHub Blog，`addFeeds` 幂等、每次启动重跑无副作用），源 url 刻意避开旧版 LEGACY 列表不会被误删；调度器首轮 8s 后抓取，开箱即有真实内容。
 - **v0.7.29** 启动健壮性：定位「装了新版本仍没数据」的运行时根因——`app.whenReady` 里 `createWindow()` 排在 `startIngestServer()` / `startScheduler()` **之后**，而本地 ingest http 服务（端口 47832）**无 error handler**，一旦端口被占用（`EADDRINUSE`，常见于上次未退干净）就会变成未捕获异常**崩掉主进程、窗口建不出来**，表现为整片空白。现改为：① `createWindow()` **先行**，保证 UI 永远能打开；② `initDb` / `startIngestServer` / `startScheduler` 各自包 `try/catch`，次级服务失败不再拖垮窗口；③ `ingest.ts` 给 `server` 加 `'error'` 监听器吞掉 listen 错误。至此代码层（种子/抓取/渲染首屏/空状态报错）已逐项实测确认正确，剩下「仍没数据」多为真机网络抓取失败或**用户实际跑的是旧二进制**（未签名 DMG 易被老进程/未覆盖占据）——以标题栏版本号与「来源管理」里 6 个预置源作为判定依据。
-- **v0.7.30** 数据可观测性 + 定位「没数据」元凶：经本地用 `node:sqlite` 直接打开真实库实测，确认 `~/Library/Application Support/readflow/readflow/readflow.db`（嵌套路径，本代码库自始至终唯一的库路径）**数据完好**——含 1 个订阅源（潮流周刊）+ 14 条条目（Twitter 书签 / 阮一峰周刊 / 潮流周刊 265–276 期），且 app 原版 `listItems('rss')` 查询对着真实库**返回 12 条**，数据层 100% 正常。据此判定用户所见「没数据」是**运行中的 app 读到了另一个空库**（多为机器上旧副本 / 顶层孤儿 `…/readflow/readflow.db` 0 字节残留），而非数据丢失。新增：① 设置 → 操作 顶部「数据库位置」卡片，**直接显示当前 app 实际指向的库绝对路径**（含「复制路径」「在访达中打开」），IPC `app:dbFile` / `app:openDbDir`；② 该卡片提示用户核对路径是否就是有数据的那个文件。从此"到底读的是哪个库"一眼可见，杜绝旧二进制糊弄。
-- **v0.7.31** 修复「数据库位置」卡片**永远显示"加载中"**：根因是该 `useEffect` 仅 `invoke('app:dbFile').then(...)`，**没有 `.catch`**——一旦主进程未就绪 / 主进程是旧版（无此 handler，常见于 dev 模式 HMR 只热更了渲染层、或旧二进制）/ IPC 被 reject，promise 永不 resolve，`dbFile` 卡在初始空串 → 一直"加载中"。现改为：① `getDbFile()` **惰性兜底**——即便 `initDb` 因异常未跑完，也按 `userData/readflow/readflow.db` 算出本应使用路径，绝不返回空；② 渲染层 `invoke` 加 `.catch` + **最多 3 次 400ms 重试**，失败则显示明确红色错误「⚠ 读取数据库路径失败：…（主进程可能未就绪，请彻底退出后重开应用）」而非无限加载；③ 新增 `.db-err` 样式。从"静默卡死"升级为"可读诊断"。
-- **v0.7.33** 根治「替换 app 后数据丢失 / 出现两个库文件」：① 把数据库路径**锁死为唯一权威位置** `~/Library/Application Support/readflow/readflow/readflow.db`（所有应用数据集中在该 `readflow/` 子目录），并把旧路径 `…/readflow/readflow.db`（扁平）登记为历史遗留；② 新增 `migrateLegacyDatabase()`：每次启动若权威库为空/缺失、而历史旧路径有数据，则**自动整体复制**旧库（含 `-wal`/`-shm`）到权威位置并改名 `.migrated` 备份，**绝不覆盖已有数据的权威库**（经 10 条独立单测验证：迁移/不覆盖/空库填充/无操作四场景全过）；③ 澄清根因——此前「没数据」并非 dev 模式所致，而是**不同版本 app 改过数据库路径**，替换 `.app` 后新二进制去新位置找、旧数据被孤立成空库；dev 模式的 `userData` 重定向仅作用于项目目录 `.readflow-userData`，与用户 `~/Library` 真实数据完全隔离。今后若再改路径，只需把旧路径追加进 `legacyDbCandidates()` 即可自动兼容。
-- **v0.7.34** 数据库改为**单层**结构：应用数据 `readflow.db` / `images/` / `backups/` / `board-assets/` 直接放在 Electron `userData` 根目录（`~/Library/Application Support/readflow/`），**不再多套一层 `readflow/` 子目录**（消除「两个 readflow 文件夹」的视觉冗余）。v0.7.33 的嵌套位置 `…/readflow/readflow.db` 登记为新版的历史遗留路径，`migrateLegacyDatabase()` 仍会在启动时自动把其中的数据迁到单层位置；嵌套数据子目录（images/backups/board-assets）也会上移到根目录后删除空壳。
+- **v0.7.30** 数据可观测性 + 定位「没数据」元凶：经本地用 `node:sqlite` 直接打开真实库实测，确认 `~/Library/Application Support/capybara/capybara/capybara.db`（嵌套路径，本代码库自始至终唯一的库路径）**数据完好**——含 1 个订阅源（潮流周刊）+ 14 条条目（Twitter 书签 / 阮一峰周刊 / 潮流周刊 265–276 期），且 app 原版 `listItems('rss')` 查询对着真实库**返回 12 条**，数据层 100% 正常。据此判定用户所见「没数据」是**运行中的 app 读到了另一个空库**（多为机器上旧副本 / 顶层孤儿 `…/capybara/capybara.db` 0 字节残留），而非数据丢失。新增：① 设置 → 操作 顶部「数据库位置」卡片，**直接显示当前 app 实际指向的库绝对路径**（含「复制路径」「在访达中打开」），IPC `app:dbFile` / `app:openDbDir`；② 该卡片提示用户核对路径是否就是有数据的那个文件。从此"到底读的是哪个库"一眼可见，杜绝旧二进制糊弄。
+- **v0.7.31** 修复「数据库位置」卡片**永远显示"加载中"**：根因是该 `useEffect` 仅 `invoke('app:dbFile').then(...)`，**没有 `.catch`**——一旦主进程未就绪 / 主进程是旧版（无此 handler，常见于 dev 模式 HMR 只热更了渲染层、或旧二进制）/ IPC 被 reject，promise 永不 resolve，`dbFile` 卡在初始空串 → 一直"加载中"。现改为：① `getDbFile()` **惰性兜底**——即便 `initDb` 因异常未跑完，也按 `userData/capybara/capybara.db` 算出本应使用路径，绝不返回空；② 渲染层 `invoke` 加 `.catch` + **最多 3 次 400ms 重试**，失败则显示明确红色错误「⚠ 读取数据库路径失败：…（主进程可能未就绪，请彻底退出后重开应用）」而非无限加载；③ 新增 `.db-err` 样式。从"静默卡死"升级为"可读诊断"。
+- **v0.7.33** 根治「替换 app 后数据丢失 / 出现两个库文件」：① 把数据库路径**锁死为唯一权威位置** `~/Library/Application Support/capybara/capybara/capybara.db`（所有应用数据集中在该 `capybara/` 子目录），并把旧路径 `…/capybara/capybara.db`（扁平）登记为历史遗留；② 新增 `migrateLegacyDatabase()`：每次启动若权威库为空/缺失、而历史旧路径有数据，则**自动整体复制**旧库（含 `-wal`/`-shm`）到权威位置并改名 `.migrated` 备份，**绝不覆盖已有数据的权威库**（经 10 条独立单测验证：迁移/不覆盖/空库填充/无操作四场景全过）；③ 澄清根因——此前「没数据」并非 dev 模式所致，而是**不同版本 app 改过数据库路径**，替换 `.app` 后新二进制去新位置找、旧数据被孤立成空库；dev 模式的 `userData` 重定向仅作用于项目目录 `.capybara-userData`，与用户 `~/Library` 真实数据完全隔离。今后若再改路径，只需把旧路径追加进 `legacyDbCandidates()` 即可自动兼容。
+- **v0.7.34** 数据库改为**单层**结构：应用数据 `capybara.db` / `images/` / `backups/` / `board-assets/` 直接放在 Electron `userData` 根目录（`~/Library/Application Support/capybara/`），**不再多套一层 `capybara/` 子目录**（消除「两个 capybara 文件夹」的视觉冗余）。v0.7.33 的嵌套位置 `…/capybara/capybara.db` 登记为新版的历史遗留路径，`migrateLegacyDatabase()` 仍会在启动时自动把其中的数据迁到单层位置；嵌套数据子目录（images/backups/board-assets）也会上移到根目录后删除空壳。
 - **v0.7.40+** 白板交互重构：卡片 6 类型快捷按钮移至工具栏（Excalidraw 风格），删除弹窗模式；连线改为 hover 卡片四边中点拖拽（无需切换模式）；贝塞尔曲线切线对齐；删除白板二次确认；移除重命名按钮；RSS 删除级联清理（`feed_id` 列 + 启动回填）；书签/白板分区分隔线；白板标题字号统一。
-- **v0.7.65+** JSON 配置导入/导出：设置页增加「导出配置」和「导入配置」按钮，所有设置项 + 订阅源列表序列化为 `readflow-config.json`，跨机迁移一键恢复。
+- **v0.7.65+** JSON 配置导入/导出：设置页增加「导出配置」和「导入配置」按钮，所有设置项 + 订阅源列表序列化为 `capybara-config.json`，跨机迁移一键恢复。
 - **v0.7.73+** 阅读配色系统：30 套 VSCode 主题风格阅读配色（暗色 15 + 亮色 15），支持「跟随界面」模式。自定义主题编辑器：hover 色块显示「创建副本」按钮，弹窗编辑 15 个颜色值后保存到 localStorage。阅读面板 dropdown 与外观设置页同步展示内置 + 自定义主题。
 - **v0.7.75** RSS 分页删除修复（删除后不再跳回首页）+ 订阅列表去重（`addFeeds` 入参去重 + DB 启动去重迁移）；已订阅列表展示源地址（标题下方小号 mono 字体 URL）；数据库路径支持文件选择器浏览。
 - **v0.7.76** items 表增加 `feed_id` 列：新建 RSS 条目自动关联到 feeds；启动时按 `source_name` 回填已有条目；`deleteFeed` 按 `feed_id` 级联清理。配色操作按钮重构：删除「新建阅读配色」按钮，16px 正圆 hover 按钮，beam-border 静态描边效果，右上角贴合卡片。

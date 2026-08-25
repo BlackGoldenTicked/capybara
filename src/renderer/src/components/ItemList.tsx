@@ -131,11 +131,11 @@ export function ItemList() {
   const [listMode, setListMode] = useState<'card' | 'list'>('card')
   useEffect(() => {
     // 读取持久化的列表视图模式（card 默认 / list 紧凑）
-    void (window.readflow.invoke('settings:get', 'list_mode') as Promise<string>).then((r) => { if (r === 'list') setListMode('list') })
+    void (window.capybara.invoke('settings:get', 'list_mode') as Promise<string>).then((r) => { if (r === 'list') setListMode('list') })
   }, [])
   const setListModeAndPersist = (m: 'card' | 'list') => {
     setListMode(m)
-    void window.readflow.invoke('settings:set', 'list_mode', m)
+    void window.capybara.invoke('settings:set', 'list_mode', m)
   }
   useEffect(() => {
     const el = wrapRef.current

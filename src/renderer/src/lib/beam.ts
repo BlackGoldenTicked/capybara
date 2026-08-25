@@ -11,7 +11,7 @@ interface Point { x: number; y: number }
 const CHARGE_MS = 420
 const FLIGHT_MS = 460
 const CLEANUP_MS = 1700
-const OVERLAY_ID = 'readflow-beam-overlay'
+const OVERLAY_ID = 'capybara-beam-overlay'
 
 function prefersReducedMotion(): boolean {
   try {

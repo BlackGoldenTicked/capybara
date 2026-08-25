@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ReadFlow 版本发布流程：
+# Capybara 版本发布流程：
 # 每次修改代码后，将 package.json 的 semver patch 位 +1（如 0.7.36 -> 0.7.37），
 # 并将当前全部改动提交到 git（commit message 形如 "vX.Y.Z 本次改动简述"，
 # 沿用仓库既有风格；只 commit，不打 tag、不 push）。

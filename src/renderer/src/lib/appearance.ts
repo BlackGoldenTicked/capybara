@@ -1,5 +1,5 @@
 /**
- * ReadFlow 外观 / 配色 / 主题系统
+ * Capybara 外观 / 配色 / 主题系统
  *
  * 自研 Design System（DS）：
  * - 主题：跟随系统 / 亮 / 暗（亮暗通过 html.dark 类切换）
@@ -89,7 +89,7 @@ export function uiFontStack(family: string): string {
 const asString = (v: unknown, fallback: string): string => (typeof v === 'string' && v ? v : fallback)
 
 export async function loadAppearance(): Promise<Appearance> {
-  const get = (k: string) => window.readflow.invoke('settings:get', k) as Promise<string | null | undefined>
+  const get = (k: string) => window.capybara.invoke('settings:get', k) as Promise<string | null | undefined>
   const [theme, colorTheme, ff, fs, fw] = await Promise.all([
     get(SETTING_KEYS.theme), get(SETTING_KEYS.colorTheme),
     get(SETTING_KEYS.fontFamily), get(SETTING_KEYS.fontScale), get(SETTING_KEYS.fontWeight)
@@ -112,12 +112,12 @@ export function persistAppearance(patch: Partial<Appearance>): void {
   for (const [key, value] of Object.entries(patch)) {
     const settingKey = (SETTING_KEYS as Record<string, string>)[key]
     if (settingKey && value !== undefined) {
-      void window.readflow.invoke('settings:set', settingKey, String(value))
+      void window.capybara.invoke('settings:set', settingKey, String(value))
     }
   }
 }
 
-const APPEARANCE_CACHE_KEY = 'readflow:appearance'
+const APPEARANCE_CACHE_KEY = 'capybara:appearance'
 
 /** 把当前外观镜像到 localStorage，供下次启动在首帧前同步应用，消除「默认主题→切换」闪烁。 */
 export function cacheAppearance(a: Appearance): void {

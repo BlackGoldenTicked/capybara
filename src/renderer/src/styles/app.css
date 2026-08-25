@@ -1,4 +1,4 @@
-/* ReadFlow 应用样式 —— 全部基于 tokens.css 变量 */
+/* Capybara 应用样式 —— 全部基于 tokens.css 变量 */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root { height: 100%; }

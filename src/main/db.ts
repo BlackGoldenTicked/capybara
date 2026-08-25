@@ -86,7 +86,7 @@ function readDbConfig(): string | null {
       const p = cfg.dbPath.trim()
       // 如果是目录，自动补全文件名
       try {
-        if (fs.statSync(p).isDirectory()) return path.join(p, 'readflow.db')
+        if (fs.statSync(p).isDirectory()) return path.join(p, 'capybara.db')
       } catch { /* 文件还不存在，直接当文件路径使用 */ }
       return p
     }
@@ -150,17 +150,25 @@ export function clearAllFeedCache() {
 }
 
 // ===== 数据库路径（单一权威位置，禁止随意变更！） =====
-// 所有应用数据（库 + images + backups + board-assets）统一集中在 userData/readflow/ 下，
-// 库文件固定为 userData/readflow/readflow.db。
-// 历史上曾经改过路径（扁平的 userData/readflow.db），导致「替换 app 后旧数据被孤立、开空库」的事故。
+// 所有应用数据（库 + images + backups + board-assets）统一集中在 userData/ 根目录下，
+// 库文件固定为 userData/capybara.db。
+// 历史上曾经改过路径（扁平的 userData/<旧名>.db 和嵌套的 userData/<旧名>/<旧名>.db），
+// 导致「替换 app 后旧数据被孤立、开空库」的事故。
 // 因此：本路径今后绝不能再改；若迫不得已要改，必须把旧路径加入 legacyDbCandidates() 以便自动迁移。
 function defaultDbPath(): string {
-  return path.join(app.getPath('userData'), 'readflow.db')
+  return path.join(app.getPath('userData'), 'capybara.db')
 }
-// 历史上曾用过的旧库路径：v0.7.33 的嵌套位置 userData/readflow/readflow.db。
+// 历史上曾用过的旧库路径（旧产品名时期）：
+//   v0.7.33 嵌套位置 userData/<旧名>/<旧名>.db
+//   v0.7.34 扁平位置 userData/<旧名>.db（改名 Capybara 之前）
 // 启动时会把「旧位置有数据、新位置为空」的旧库原样复制过来，避免数据凭空消失。
+// 注意：路径字符串中的旧名是硬编码的历史事实，改不得——改了老用户就找不到旧库了。
 function legacyDbCandidates(): string[] {
-  return [path.join(app.getPath('userData'), 'readflow', 'readflow.db')]
+  return [
+    path.join(app.getPath('userData'), 'readflow.db'),               // v0.7.34 改名前
+    path.join(app.getPath('userData'), 'readflow', 'readflow.db'),   // v0.7.33 嵌套
+    path.join(app.getPath('userData'), 'capybara', 'capybara.db'),  // 历史嵌套同名
+  ]
 }
 
 export function getDbFile(): string {
@@ -244,7 +252,7 @@ export function stopWalCheckpoint() {
 }
 
 /**
- * 单层化收尾：若仍存在 v0.7.33 的嵌套数据子目录 userData/readflow/，
+ * 单层化收尾：若仍存在 v0.7.33 的嵌套数据子目录 userData/<旧名>/，
  * 把里面的 images/backups/board-assets 上移到 userData 根，再删除空壳。
  * 若嵌套目录里还残留未迁移的库文件（.db/.migrated），则保留该目录，绝不误删。
  */
@@ -263,7 +271,7 @@ function relocateLegacyDataDir(userData: string) {
       }
     }
   }
-  // 把嵌套目录里遗留的 .migrated 备份文件上移到 userData 根（避免残留一个空壳 readflow/ 文件夹）
+  // 把嵌套目录里遗留的 .migrated 备份文件上移到 userData 根（避免残留一个空壳旧文件夹）
   try {
     for (const f of fs.readdirSync(legacy)) {
       if (f.includes('.migrated')) {
@@ -292,7 +300,7 @@ export function initDb() {
     console.log('[initDb] 使用自定义数据库路径：', dbPath)
   } else {
     baseDir = defaultDir
-    dbPath = path.join(baseDir, 'readflow.db')
+    dbPath = path.join(baseDir, 'capybara.db')
     console.log('[initDb] 使用默认数据库路径：', dbPath)
   }
 
@@ -828,7 +836,7 @@ export function fillCoverIfEmpty(id: number, url: string): boolean {
 export async function storeCover(id: number, url: string): Promise<void> {
   if (!url || !imagesDir) return
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'ReadFlow' }, signal: AbortSignal.timeout(15_000) })
+    const res = await fetch(url, { headers: { 'User-Agent': 'Capybara' }, signal: AbortSignal.timeout(15_000) })
     if (!res.ok) return
     const buf = Buffer.from(await res.arrayBuffer())
     let ext = path.extname(new URL(url).pathname)

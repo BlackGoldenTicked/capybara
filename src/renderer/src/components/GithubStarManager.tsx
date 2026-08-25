@@ -10,13 +10,13 @@ export function GithubStarManager() {
   const [ghMsg, setGhMsg] = useState('')
 
   useEffect(() => {
-    void (window.readflow.invoke('settings:get', 'github_stars_user') as Promise<string>).then((r) => setGhUser(r || ''))
-    void (window.readflow.invoke('settings:get', 'github_token') as Promise<string>).then((r) => setTokenSaved(r ? '1' : ''))
+    void (window.capybara.invoke('settings:get', 'github_stars_user') as Promise<string>).then((r) => setGhUser(r || ''))
+    void (window.capybara.invoke('settings:get', 'github_token') as Promise<string>).then((r) => setTokenSaved(r ? '1' : ''))
   }, [])
 
   const saveToken = async () => {
-    await window.readflow.invoke('settings:set', 'github_token', tokenInput)
-    await window.readflow.invoke('settings:set', 'github_stars_user', ghUser)
+    await window.capybara.invoke('settings:set', 'github_token', tokenInput)
+    await window.capybara.invoke('settings:set', 'github_stars_user', ghUser)
     setTokenSaved(tokenInput ? '1' : ''); setTokenInput('')
     setGhMsg('已保存')
   }

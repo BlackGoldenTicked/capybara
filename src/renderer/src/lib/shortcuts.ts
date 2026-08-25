@@ -1,5 +1,5 @@
 /**
- * ReadFlow 快捷键系统
+ * Capybara 快捷键系统
  *
  * 遵循主流桌面软件约定（macOS 以 ⌘ 为主，Windows/Linux 自动映射为 Ctrl）：
  * - Mod+,        打开系统配置

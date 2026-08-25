@@ -1,4 +1,4 @@
-"""ReadFlow DMG 构建脚本（手动流程，确保背景图正确显示）。
+"""Capybara DMG 构建脚本（手动流程，确保背景图正确显示）。
 
 electron-builder / dmgbuild 在本机生成的 .DS_Store 缺少 icvp(图标视图选项)
 里的 backgroundImageAlias 记录，导致 Finder 不显示背景图。本脚本改用
@@ -11,7 +11,7 @@ import os
 import shutil
 import subprocess
 
-APP_NAME = "ReadFlow"
+APP_NAME = "Capybara"
 
 PROJECT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASE = os.path.join(PROJECT, "release")
@@ -23,7 +23,7 @@ with open(os.path.join(PROJECT, "package.json"), encoding="utf-8") as f:
 VOLUME = f"{APP_NAME} {VERSION}"
 OUT_DMG = os.path.join(RELEASE, f"{APP_NAME}-{VERSION}.dmg")
 
-RW_DMG = "/tmp/readflow-build-rw.dmg"
+RW_DMG = "/tmp/capybara-build-rw.dmg"
 
 DS_STORE_SCRIPT = r'''
 from mac_alias import Alias
@@ -74,7 +74,7 @@ with DSStore.open(DS_STORE, "w+") as d:
     d["."]["bwsp"] = bwsp
     d["."]["icvp"] = icvp
     d["."]["icvl"] = ("long", 64)
-    d["ReadFlow.app"]["Iloc"] = (180, 190)
+    d["Capybara.app"]["Iloc"] = (180, 190)
     d["Applications"]["Iloc"] = (490, 190)
 print("DS_Store written")
 '''

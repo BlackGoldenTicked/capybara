@@ -1,5 +1,5 @@
 /**
- * ReadFlow 语义化 UI 音效引擎
+ * Capybara 语义化 UI 音效引擎
  *
  * 移植并适配自 shiye-tabs 的 sounds.ts（保留其 Web Audio 合成范式：用振荡器 +
  * 噪声 + 包络合成短促、克制的反馈音，零素材依赖，零网络请求）。

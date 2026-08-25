@@ -72,7 +72,7 @@ class ExtractionQueue {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), 12_000)
     try {
-      const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'ReadFlow/0.1 (+https://readflow.app)' } })
+      const res = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'Capybara/0.1 (+https://capybara.app)' } })
       if (!res.ok) return null
       const ctype = res.headers.get('content-type') ?? ''
       if (!/text\/html|application\/xhtml/i.test(ctype)) return null

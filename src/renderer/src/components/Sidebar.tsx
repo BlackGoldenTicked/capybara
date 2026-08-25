@@ -65,14 +65,14 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
 
   // 恢复上次折叠状态（持久化在 settings 表 sidebar_collapsed，JSON 记录各分组开关）
   useEffect(() => {
-    void (window.readflow.invoke('settings:get', 'sidebar_collapsed') as Promise<string>).then((r) => {
+    void (window.capybara.invoke('settings:get', 'sidebar_collapsed') as Promise<string>).then((r) => {
       if (r) { try { setCollapsedSec(JSON.parse(r)) } catch { /* 忽略损坏数据 */ } }
     })
   }, [])
   const toggleSec = (id: string) => {
     const next = { ...collapsedSec, [id]: !collapsedSec[id] }
     setCollapsedSec(next)
-    void window.readflow.invoke('settings:set', 'sidebar_collapsed', JSON.stringify(next))
+    void window.capybara.invoke('settings:set', 'sidebar_collapsed', JSON.stringify(next))
   }
 
   const commitRename = (id: number) => {

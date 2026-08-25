@@ -5,7 +5,7 @@ import { addItem, getSetting, setSetting, SourceType } from './db'
 const PORT = 47832
 
 /**
- * 本地 ingest 服务：供 ReadFlow Clip 浏览器扩展把 X 收藏/网页推送到客户端。
+ * 本地 ingest 服务：供 Capybara Clip 浏览器扩展把 X 收藏/网页推送到客户端。
  * 只监听 127.0.0.1；首次启动生成随机 token，扩展通过 GET /pair 完成配对。
  */
 export function startIngestServer() {
@@ -22,7 +22,7 @@ export function startIngestServer() {
 
     if (req.method === 'GET' && req.url === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ ok: true, app: 'readflow' }))
+      res.end(JSON.stringify({ ok: true, app: 'capybara' }))
       return
     }
     // 配对只允许本机回环请求（http server 本就只绑 127.0.0.1，双保险）

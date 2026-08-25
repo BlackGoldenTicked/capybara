@@ -33,7 +33,7 @@ export function ReaderPane() {
     if (selectedId == null) { setItem(null); return }
     let alive = true
     setLoading(true)
-    window.readflow.invoke('items:get', selectedId).then((r) => {
+    window.capybara.invoke('items:get', selectedId).then((r) => {
       if (alive) { setItem((r as Item) ?? null); setLoading(false) }
     }).catch(() => { if (alive) setLoading(false) })
     return () => { alive = false }
@@ -50,7 +50,7 @@ export function ReaderPane() {
   }, [item])
 
   useEffect(() => {
-    void (window.readflow.invoke('settings:get', 'reader_noimg') as Promise<string>).then((r) => setNoImg(r === '1'))
+    void (window.capybara.invoke('settings:get', 'reader_noimg') as Promise<string>).then((r) => setNoImg(r === '1'))
   }, [selectedId])
 
   // 正文目录：从（清洗后的）正文 HTML 抽取标题或段落区块，并注入锚点 id
@@ -103,7 +103,7 @@ export function ReaderPane() {
     return (<section className="reader"><div className="reader-empty">选择左侧条目开始阅读 · J/K 快速浏览{loading ? ' · 加载中…' : ''}</div></section>)
   }
 
-  const toggleNoImg = () => { const v = !noImg; setNoImg(v); void window.readflow.invoke('settings:set', 'reader_noimg', v ? '1' : '0') }
+  const toggleNoImg = () => { const v = !noImg; setNoImg(v); void window.capybara.invoke('settings:set', 'reader_noimg', v ? '1' : '0') }
 
   // 正文内点击：图片 → 灯箱；链接 → 系统默认浏览器打开（不在应用内跳转）
   const onContentClick = (e: React.MouseEvent) => {

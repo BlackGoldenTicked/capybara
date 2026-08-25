@@ -17,7 +17,7 @@ export function DbView() {
   const [err, setErr] = useState('')
 
   useEffect(() => {
-    void (window.readflow.invoke('db:tables') as Promise<TableInfo[]>)
+    void (window.capybara.invoke('db:tables') as Promise<TableInfo[]>)
       .then((r) => setTables(r))
       .catch((e: unknown) => setTablesErr(String((e as { message?: string })?.message || e || '未知错误')))
   }, [])
@@ -29,7 +29,7 @@ export function DbView() {
   const loadRows = async (name: string, p: number) => {
     setLoading(true)
     try {
-      const r = await window.readflow.invoke('db:rows', name, PAGE, p * PAGE) as RowsResult
+      const r = await window.capybara.invoke('db:rows', name, PAGE, p * PAGE) as RowsResult
       setData(r); setPage(p)
     } catch (e: unknown) {
       setErr(String((e as { message?: string })?.message || e || '未知错误'))

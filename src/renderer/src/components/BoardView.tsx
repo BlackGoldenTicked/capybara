@@ -57,7 +57,7 @@ export function BoardView() {
   const [, heightTick] = useState(0)
 
   useEffect(() => {
-    window.readflow.invoke('items:list', 'all', '').then((r) => {
+    window.capybara.invoke('items:list', 'all', '').then((r) => {
       const map: Record<number, ItemRow> = {}
       for (const it of r as ItemRow[]) map[it.id] = it
       setItemMap(map)
@@ -141,7 +141,7 @@ export function BoardView() {
     const files = Array.from(e.dataTransfer.files)
     const { x, y } = dropPos(e)
     files.forEach((f, i) => {
-      const path = window.readflow.getPathForFile(f)
+      const path = window.capybara.getPathForFile(f)
       const kind: CardKind = f.type.startsWith('image/') ? 'image'
         : f.type.startsWith('video/') ? 'video'
         : f.type.startsWith('audio/') ? 'video' : 'file'
@@ -159,14 +159,14 @@ export function BoardView() {
   const onFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = ''
     const kind = pendingKind.current; if (!f || !kind) return
-    const path = window.readflow.getPathForFile(f)
+    const path = window.capybara.getPathForFile(f)
     const pos = autoPos()
     void addCard({ kind, _sourcePath: path, title: f.name, x: pos.x, y: pos.y }).then((c) => setEditingId(c.id))
   }
 
   const openPicker = async () => {
     setPickerOpen(true)
-    const list = await window.readflow.invoke('items:list', 'all', '') as ItemRow[]
+    const list = await window.capybara.invoke('items:list', 'all', '') as ItemRow[]
     setPickerItems(list)
   }
   const pickItem = (it: ItemRow) => {

@@ -45,11 +45,11 @@ export default function App() {
     void load(); void loadFeeds(); void loadBoards()
     void useStore.getState().initAppearance()
     // 恢复上次布局宽度
-    void (window.readflow.invoke('settings:get', 'side_w') as Promise<string>).then((r) => { const n = Number(r); if (n >= 120) setSideW(n) })
-    void (window.readflow.invoke('settings:get', 'list_w') as Promise<string>).then((r) => { const n = Number(r); if (n >= 260) setListW(n) })
-    void (window.readflow.invoke('settings:get', 'feed_w') as Promise<string>).then((r) => { const n = Number(r); if (n >= 140) setFeedW(n) })
-    void (window.readflow.invoke('settings:get', 'side_collapsed') as Promise<string>).then((r) => { if (r === '1') setSideCollapsed(true) })
-    void (window.readflow.invoke('app:version') as Promise<string>).then((r) => setVersion(r || ''))
+    void (window.capybara.invoke('settings:get', 'side_w') as Promise<string>).then((r) => { const n = Number(r); if (n >= 120) setSideW(n) })
+    void (window.capybara.invoke('settings:get', 'list_w') as Promise<string>).then((r) => { const n = Number(r); if (n >= 260) setListW(n) })
+    void (window.capybara.invoke('settings:get', 'feed_w') as Promise<string>).then((r) => { const n = Number(r); if (n >= 140) setFeedW(n) })
+    void (window.capybara.invoke('settings:get', 'side_collapsed') as Promise<string>).then((r) => { if (r === '1') setSideCollapsed(true) })
+    void (window.capybara.invoke('app:version') as Promise<string>).then((r) => setVersion(r || ''))
   }, [load, loadFeeds, loadBoards])
 
   // 全局轻触音效：仅在可交互元素上触发，随设置开关；首次手势预热音频上下文
@@ -69,7 +69,7 @@ export default function App() {
 
   useEffect(() => {
     const cb = () => { void useStore.getState().load(); void useStore.getState().loadFeeds() }
-    window.readflow.onSourcesUpdated(cb)
+    window.capybara.onSourcesUpdated(cb)
   }, [])
 
   // 全局快捷键：使用「设置 → 快捷键」中可配置的组合键
@@ -163,10 +163,10 @@ export default function App() {
     dragRef.current = null
     setDragging(false)
     if (!d) return
-    void window.readflow.invoke('settings:set', 'side_w', String(sideW))
-    void window.readflow.invoke('settings:set', 'list_w', String(listW))
-    void window.readflow.invoke('settings:set', 'feed_w', String(feedW))
-    void window.readflow.invoke('settings:set', 'side_collapsed', sideCollapsed ? '1' : '0')
+    void window.capybara.invoke('settings:set', 'side_w', String(sideW))
+    void window.capybara.invoke('settings:set', 'list_w', String(listW))
+    void window.capybara.invoke('settings:set', 'feed_w', String(feedW))
+    void window.capybara.invoke('settings:set', 'side_collapsed', sideCollapsed ? '1' : '0')
   }
 
   const sidebarStyle: CSSProperties = { width: sideCollapsed ? 56 : sideW }

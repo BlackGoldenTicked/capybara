@@ -9,7 +9,7 @@ export async function backupWebDAV(): Promise<{ ok: boolean; size: number; at: s
   if (!url) throw new Error('未配置 WebDAV 地址')
   checkpoint()
   const buf = fs.readFileSync(getDbFile())
-  const target = url.endsWith('/') ? url + 'readflow-backup.db' : url + '/readflow-backup.db'
+  const target = url.endsWith('/') ? url + 'capybara-backup.db' : url + '/capybara-backup.db'
   const headers: Record<string, string> = { 'Content-Type': 'application/octet-stream' }
   if (user) headers.Authorization = 'Basic ' + Buffer.from(`${user}:${pass ?? ''}`).toString('base64')
   const res = await fetch(target, { method: 'PUT', headers, body: buf })

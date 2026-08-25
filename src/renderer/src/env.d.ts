@@ -102,7 +102,7 @@ export interface NetLogEntry {
   source?: string
 }
 
-interface ReadflowBridge {
+interface CapybaraBridge {
   invoke(channel: string, ...args: unknown[]): Promise<unknown>
   onSourcesUpdated(cb: () => void): void
   onNetLog(cb: (entry: NetLogEntry) => void): void
@@ -110,5 +110,5 @@ interface ReadflowBridge {
 }
 
 declare global {
-  interface Window { readflow: ReadflowBridge }
+  interface Window { capybara: CapybaraBridge }
 }

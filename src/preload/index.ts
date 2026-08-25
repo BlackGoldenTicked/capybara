@@ -30,7 +30,7 @@ const validChannels = [
 
 type Channel = (typeof validChannels)[number]
 
-contextBridge.exposeInMainWorld('readflow', {
+contextBridge.exposeInMainWorld('capybara', {
   invoke: async (channel: Channel, ...args: unknown[]) => {
     if (!validChannels.includes(channel)) throw new Error(`Invalid channel: ${channel}`)
     return ipcRenderer.invoke(channel, ...args)

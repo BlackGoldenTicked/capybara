@@ -31,8 +31,8 @@ export function SourceManager() {
   const [twMsg, setTwMsg] = useState('')
 
   useEffect(() => {
-    void (window.readflow.invoke('settings:get', 'github_stars_user') as Promise<string>).then((r) => setGhUser(r || ''))
-    void (window.readflow.invoke('settings:get', 'github_token') as Promise<string>).then((r) => setTokenSaved(r ? '1' : ''))
+    void (window.capybara.invoke('settings:get', 'github_stars_user') as Promise<string>).then((r) => setGhUser(r || ''))
+    void (window.capybara.invoke('settings:get', 'github_token') as Promise<string>).then((r) => setTokenSaved(r ? '1' : ''))
   }, [])
 
   // ===== RSS =====
@@ -48,7 +48,7 @@ export function SourceManager() {
   const importOpml = async () => {
     setOpmlMsg('选择文件中…')
     try {
-      const r = await window.readflow.invoke('feeds:importOpml', kind) as { added: number; skipped: number; total: number }
+      const r = await window.capybara.invoke('feeds:importOpml', kind) as { added: number; skipped: number; total: number }
       if (r.total === 0) { setOpmlMsg('已取消或未选择文件'); return }
       await useStore.getState().loadFeeds()
       setOpmlMsg(`导入完成：新增 ${r.added} 个，跳过已存在 ${r.skipped} 个（共 ${r.total}）`)
@@ -57,8 +57,8 @@ export function SourceManager() {
 
   // ===== GitHub Star =====
   const saveToken = async () => {
-    await window.readflow.invoke('settings:set', 'github_token', tokenInput)
-    await window.readflow.invoke('settings:set', 'github_stars_user', ghUser)
+    await window.capybara.invoke('settings:set', 'github_token', tokenInput)
+    await window.capybara.invoke('settings:set', 'github_stars_user', ghUser)
     setTokenSaved(tokenInput ? '1' : ''); setTokenInput('')
     setGhMsg('已保存 Token 与用户名')
   }

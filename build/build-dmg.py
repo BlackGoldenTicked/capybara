@@ -1,7 +1,7 @@
-"""Build ReadFlow DMG with proper background image using dmgbuild."""
+"""Build Capybara DMG with proper background image using dmgbuild."""
 import os
 
-APPLICATION_NAME = "ReadFlow"
+APPLICATION_NAME = "Capybara"
 VERSION = "0.7.21"
 VOLUME_NAME = f"{APPLICATION_NAME} {VERSION}"
 

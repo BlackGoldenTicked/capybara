@@ -1,12 +1,12 @@
 /* ============================================================
-   ReadFlow 设计令牌 —— 自研 Design System（DS）
+   Capybara 设计令牌 —— 自研 Design System（DS）
    - 令牌前缀统一为 --ds-*（text / brand / surface / icon / radius /
      elevation / motion / font）。
    - 浅色基准定义于 :root，深色基准定义于 html.dark（深色用 .dark
      类后缀而非 data-theme="dark"）。
    - 12 套预设主题色板见 themes.css（html[data-theme="X"] 与
      html[data-theme="X"].dark）。
-   - 为兼容既有组件样式，保留 ReadFlow 旧令牌（--color-* / --border-* /
+   - 为兼容既有组件样式，保留 Capybara 旧令牌（--color-* / --border-* /
      --card-accent / --border-radius-* / --ease-* / --dur-*）作为
      --ds-* 的别名，在 :root 一次性映射，随主题动态解析。
    ============================================================ */
@@ -117,7 +117,7 @@
   --ds-font-display-number: 'Spline Sans Mono', ui-monospace, monospace;
 
   /* ============================================================
-     ReadFlow 旧令牌别名 → 映射到 --ds-*（随主题动态解析）
+     Capybara 旧令牌别名 → 映射到 --ds-*（随主题动态解析）
      ============================================================ */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", Menlo, monospace;

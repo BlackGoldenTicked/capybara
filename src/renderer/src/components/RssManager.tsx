@@ -20,7 +20,7 @@ export function RssManager() {
     if (!url.trim()) { showToast('请填写 RSS 地址'); return }
     setValidating(true)
     try {
-      const v = await window.readflow.invoke('feeds:validate', url.trim()) as { valid: boolean; title?: string; error?: string }
+      const v = await window.capybara.invoke('feeds:validate', url.trim()) as { valid: boolean; title?: string; error?: string }
       if (!v.valid) { showToast('验证失败：' + (v.error || '无法解析')); return }
       const finalName = name.trim() || v.title || url.trim()
       await addFeed('rss', finalName, url.trim(), schedule, kind)
@@ -33,7 +33,7 @@ export function RssManager() {
   const importOpml = async () => {
     setOpmlMsg('选择文件中…')
     try {
-      const r = await window.readflow.invoke('feeds:importOpml', kind) as { added: number; skipped: number; total: number }
+      const r = await window.capybara.invoke('feeds:importOpml', kind) as { added: number; skipped: number; total: number }
       if (r.total === 0) { setOpmlMsg('已取消或未选择文件'); return }
       await useStore.getState().loadFeeds()
       setOpmlMsg(`导入完成：新增 ${r.added} / 跳过重复 ${r.skipped}（共 ${r.total}）`)
@@ -119,7 +119,7 @@ export function RssManager() {
                     <span className="fr-name">{f.name || f.url}</span>
                     <span className="fr-url-line">
                       <span className="fr-url">{f.url}</span>
-                      <button className="fr-open" type="button" title="在浏览器中打开" onClick={() => void window.readflow.invoke('shell:openExternal', f.url)}>
+                      <button className="fr-open" type="button" title="在浏览器中打开" onClick={() => void window.capybara.invoke('shell:openExternal', f.url)}>
                         <Icon name="external" size={13} />
                       </button>
                     </span>

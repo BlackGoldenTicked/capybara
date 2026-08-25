@@ -6,7 +6,7 @@ export async function fetchGithubStars(feed: Feed): Promise<number> {
   const token = getSetting('github_token')
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
-    'User-Agent': 'ReadFlow/0.1'
+    'User-Agent': 'Capybara/0.1'
   }
   if (token) headers.Authorization = `Bearer ${token}`
   const res = await fetch('https://api.github.com/user/starred?per_page=100', { headers })

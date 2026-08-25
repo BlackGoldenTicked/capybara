@@ -1,8 +1,8 @@
 {
-  "name": "readflow",
+  "name": "capybara",
   "version": "0.7.192",
   "private": true,
-  "description": "ReadFlow - personal knowledge pipeline desktop client",
+  "description": "Capybara - personal knowledge pipeline desktop client",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -13,8 +13,8 @@
     "dist": "electron-vite build && electron-builder"
   },
   "build": {
-    "appId": "app.readflow",
-    "productName": "ReadFlow",
+    "appId": "app.capybara",
+    "productName": "Capybara",
     "icon": "build/AppIcon.icns",
     "directories": {
       "output": "release",

@@ -49,13 +49,13 @@ export function DiscoverPanel() {
   }, [roles])
 
   useEffect(() => {
-    void (window.readflow.invoke('discover:roles') as Promise<DiscoverRole[]>).then(setRoles)
-    void (window.readflow.invoke('discover:tags') as Promise<string[]>).then(setTags)
+    void (window.capybara.invoke('discover:roles') as Promise<DiscoverRole[]>).then(setRoles)
+    void (window.capybara.invoke('discover:tags') as Promise<string[]>).then(setTags)
   }, [])
 
   const query = async (p: number) => {
     try {
-      const r = await window.readflow.invoke('discover:feeds', {
+      const r = await window.capybara.invoke('discover:feeds', {
         roleIds: roleId ? [roleId] : [],
         tags: selTags,
         languages: lang === 'all' ? [] : [lang],

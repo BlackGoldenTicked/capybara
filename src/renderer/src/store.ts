@@ -156,9 +156,9 @@ export const useStore = create<State>((set, get) => ({
     const { view, search, activeSourceType, activeFeed } = get()
     try {
       const [counts, sourceCounts, page0] = await Promise.all([
-        window.readflow.invoke('items:counts') as Promise<Record<View, number>>,
-        window.readflow.invoke('items:sourceCounts') as Promise<Record<string, number>>,
-        window.readflow.invoke('items:listPage', view, search, activeSourceType, activeFeed, 0, PAGE_SIZE) as Promise<ItemRow[]>
+        window.capybara.invoke('items:counts') as Promise<Record<View, number>>,
+        window.capybara.invoke('items:sourceCounts') as Promise<Record<string, number>>,
+        window.capybara.invoke('items:listPage', view, search, activeSourceType, activeFeed, 0, PAGE_SIZE) as Promise<ItemRow[]>
       ])
       set({ items: page0, itemsPage: 0, itemsDone: page0.length < PAGE_SIZE, itemsLoadingMore: false, counts, sourceCounts })
     } catch (e) {
@@ -172,7 +172,7 @@ export const useStore = create<State>((set, get) => ({
     if (itemsDone || itemsLoadingMore) return
     set({ itemsLoadingMore: true })
     try {
-      const more = await window.readflow.invoke('items:listPage', view, search, activeSourceType, activeFeed, itemsPage + 1, PAGE_SIZE) as Promise<ItemRow[]>
+      const more = await window.capybara.invoke('items:listPage', view, search, activeSourceType, activeFeed, itemsPage + 1, PAGE_SIZE) as Promise<ItemRow[]>
       if (more.length < PAGE_SIZE) set({ itemsDone: true })
       if (more.length > 0) {
         const existing = new Set(get().items.map((i) => i.id))
@@ -183,8 +183,8 @@ export const useStore = create<State>((set, get) => ({
       set({ itemsLoadingMore: false })
     }
   },
-  loadFeeds: async () => { set({ feeds: await window.readflow.invoke('feeds:list') as Feed[] }) },
-  loadBoards: async () => { set({ boards: await window.readflow.invoke('boards:list') as Board[] }) },
+  loadFeeds: async () => { set({ feeds: await window.capybara.invoke('feeds:list') as Feed[] }) },
+  loadBoards: async () => { set({ boards: await window.capybara.invoke('boards:list') as Board[] }) },
 
   // 点击条目仅选中、打开阅读面板，不再自动标记已读（已读需手动点「已读」图标或「标为已读」）
   select: (id) => {
@@ -206,7 +206,7 @@ export const useStore = create<State>((set, get) => ({
       ? ({ favorite: '已取消收藏', later: '已取消稍后读', archived: '已取消归档' } as Record<string, string>)[status]
       : ({ favorite: '已收藏', later: '已稍后读', archived: '已归档', inbox: '已退回收集箱' } as Record<string, string>)[status]
     try {
-      const counts = await window.readflow.invoke('items:updateStatus', id, effective) as Record<View, number>
+      const counts = await window.capybara.invoke('items:updateStatus', id, effective) as Record<View, number>
       set({ counts })
       const { items } = get()
       const next = items.filter((i) => i.id !== id)
@@ -218,9 +218,9 @@ export const useStore = create<State>((set, get) => ({
       get().showToast('操作失败：' + (e as Error).message)
     }
   },
-  quickAdd: async (url) => { await window.readflow.invoke('items:quickAdd', url); set({ quickAddOpen: false }); await get().load() },
+  quickAdd: async (url) => { await window.capybara.invoke('items:quickAdd', url); set({ quickAddOpen: false }); await get().load() },
   refreshAll: async () => {
-    await window.readflow.invoke('sources:refreshAll')
+    await window.capybara.invoke('sources:refreshAll')
     await Promise.all([get().load(), get().loadFeeds()])
     const bad = get().feeds.find((f) => f.error_count > 0)
     if (bad) get().showToast('无法获取数据：' + (bad.last_error || '未知错误'))
@@ -229,7 +229,7 @@ export const useStore = create<State>((set, get) => ({
   addFeed: async (type, name, url, scheduleMin, kind) => {
     const existed = get().feeds.some((f) => f.url === url)
     try {
-      const feed = await window.readflow.invoke('feeds:add', type, name, url, scheduleMin, kind ?? 'article') as Feed
+      const feed = await window.capybara.invoke('feeds:add', type, name, url, scheduleMin, kind ?? 'article') as Feed
       await get().loadFeeds()
       if (existed) { get().showToast('该 RSS 源已存在，已跳过'); return }
       // 新增即抓取：用户添加后立刻拉取，无需等待 ≤60s 调度（修复 RSS 逻辑：新增即刷新）
@@ -238,33 +238,33 @@ export const useStore = create<State>((set, get) => ({
     } catch (e) { get().showToast('添加失败：' + (e as Error).message) }
   },
   addManyFeeds: async (list) => {
-    const n = await window.readflow.invoke('feeds:addMany', list) as number
+    const n = await window.capybara.invoke('feeds:addMany', list) as number
     await get().loadFeeds()
     // 批量新增后强制刷新全部（含新源），立即见效（修复 RSS 逻辑：Discover 一键添加即抓取）
     if (n > 0) await get().refreshAll()
     return n
   },
-  deleteFeed: async (id) => { await window.readflow.invoke('feeds:delete', id); await get().loadFeeds() },
+  deleteFeed: async (id) => { await window.capybara.invoke('feeds:delete', id); await get().loadFeeds() },
   refreshFeed: async (id) => {
-    const n = await window.readflow.invoke('feeds:refresh', id) as number
+    const n = await window.capybara.invoke('feeds:refresh', id) as number
     if (n < 0) {
       const bad = get().feeds.find((f) => f.id === id)
       get().showToast('无法获取数据：' + (bad?.last_error || '未知错误'))
     }
     await Promise.all([get().load(), get().loadFeeds()])
   },
-  markAllRead: async (view) => { const counts = await window.readflow.invoke('items:markAllRead', view) as Record<View, number>; set({ counts }); playSound('complete'); await get().load() },
-  clearInbox: async () => { const counts = await window.readflow.invoke('items:clearInbox') as Record<View, number>; set({ counts }); playSound('complete'); await get().load() },
+  markAllRead: async (view) => { const counts = await window.capybara.invoke('items:markAllRead', view) as Record<View, number>; set({ counts }); playSound('complete'); await get().load() },
+  clearInbox: async () => { const counts = await window.capybara.invoke('items:clearInbox') as Record<View, number>; set({ counts }); playSound('complete'); await get().load() },
 
   openInBrowser: (url, origin) => {
     if (url) {
-      void window.readflow.invoke('shell:openExternal', url)
+      void window.capybara.invoke('shell:openExternal', url)
       playSound('open')
     }
   },
   deleteItem: async (id) => {
     playSound('delete')
-    await window.readflow.invoke('items:delete', id)
+    await window.capybara.invoke('items:delete', id)
     // 乐观移除，随后重载以刷新计数
     set({ items: get().items.filter((i) => i.id !== id), selectedId: get().selectedId === id ? null : get().selectedId })
     await get().load()
@@ -272,7 +272,7 @@ export const useStore = create<State>((set, get) => ({
   toggleRead: async (id) => {
     const it = get().items.find((i) => i.id === id)
     const next = !(it?.is_read)
-    await window.readflow.invoke('items:setRead', id, next)
+    await window.capybara.invoke('items:setRead', id, next)
     set({ items: get().items.map((i) => i.id === id ? { ...i, is_read: next ? 1 : 0 } : i) })
     // RSS（未读）视图中标记为已读后，立即重载使其离开未读列表
     if (get().view === 'rss' && next) void get().load()
@@ -280,13 +280,13 @@ export const useStore = create<State>((set, get) => ({
 
   openBoard: async (id) => {
     const [cards, links] = await Promise.all([
-      window.readflow.invoke('boards:cards', id) as Promise<Card[]>,
-      window.readflow.invoke('boards:links', id) as Promise<BoardLink[]>
+      window.capybara.invoke('boards:cards', id) as Promise<Card[]>,
+      window.capybara.invoke('boards:links', id) as Promise<BoardLink[]>
     ])
     set({ activeBoardId: id, cards, links, screen: 'board' })
   },
   createBoard: async () => {
-    const b = await window.readflow.invoke('boards:create', '未命名白板') as Board
+    const b = await window.capybara.invoke('boards:create', '未命名白板') as Board
     set({ activeBoardId: b.id, cards: [], screen: 'board' })
     await get().loadBoards()
   },
@@ -302,7 +302,7 @@ export const useStore = create<State>((set, get) => ({
   addCard: async (partial) => {
     const id = get().activeBoardId
     if (id == null) { get().showToast('请先打开一个白板'); throw new Error('no active board') }
-    const card = await window.readflow.invoke('boards:addCard', {
+    const card = await window.capybara.invoke('boards:addCard', {
       board_id: id,
       kind: partial.kind ?? 'text',
       item_id: partial.item_id ?? null,
@@ -315,31 +315,31 @@ export const useStore = create<State>((set, get) => ({
     return card
   },
   updateCard: async (cid, patch) => {
-    const card = await window.readflow.invoke('boards:updateCard', cid, {
+    const card = await window.capybara.invoke('boards:updateCard', cid, {
       title: patch.title, body: patch.body, payload: patch.payload,
       w: patch.w, h: patch.h, kind: patch.kind, item_id: patch.item_id
     }, (patch as { _sourcePath?: string })._sourcePath) as Card
     set({ cards: get().cards.map((c) => c.id === cid ? card : c) })
   },
   moveCard: async (cid, x, y) => {
-    await window.readflow.invoke('boards:moveCard', cid, x, y)
+    await window.capybara.invoke('boards:moveCard', cid, x, y)
     set({ cards: get().cards.map((c) => c.id === cid ? { ...c, x, y } : c) })
   },
   deleteCard: async (cid) => {
-    await window.readflow.invoke('boards:deleteCard', cid)
+    await window.capybara.invoke('boards:deleteCard', cid)
     set({ cards: get().cards.filter((c) => c.id !== cid), links: get().links.filter((l) => l.from_id !== cid && l.to_id !== cid) })
   },
-  loadLinks: async (boardId) => { set({ links: await window.readflow.invoke('boards:links', boardId) as BoardLink[] }) },
+  loadLinks: async (boardId) => { set({ links: await window.capybara.invoke('boards:links', boardId) as BoardLink[] }) },
   addLink: async (fromId, toId) => {
     const id = get().activeBoardId
     if (id == null) return
-    const link = await window.readflow.invoke('boards:addLink', id, fromId, toId) as BoardLink | null
+    const link = await window.capybara.invoke('boards:addLink', id, fromId, toId) as BoardLink | null
     if (link) set({ links: [...get().links, link] })
     else get().showToast('已存在该连线')
   },
-  deleteLink: async (lid) => { await window.readflow.invoke('boards:deleteLink', lid); set({ links: get().links.filter((l) => l.id !== lid) }) },
+  deleteLink: async (lid) => { await window.capybara.invoke('boards:deleteLink', lid); set({ links: get().links.filter((l) => l.id !== lid) }) },
   updateLink: async (lid, label) => {
-    await window.readflow.invoke('boards:updateLink', lid, label)
+    await window.capybara.invoke('boards:updateLink', lid, label)
     set({ links: get().links.map((l) => l.id === lid ? { ...l, label } : l) })
   },
   autoPos: () => {
@@ -356,14 +356,14 @@ export const useStore = create<State>((set, get) => ({
   },
   renameBoard: async (id, name) => {
     try {
-      await window.readflow.invoke('boards:rename', id, name)
+      await window.capybara.invoke('boards:rename', id, name)
       set({ boards: get().boards.map((b) => b.id === id ? { ...b, name } : b) })
     } catch (err) {
       get().showToast('重命名失败：' + (err instanceof Error ? err.message : String(err)))
     }
   },
   deleteBoard: async (id) => {
-    await window.readflow.invoke('boards:delete', id)
+    await window.capybara.invoke('boards:delete', id)
     const boards = get().boards.filter((b) => b.id !== id)
     const wasActive = get().activeBoardId === id
     set({
@@ -376,19 +376,19 @@ export const useStore = create<State>((set, get) => ({
   },
 
   fetchGithubStars: async (username) => {
-    const r = await window.readflow.invoke('github:fetchStars', username) as { added: number; total: number }
+    const r = await window.capybara.invoke('github:fetchStars', username) as { added: number; total: number }
     await get().load()
     return r
   },
   importTwitterBookmarks: async () => {
-    const r = await window.readflow.invoke('twitter:importBookmarks') as { added: number; total: number }
+    const r = await window.capybara.invoke('twitter:importBookmarks') as { added: number; total: number }
     await get().load()
     return r
   },
 
   initAppearance: async () => {
     // 一次性拉取启动所需的全部设置（外观 / 音效 / 快捷键 / 开发者模式），把原先多次顺序 IPC 合并为 1 次，缩短首屏
-    const boot = await window.readflow.invoke('app:bootstrap') as {
+    const boot = await window.capybara.invoke('app:bootstrap') as {
       appearance: Appearance
       soundEnabled: boolean
       soundVolume: number
@@ -402,13 +402,13 @@ export const useStore = create<State>((set, get) => ({
     audioSetVolume(boot.soundVolume)
     set({ appearance: a, soundEnabled: boot.soundEnabled, soundVolume: boot.soundVolume, shortcuts: parseShortcuts(boot.shortcuts), developerMode: boot.developerMode, logo: boot.logo || '默认.png' })
     // 加载当前数据库路径配置
-    void window.readflow.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
+    void window.capybara.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
     // 系统亮暗偏好变化时，system 模式下跟随切换（重新应用 .dark 类）
     watchSystemTheme(() => {
       if (get().appearance.theme === 'system') applyAppearance(get().appearance)
     })
     // 网络诊断日志：开发者模式下持续追加，供应用内浮动面板显示（最多保留 300 条）
-    window.readflow.onNetLog((entry) => {
+    window.capybara.onNetLog((entry) => {
       if (!get().developerMode) return
       const next = get().netLog.concat(entry)
       if (next.length > 300) next.splice(0, next.length - 300)
@@ -416,12 +416,12 @@ export const useStore = create<State>((set, get) => ({
     })
   },
   setDeveloperMode: (v) => {
-    void window.readflow.invoke('settings:set', 'developer_mode', v ? '1' : '0')
-    void window.readflow.invoke('devtools:toggle')
+    void window.capybara.invoke('settings:set', 'developer_mode', v ? '1' : '0')
+    void window.capybara.invoke('devtools:toggle')
     set({ developerMode: v })
   },
   setDbPath: async (pathVal) => {
-    const r = await window.readflow.invoke('settings:setDbPath', pathVal) as { ok: boolean; error?: string }
+    const r = await window.capybara.invoke('settings:setDbPath', pathVal) as { ok: boolean; error?: string }
     if (r.ok) set({ dbPath: pathVal })
     return r
   },
@@ -434,17 +434,17 @@ export const useStore = create<State>((set, get) => ({
   },
   setSoundEnabled: (enabled) => {
     audioSetEnabled(enabled)
-    void window.readflow.invoke('settings:set', 'sound_enabled', enabled ? '1' : '0')
+    void window.capybara.invoke('settings:set', 'sound_enabled', enabled ? '1' : '0')
     set({ soundEnabled: enabled })
     if (enabled) playSound('toggle')
   },
   setSoundVolume: (v) => {
     audioSetVolume(v)
-    void window.readflow.invoke('settings:set', 'sound_volume', String(v))
+    void window.capybara.invoke('settings:set', 'sound_volume', String(v))
     set({ soundVolume: v })
   },
   setLogo: (id) => {
-    void window.readflow.invoke('app:setLogo', id)
+    void window.capybara.invoke('app:setLogo', id)
     set({ logo: id })
     playSound('style')
   },
@@ -455,15 +455,15 @@ export const useStore = create<State>((set, get) => ({
   },
   closeSettings: () => set({ settingsOpen: false }),
   setShortcuts: (next) => {
-    void window.readflow.invoke('settings:set', 'shortcuts', JSON.stringify(next))
+    void window.capybara.invoke('settings:set', 'shortcuts', JSON.stringify(next))
     set({ shortcuts: next })
   },
   resetShortcuts: () => {
-    void window.readflow.invoke('settings:set', 'shortcuts', JSON.stringify(DEFAULT_SHORTCUTS))
+    void window.capybara.invoke('settings:set', 'shortcuts', JSON.stringify(DEFAULT_SHORTCUTS))
     set({ shortcuts: { ...DEFAULT_SHORTCUTS } })
   },
   purge: async (keepDays, maxItems) => {
-    const r = await window.readflow.invoke('settings:purge', keepDays, maxItems) as { purged: number }
+    const r = await window.capybara.invoke('settings:purge', keepDays, maxItems) as { purged: number }
     playSound('complete')
     get().showToast(`已清理 ${r.purged} 条归档内容`)
     await get().load()

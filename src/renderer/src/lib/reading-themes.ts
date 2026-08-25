@@ -168,7 +168,7 @@ export function getAllReadingThemes(): ReadingTheme[] {
   return [...READING_THEMES, ...getCustomReadingThemes()]
 }
 
-const CUSTOM_RT_KEY = 'readflow:custom-reading-themes'
+const CUSTOM_RT_KEY = 'capybara:custom-reading-themes'
 
 /** 从 localStorage 加载自定义阅读主题 */
 export function getCustomReadingThemes(): ReadingTheme[] {

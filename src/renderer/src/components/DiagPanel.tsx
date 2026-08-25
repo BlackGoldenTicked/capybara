@@ -69,7 +69,7 @@ export function DiagPanel() {
     setStep1Status('running')
     setPurgeResult(null)
     try {
-      const r = await window.readflow.invoke('diag:testPurge', purgeDays, purgeMax) as PurgeCheckResult
+      const r = await window.capybara.invoke('diag:testPurge', purgeDays, purgeMax) as PurgeCheckResult
       setPurgeResult(r)
       await loadFeeds()
       await load()
@@ -88,7 +88,7 @@ export function DiagPanel() {
     setSingleNormal(null)
     setSingleForce(null)
     try {
-      const r = await window.readflow.invoke('diag:testRefreshOne', selectedFeedId) as DiagSingleResult
+      const r = await window.capybara.invoke('diag:testRefreshOne', selectedFeedId) as DiagSingleResult
       setSingleNormal(r)
       await loadFeeds()
       await load()
@@ -102,7 +102,7 @@ export function DiagPanel() {
     if (!selectedFeedId) { showToast('请先选择订阅源'); return }
     setStep2Status('running')
     try {
-      const r = await window.readflow.invoke('diag:testForceOne', selectedFeedId) as DiagSingleResult
+      const r = await window.capybara.invoke('diag:testForceOne', selectedFeedId) as DiagSingleResult
       setSingleForce(r)
       await loadFeeds()
       await load()
@@ -120,7 +120,7 @@ export function DiagPanel() {
     setAllNormal(null)
     setAllForce(null)
     try {
-      const r = await window.readflow.invoke('diag:testRefreshAll') as DiagAllResult
+      const r = await window.capybara.invoke('diag:testRefreshAll') as DiagAllResult
       setAllNormal(r)
       await loadFeeds()
       await load()
@@ -133,7 +133,7 @@ export function DiagPanel() {
   const runStep3Force = async () => {
     setStep3Status('running')
     try {
-      const r = await window.readflow.invoke('diag:testForceAll') as DiagAllResult
+      const r = await window.capybara.invoke('diag:testForceAll') as DiagAllResult
       setAllForce(r)
       await loadFeeds()
       await load()

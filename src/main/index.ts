@@ -24,7 +24,7 @@ import { diagSnapshot, diagTestPurge, diagRefreshFeed, diagRefreshAll, forceRefr
 
 if (!app.isPackaged) {
   try {
-    const devUserData = path.join(process.cwd(), '.readflow-userData')
+    const devUserData = path.join(process.cwd(), '.capybara-userData')
     fs.mkdirSync(devUserData, { recursive: true })
     app.setPath('userData', devUserData)
     app.commandLine.appendSwitch('no-sandbox')
@@ -269,7 +269,7 @@ function applyLogo(id: string): void {
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1080, minHeight: 680,
-    title: '阅流 ReadFlow', titleBarStyle: 'hiddenInset', backgroundColor: '#1f1f1d',
+    title: '水豚 Capybara', titleBarStyle: 'hiddenInset', backgroundColor: '#1f1f1d',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true, nodeIntegration: false, sandbox: false
@@ -444,13 +444,13 @@ function registerIpc() {
       for (const r of rows) { settings[r.key] = r.value }
       const feeds = listFeeds()
       const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), settings, feeds }, null, 2)
-      const r = await dialog.showSaveDialog(mainWindow!, { title: '导出 ReadFlow 配置', defaultPath: 'readflow-config.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+      const r = await dialog.showSaveDialog(mainWindow!, { title: '导出 Capybara 配置', defaultPath: 'capybara-config.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
       if (r.canceled || !r.filePath) return false
       await fs.promises.writeFile(r.filePath, json, 'utf-8')
       return true
     }) as never,
     'settings:import': (async () => {
-      const r = await dialog.showOpenDialog(mainWindow!, { title: '导入 ReadFlow 配置', filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] })
+      const r = await dialog.showOpenDialog(mainWindow!, { title: '导入 Capybara 配置', filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] })
       if (r.canceled || r.filePaths.length === 0) return { ok: false, error: '已取消' }
       try {
         const raw = await fs.promises.readFile(r.filePaths[0], 'utf-8')
@@ -558,7 +558,7 @@ function registerIpc() {
       const name = (username || '').trim()
       if (!name) throw new Error('请填写 GitHub 用户名')
       const token = getSetting('github_token') || ''
-      const headers: Record<string, string> = { 'User-Agent': 'ReadFlow', 'Accept': 'application/vnd.github+json' }
+      const headers: Record<string, string> = { 'User-Agent': 'Capybara', 'Accept': 'application/vnd.github+json' }
       if (token) headers['Authorization'] = `Bearer ${token}`
       let page = 1, added = 0
       const seen = new Set<string>()

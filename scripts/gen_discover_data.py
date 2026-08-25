@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ReadFlow 信源发现数据生成脚本（可复现）。
+Capybara 信源发现数据生成脚本（可复现）。
 从项目 feeds/ 目录解析 rss_sources_insert.sql（RSS 源）+ ddl.sql（65 角色），
 生成 src/main/discover/data.ts（紧凑 TS 模块），并推导 role_source_map 角色映射。
 

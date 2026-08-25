@@ -94,12 +94,12 @@ function AppearanceTab() {
   const styleGridRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    window.readflow.invoke('app:fontList').then((list) => setSystemFonts(list as string[])).catch(() => { })
+    window.capybara.invoke('app:fontList').then((list) => setSystemFonts(list as string[])).catch(() => { })
   }, [])
 
   // 加载内置 logo 列表（应用图标切换）
   useEffect(() => {
-    window.readflow.invoke('app:logoList').then((list) => setLogos(list as Array<{ id: string; name: string; thumb: string }>)).catch(() => { })
+    window.capybara.invoke('app:logoList').then((list) => setLogos(list as Array<{ id: string; name: string; thumb: string }>)).catch(() => { })
   }, [])
 
   const setTheme = (theme: ThemeMode) => updateAppearance({ theme })
@@ -224,7 +224,7 @@ function AppearanceTab() {
         <p className="src-hint">选择后仅改变正文阅读区域的配色，不影响左侧列表和设置等界面。新增配色只能通过「导入配色」加载 JSON 文件（含 name / mode / colors）。</p>
         <div className="src-actions" style={{ marginBottom: 10 }}>
           <button onClick={async () => {
-            const r = await window.readflow.invoke('readingTheme:import') as {
+            const r = await window.capybara.invoke('readingTheme:import') as {
               ok: boolean; error?: string;
               theme?: { name: string; mode: 'dark' | 'light'; colors: Record<string, string> }
             }
@@ -413,7 +413,7 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
           <input
             type="text"
             value={dbPathInput ?? ''}
-            placeholder={dbPath || '使用默认路径 (~/Library/Application Support/readflow/readflow.db)'}
+            placeholder={dbPath || '使用默认路径 (~/Library/Application Support/capybara/capybara.db)'}
             onChange={(e) => setDbPathInput(e.target.value)}
             style={{ flex: 1 }}
           />
@@ -427,7 +427,7 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
             }
           }}>保存</button>
           <button title="浏览选择数据库文件" onClick={async () => {
-            const p = await window.readflow.invoke('settings:pickDbPath') as string
+            const p = await window.capybara.invoke('settings:pickDbPath') as string
             if (p) setDbPathInput(p)
           }}>浏览…</button>
         </div>
@@ -449,11 +449,11 @@ function ActionsTab({ onRefresh }: { onRefresh: () => Promise<void> }) {
         <p className="src-hint">导出所有设置项（外观、配色、订阅源列表等）为 JSON 文件，可在另一台电脑或重装后恢复。导入时自动跳过已存在的订阅源。</p>
         <div className="src-actions">
           <button onClick={async () => {
-            const ok = await window.readflow.invoke('settings:export')
+            const ok = await window.capybara.invoke('settings:export')
             showToast(ok ? '配置已导出' : '已取消导出')
           }}><Icon name="upload" size={14} /> 导出配置</button>
           <button onClick={async () => {
-            const r = await window.readflow.invoke('settings:import') as { ok: boolean; error?: string; imported?: number }
+            const r = await window.capybara.invoke('settings:import') as { ok: boolean; error?: string; imported?: number }
             if (r.ok) {
               showToast(`已导入 ${r.imported ?? 0} 项设置，请重启应用生效`)
               // 重新加载外观以应用导入的配色
@@ -557,7 +557,7 @@ const THANKS_CARDS: Array<{ icon: IconName; accent: string; title: string; desc:
     icon: 'palette',
     accent: '#6c5ce7',
     title: 'NewMax',
-    desc: '感谢 NewMax 的设计语言参考：配色体系、间距节奏与组件规范为 ReadFlow 的视觉风格提供了重要借鉴。',
+    desc: '感谢 NewMax 的设计语言参考：配色体系、间距节奏与组件规范为 Capybara 的视觉风格提供了重要借鉴。',
     url: ''
   }
 ]
@@ -616,7 +616,7 @@ const OSS_GROUPS: Array<{ title: string; items: Array<{ name: string; version: s
 function ThanksTab() {
   const [ver, setVer] = useState('')
   useEffect(() => {
-    window.readflow.invoke('app:version').then((v) => setVer((v as string) || '')).catch(() => { })
+    window.capybara.invoke('app:version').then((v) => setVer((v as string) || '')).catch(() => { })
   }, [])
 
   return (
@@ -626,7 +626,7 @@ function ThanksTab() {
         <div className="thanks-hero-text">
           <h2 className="thanks-title">致谢</h2>
           <p className="thanks-sub">
-            ReadFlow 是一款个人知识管线桌面客户端{ver ? `，当前版本 ${ver}` : ''}。它站在开源社区与优秀产品设计者的肩膀之上。
+            Capybara 是一款个人知识管线桌面客户端{ver ? `，当前版本 ${ver}` : ''}。它站在开源社区与优秀产品设计者的肩膀之上。
             本页列出构建它所用的开源软件，并向给予设计启发与开发辅助的产品致以谢意。
           </p>
         </div>
@@ -636,7 +636,7 @@ function ThanksTab() {
         <div className="src-head-row">
           <p className="src-label">设计风格致谢</p>
         </div>
-        <p className="src-hint">以下产品的设计语言为 ReadFlow 的界面与交互提供了重要参考。</p>
+        <p className="src-hint">以下产品的设计语言为 Capybara 的界面与交互提供了重要参考。</p>
         <div className="thanks-cards">
           {THANKS_CARDS.map((c) => (
             <div className="thanks-card" key={c.title}>
@@ -648,7 +648,7 @@ function ThanksTab() {
                 <p className="thanks-card-desc">{c.desc}</p>
                 {c.url && (
                   <a className="thanks-card-link" href={c.url}
-                    onClick={(e) => { e.preventDefault(); void window.readflow.invoke('shell:openExternal', c.url) }}>
+                    onClick={(e) => { e.preventDefault(); void window.capybara.invoke('shell:openExternal', c.url) }}>
                     <Icon name="external" size={13} /> 访问官网 ↗
                   </a>
                 )}
@@ -662,7 +662,7 @@ function ThanksTab() {
         <div className="src-head-row">
           <p className="src-label">开源软件清单</p>
         </div>
-        <p className="src-hint">ReadFlow 基于以下开源项目构建（按用途分组）。许可证信息以各项目官方声明为准。</p>
+        <p className="src-hint">Capybara 基于以下开源项目构建（按用途分组）。许可证信息以各项目官方声明为准。</p>
         <div className="oss-list">
           {OSS_GROUPS.map((g) => (
             <div className="oss-group" key={g.title}>

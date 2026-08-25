@@ -36,7 +36,7 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
   const onReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
-    const path = window.readflow.getPathForFile(f)
+    const path = window.capybara.getPathForFile(f)
     saveAsset(path)
     e.target.value = ''
   }
@@ -91,7 +91,7 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
                   <span className="file-icon"><Icon name="file" size={20} /></span>
                   <span>{p.name || title}</span>
                   <span className="file-size">{fmtSize(p.size)}</span>
-                  <button onClick={() => void window.readflow.invoke('boards:openFile', p.file!)}><Icon name="external" size={13} /> 用默认程序打开</button>
+                  <button onClick={() => void window.capybara.invoke('boards:openFile', p.file!)}><Icon name="external" size={13} /> 用默认程序打开</button>
                 </div>
               )}
             </div>
