@@ -32,6 +32,8 @@ export function GithubStarManager() {
       setGhMsg('验证码已复制到剪贴板，请粘贴到 GitHub 页面并授权')
       // 第二步：轮询 token（阻塞直到用户授权或超时）
       const { login } = await window.capybara.invoke('github:pollLogin') as { login: string }
+      // 登录成功：更新 token 状态 + 持久化用户名到数据库（下次打开仍显示）
+      await window.capybara.invoke('settings:set', 'github_stars_user', login)
       setHasToken(true)
       setGhUser(login)
       setUserCode('')
