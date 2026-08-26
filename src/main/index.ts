@@ -17,7 +17,7 @@ import {
 import { startIngestServer } from './ingest'
 import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
 import { fetchStarsByUsername, githubHeaders } from './sources/github'
-import { startGithubDeviceLogin, abortGithubDeviceLogin, hasGithubToken, setGithubToken, getGithubToken } from './sources/github-auth'
+import { startGithubDeviceLogin, pollGithubDeviceLogin, abortGithubDeviceLogin, hasGithubToken, setGithubToken, getGithubToken } from './sources/github-auth'
 import { marked } from 'marked'
 import * as cheerio from 'cheerio'
 
@@ -639,9 +639,12 @@ function registerIpc() {
       }
     }) as never,
 
-    // ===== GitHub ★：OAuth Device Flow 一键登录 =====
+    // ===== GitHub ★：OAuth Device Flow 一键登录（两步：申请验证码 → 轮询 token）=====
     'github:deviceLogin': (async () => {
       return await startGithubDeviceLogin()
+    }) as never,
+    'github:pollLogin': (async () => {
+      return await pollGithubDeviceLogin()
     }) as never,
     'github:abortLogin': (() => {
       abortGithubDeviceLogin()

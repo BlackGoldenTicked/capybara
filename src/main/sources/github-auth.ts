@@ -73,15 +73,15 @@ export function abortGithubDeviceLogin(): void {
   deviceLoginAborted = true
 }
 
+/** 缓存当前 Device Flow 的设备码信息，供 pollGithubDeviceLogin 使用 */
+let deviceCodeCache: { device_code: string; user_code: string; verification_uri: string; interval: number; expires_in: number } | null = null
+
 /**
- * GitHub OAuth Device Flow 一键登录：
- * 1. 申请 device_code + user_code
- * 2. 打开 github.com/login/device 并把 user_code 复制到剪贴板
- * 3. 轮询 access_token（authorization_pending 间隔重试）
- * 4. 用 token 调 /user 拿登录名，token 加密存储
+ * GitHub OAuth Device Flow 第一步：申请设备码 + 验证码。
+ * 返回 { user_code, verification_uri } 供前端展示，同时打开浏览器、复制验证码到剪贴板。
  * 需要先在设置中填 OAuth App 的 client_id（App 须启用 Device Flow）。
  */
-export async function startGithubDeviceLogin(): Promise<{ login: string }> {
+export async function startGithubDeviceLogin(): Promise<{ user_code: string; verification_uri: string }> {
   const clientId = (getSetting('github_client_id') || '').trim()
   if (!clientId) throw new Error('请先填写 GitHub OAuth Client ID（github.com/settings/developers 创建 OAuth App 并启用 Device Flow）')
 
@@ -98,39 +98,61 @@ export async function startGithubDeviceLogin(): Promise<{ login: string }> {
     interval?: number; expires_in?: number
   }
 
-  // 2) 打开浏览器 + 复制用户码，用户在浏览器粘贴确认
+  // 缓存设备码，供后续 pollGithubDeviceLogin 轮询使用
+  deviceCodeCache = {
+    device_code: code.device_code,
+    user_code: code.user_code,
+    verification_uri: code.verification_uri,
+    interval: Math.max(5, code.interval ?? 5),
+    expires_in: code.expires_in ?? 900
+  }
+
+  // 打开浏览器 + 复制验证码到剪贴板
   try { clipboard.writeText(code.user_code) } catch { /* 剪贴板不可用则手动输入 */ }
   await shell.openExternal(code.verification_uri)
 
-  // 3) 轮询 token
-  const interval = Math.max(5, code.interval ?? 5)
-  const deadline = Date.now() + (code.expires_in ?? 900) * 1000
+  return { user_code: code.user_code, verification_uri: code.verification_uri }
+}
+
+/**
+ * GitHub OAuth Device Flow 第二步：轮询 access_token。
+ * 在前端展示验证码后调用，阻塞直到用户在浏览器中授权（或超时/拒绝）。
+ */
+export async function pollGithubDeviceLogin(): Promise<{ login: string }> {
+  if (!deviceCodeCache) throw new Error('请先点击「一键登录」获取验证码')
+  const { device_code, interval, expires_in } = deviceCodeCache
+  const clientId = (getSetting('github_client_id') || '').trim()
+  const deadline = Date.now() + expires_in * 1000
+
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, interval * 1000))
     if (deviceLoginAborted) throw new Error('已取消登录')
     const res = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ client_id: clientId, device_code: code.device_code, grant_type: 'urn:ietf:params:oauth:grant-type:device_code' })
+      body: JSON.stringify({ client_id: clientId, device_code, grant_type: 'urn:ietf:params:oauth:grant-type:device_code' })
     })
     const j = await res.json() as {
       access_token?: string; error?: string; error_description?: string
     }
     if (j.access_token) {
-      // 4) 拿登录名
+      // 拿登录名
       const userRes = await fetch('https://api.github.com/user', {
         headers: { Authorization: `Bearer ${j.access_token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'Capybara' }
       })
       if (!userRes.ok) throw new Error('Token 已获取但校验用户失败 ' + userRes.status)
       const user = await userRes.json() as { login: string }
       setGithubToken(j.access_token)
+      deviceCodeCache = null
       return { login: user.login }
     }
     if (j.error === 'authorization_pending') continue
     if (j.error === 'slow_down') { await new Promise((r) => setTimeout(r, interval * 1000)); continue }
-    if (j.error === 'expired_token') throw new Error('设备码已过期，请重新登录')
-    if (j.error === 'access_denied') throw new Error('已拒绝授权')
+    if (j.error === 'expired_token') { deviceCodeCache = null; throw new Error('设备码已过期，请重新登录') }
+    if (j.error === 'access_denied') { deviceCodeCache = null; throw new Error('已拒绝授权') }
+    deviceCodeCache = null
     throw new Error(j.error_description || j.error || '登录失败')
   }
+  deviceCodeCache = null
   throw new Error('登录超时，请重试')
 }

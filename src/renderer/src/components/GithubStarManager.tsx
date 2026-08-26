@@ -10,6 +10,7 @@ export function GithubStarManager() {
   const [clientId, setClientId] = useState('')
   const [ghMsg, setGhMsg] = useState('')
   const [loggingIn, setLoggingIn] = useState(false)
+  const [userCode, setUserCode] = useState('')
 
   useEffect(() => {
     void (window.capybara.invoke('settings:get', 'github_stars_user') as Promise<string>).then((r) => setGhUser(r || ''))
@@ -17,20 +18,28 @@ export function GithubStarManager() {
     void (window.capybara.invoke('github:tokenStatus') as Promise<{ has: boolean }>).then((r) => setHasToken(Boolean(r?.has)))
   }, [])
 
-  // 一键登录：OAuth Device Flow（自动打开浏览器，验证码已复制到剪贴板）
+  // 一键登录：OAuth Device Flow（两步：先获取验证码并展示，再轮询 token）
   const deviceLogin = async () => {
     if (!clientId.trim()) { setGhMsg('请先填写 OAuth Client ID'); return }
     await window.capybara.invoke('settings:set', 'github_client_id', clientId.trim())
     setLoggingIn(true)
-    setGhMsg('已打开浏览器，验证码已复制到剪贴板，请在 GitHub 页面粘贴并授权…')
+    setUserCode('')
+    setGhMsg('正在获取验证码…')
     try {
-      const { login } = await window.capybara.invoke('github:deviceLogin') as { login: string }
+      // 第一步：申请验证码，浏览器已自动打开 GitHub 授权页
+      const { user_code } = await window.capybara.invoke('github:deviceLogin') as { user_code: string; verification_uri: string }
+      setUserCode(user_code)
+      setGhMsg('验证码已复制到剪贴板，请粘贴到 GitHub 页面并授权')
+      // 第二步：轮询 token（阻塞直到用户授权或超时）
+      const { login } = await window.capybara.invoke('github:pollLogin') as { login: string }
       setHasToken(true)
       setGhUser(login)
+      setUserCode('')
       setGhMsg(`已通过 OAuth 登录为 ${login}`)
       showToast('GitHub 登录成功')
     } catch (e) {
       setGhMsg('登录失败：' + (e as Error).message)
+      setUserCode('')
     } finally {
       setLoggingIn(false)
     }
@@ -88,6 +97,12 @@ export function GithubStarManager() {
             </div>
           </div>
         </div>
+        {userCode && (
+          <div className="src-field">
+            <label>验证码（已复制到剪贴板，粘贴到 GitHub 授权页）</label>
+            <div className="github-code-display">{userCode}</div>
+          </div>
+        )}
       </div>
 
       <div className="set-card">
