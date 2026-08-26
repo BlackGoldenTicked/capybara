@@ -96,7 +96,7 @@ export async function fetchGithubStars(feed: Feed): Promise<number> {
   while (true) {
     const res = await fetch(
       `https://api.github.com/user/starred?per_page=100&page=${page}&sort=created&direction=desc`,
-      { headers: githubHeaders(token), signal: AbortSignal.timeout(30000) }
+      { headers: githubHeaders(token), signal: AbortSignal.timeout(60000) }
     )
     if (!res.ok) { markFeedFetched(feed.id, true); throw new Error(`github ${res.status}`) }
 
@@ -109,6 +109,7 @@ export async function fetchGithubStars(feed: Feed): Promise<number> {
     }
 
     if (!hasNextPage(res.headers.get('link'))) break
+    await new Promise((r) => setTimeout(r, 500))
     page++
   }
 
@@ -130,8 +131,12 @@ export async function fetchStarsByUsername(
   const seen = new Set<string>()
   while (true) {
     const url = `https://api.github.com/users/${encodeURIComponent(username)}/starred?per_page=100&page=${page}&sort=created&direction=desc`
-    const res = await fetch(url, { headers: githubHeaders(token), signal: AbortSignal.timeout(30000) })
+    const res = await fetch(url, { headers: githubHeaders(token), signal: AbortSignal.timeout(60000) })
     if (res.status === 403) throw new Error('GitHub API 速率超限（60 次/小时），可在系统配置填入 Token 提升额度')
+    if (res.status === 429) {
+      const retry = res.headers.get('retry-after')
+      throw new Error(`GitHub API 速率超限（429），${retry ? `请等待 ${retry} 秒后重试` : '请稍后重试'}`)
+    }
     if (!res.ok) throw new Error('GitHub API 错误 ' + res.status)
 
     const data = await res.json() as StarEntry[]
@@ -144,6 +149,8 @@ export async function fetchStarsByUsername(
       seen.add(entry.repo.html_url)
       if (writeStar(entry, 'GitHub ★')) added++
     }
+    // 页间暂停：避免连续请求触发 GitHub 限流，给 storeCover 并发下载留出网络带宽
+    await new Promise((r) => setTimeout(r, 500))
 
     // 每拉完一页通知前端进度
     onProgress?.(seen.size, page)

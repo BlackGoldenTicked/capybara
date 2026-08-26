@@ -109,7 +109,7 @@ const emptyCounts: Record<View, number> = { rss: 0, podcast: 0, video: 0, later:
 
 export const useStore = create<State>((set, get) => ({
   screen: 'library',
-  view: 'rss',
+  view: 'all',
   items: [], itemsPage: 0, itemsDone: false, itemsLoadingMore: false, counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
   selectedId: null, search: '', quickAddOpen: false,
   activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '', zenMode: false,

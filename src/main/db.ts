@@ -832,9 +832,19 @@ export function fillCoverIfEmpty(id: number, url: string): boolean {
   return true
 }
 
+/** 封面下载并发限制：最多同时 3 个，防止占满 HTTP 连接池影响主流程 */
+let coverActive = 0
+const coverQueue: Array<() => void> = []
+const COVER_CONCURRENCY = 3
+
 /** 下载封面到本地 images/，离线可用（配合画廊/白板，修复 #8 封面本地化） */
 export async function storeCover(id: number, url: string): Promise<void> {
   if (!url || !imagesDir) return
+  // 排队等信号量
+  if (coverActive >= COVER_CONCURRENCY) {
+    await new Promise<void>((resolve) => coverQueue.push(resolve))
+  }
+  coverActive++
   try {
     const res = await fetch(url, { headers: { 'User-Agent': 'Capybara' }, signal: AbortSignal.timeout(15_000) })
     if (!res.ok) return
@@ -845,6 +855,10 @@ export async function storeCover(id: number, url: string): Promise<void> {
     fs.writeFileSync(file, buf)
     db.prepare('UPDATE items SET cover_path = ? WHERE id = ?').run(`${id}${ext}`, id)
   } catch { /* 封面下载失败不阻塞主流程 */ }
+  finally {
+    coverActive--
+    coverQueue.shift()?.()
+  }
 }
 
 /** 数据保留策略：清理过量/过旧条目，但永久保留“已收藏 / 白板引用”的条目（修复 #11） */
