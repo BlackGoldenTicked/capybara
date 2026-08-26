@@ -125,8 +125,8 @@ fi
 # 只有本次确实安装成功才打开新 app（杜绝「打开旧版 app 假装成功」的假阳性）
 if [ "$INSTALLED" = "1" ]; then
   open "$APP"
-  # 前台激活，确保窗口跳到最前（未签名 app 默认可能躲在后面）
-  osascript -e 'tell application "Capybara" to activate' 2>/dev/null || true
+  # 前台激活（带超时：app 首次启动慢时不阻塞收尾，激活失败不影响安装结果）
+  timeout 5 osascript -e 'tell application "Capybara" to activate' 2>/dev/null || true
   echo "    已打开并前台激活 $APP"
 fi
 echo

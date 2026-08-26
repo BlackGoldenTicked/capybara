@@ -9,7 +9,8 @@
 #
 # 用法：
 #   bash scripts/bump.sh "本次改动简述"
-set -euo pipefail
+set -o pipefail
+set -e
 cd "$(dirname "$0")/.."
 
 if [ $# -lt 1 ]; then
@@ -39,9 +40,10 @@ log_lines() {
   echo "${n:-0}"
 }
 PID=0
+P=""
 for _ in $(seq 1 25); do
   P="$(cat "$PIDFILE" 2>/dev/null || true)"
-  if [ -n "$P" ] && kill -0 "$P" 2>/dev/null; then PID="$P"; break; fi
+  if [ -n "${P:-}" ] && kill -0 "$P" 2>/dev/null; then PID="$P"; break; fi
   sleep 0.2
 done
 if [ "$PID" != "0" ]; then
@@ -50,14 +52,14 @@ if [ "$PID" != "0" ]; then
   SHOWN=0
   while kill -0 "$PID" 2>/dev/null; do
     TOTAL=$(log_lines)
-    if [ "$TOTAL" -gt "$SHOWN" ] 2>/dev/null; then
+    if [ "${TOTAL:-0}" -gt "${SHOWN:-0}" ] 2>/dev/null; then
       sed -n "$((SHOWN+1)),${TOTAL}p" "$LOG"
-      SHOWN=$TOTAL
+      SHOWN="$TOTAL"
     fi
     sleep 1
   done
   TOTAL=$(log_lines)
-  if [ "$TOTAL" -gt "$SHOWN" ] 2>/dev/null; then
+  if [ "${TOTAL:-0}" -gt "${SHOWN:-0}" ] 2>/dev/null; then
     sed -n "$((SHOWN+1)),${TOTAL}p" "$LOG"
   fi
   echo
