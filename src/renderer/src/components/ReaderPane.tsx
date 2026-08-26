@@ -28,6 +28,8 @@ export function ReaderPane() {
   // hover tooltip：当前 hover 的章节 id + 气泡应有的 top 像素
   const [tip, setTip] = useState<{ id: string; top: number } | null>(null)
 
+  const [fetchingReadme, setFetchingReadme] = useState(false)
+
   // 按需取单条完整数据（含正文），列表不再全量传正文（性能优化 #1）
   useEffect(() => {
     if (selectedId == null) { setItem(null); return }
@@ -38,6 +40,24 @@ export function ReaderPane() {
     }).catch(() => { if (alive) setLoading(false) })
     return () => { alive = false }
   }, [selectedId])
+
+  // GitHub 条目：若 content_html 为空，自动拉取 README 并填充正文
+  useEffect(() => {
+    if (!item || item.source_type !== 'github') return
+    if (item.content_html) return // 已有正文（之前拉取过），直接用
+    let alive = true
+    setFetchingReadme(true)
+    window.capybara.invoke('github:fetchReadme', item.id).then((r) => {
+      if (!alive) return
+      const { html } = r as { html: string }
+      if (html) {
+        // 更新本地 item 状态，触发正文清洗流程
+        setItem((prev) => prev ? { ...prev, content_html: html } : prev)
+      }
+      setFetchingReadme(false)
+    }).catch(() => { if (alive) setFetchingReadme(false) })
+    return () => { alive = false }
+  }, [item])
 
   // 异步清洗正文 HTML（Web Worker），避免大文章卡顿渲染线程
   useEffect(() => {
@@ -102,6 +122,9 @@ export function ReaderPane() {
   if (selectedId == null || !item) {
     return (<section className="reader"><div className="reader-empty">选择左侧条目开始阅读 · J/K 快速浏览{loading ? ' · 加载中…' : ''}</div></section>)
   }
+
+  // GitHub 条目正在拉取 README 时的提示
+  const showReadmeLoading = item.source_type === 'github' && !html && fetchingReadme
 
   const toggleNoImg = () => { const v = !noImg; setNoImg(v); void window.capybara.invoke('settings:set', 'reader_noimg', v ? '1' : '0') }
 
@@ -184,7 +207,9 @@ export function ReaderPane() {
           ) : (
             html
               ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />
-              : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>
+              : showReadmeLoading
+                ? <div className={`${contentClass} plain`}><p style={{ color: 'var(--text-2)' }}>正在从 GitHub 拉取 README…</p></div>
+                : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照，等待采集器抓取全文）'}</div>
           )}
 
           {lightbox && (
