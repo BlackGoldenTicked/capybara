@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { press, pressBtn } from '../lib/press'
 
 export function QuickAdd() {
   const { quickAddOpen, setQuickAddOpen, quickAdd } = useStore()
@@ -20,8 +21,8 @@ export function QuickAdd() {
   }
 
   return (
-    <div className="modal-mask" onClick={() => setQuickAddOpen(false)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-mask" {...press(() => setQuickAddOpen(false))}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
         <p className="modal-title">快速收集</p>
         <input
           ref={inputRef}
@@ -31,8 +32,8 @@ export function QuickAdd() {
           onKeyDown={(e) => { if (e.key === 'Enter') void submit(); if (e.key === 'Escape') setQuickAddOpen(false) }}
         />
         <div className="modal-foot">
-          <button onClick={() => setQuickAddOpen(false)}>取消</button>
-          <button onClick={() => void submit()} disabled={busy}>{busy ? '抓取中…' : '收集'}</button>
+          <button {...pressBtn(() => setQuickAddOpen(false))}>取消</button>
+          <button {...pressBtn(() => void submit())} disabled={busy}>{busy ? '抓取中…' : '收集'}</button>
         </div>
       </div>
     </div>

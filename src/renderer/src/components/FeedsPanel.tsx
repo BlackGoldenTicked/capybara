@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react'
 import { useStore } from '../store'
 import { feedColor } from '../lib/feedColor'
 import { Icon } from './icons'
+import { press, pressBtn } from '../lib/press'
 import type { CSSProperties } from 'react'
 import type { MediaKind } from '../env'
 
@@ -43,14 +44,14 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
         <button
           className={`feed-refresh-all ${refreshingId === 'all' ? 'spinning' : ''}`}
           title="立即刷新全部源"
-          onClick={() => void refreshAllFeeds()}>
+          {...pressBtn(() => void refreshAllFeeds())}>
           <Icon name="refresh" size={13} />
         </button>
       </div>
       <div className="feeds-list">
         <button
           className={`feed-item ${activeFeed == null ? 'active' : ''}`}
-          onClick={() => setActiveFeed(null)}>
+          {...pressBtn(() => setActiveFeed(null))}>
           <span className="feed-dot all" />
           <span className="feed-name">全部</span>
         </button>
@@ -67,14 +68,15 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
                     key={f.id}
                     className={`feed-item ${activeFeed === f.name ? 'active' : ''} ${err ? 'err' : ''}`}
                     title={err ? `${f.name}\n${f.last_error || '未知错误'}` : f.name}
-                    onClick={() => setActiveFeed(activeFeed === f.name ? null : f.name)}>
+                    {...press(() => setActiveFeed(activeFeed === f.name ? null : f.name))}>
                     <span className="feed-dot" style={{ background: feedColor(f.name) }} />
                     <span className="feed-name">{f.name}</span>
                     {err && <span className="feed-err-dot" aria-label="抓取失败" />}
                     <button
                       className={`feed-refresh ${refreshingId === f.id ? 'spinning' : ''}`}
                       title="只刷新此源"
-                      onClick={(e) => { e.stopPropagation(); void refreshOne(f.id) }}>
+                      onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void refreshOne(f.id) }}
+                      onClick={(e) => e.stopPropagation()}>
                       <Icon name="refresh" size={12} />
                     </button>
                   </div>

@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import type { ItemRow } from '../env'
 import { Icon } from './icons'
 import { plainTextFromHtml } from '../lib/reader'
+import { press, pressBtn } from '../lib/press'
 
 const SOURCE_LABEL: Record<string, string> = {
   rss: 'RSS', x: 'X', wechat: '公众号', tophub: '热榜', github: 'GitHub', x_bookmark: 'X书签', manual: '手动'
@@ -44,12 +45,12 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
   const read = item.is_read === 1
   const stop = (e: React.MouseEvent) => { e.stopPropagation() }
 
-  const open = (e: React.MouseEvent) => { stop(e); data.onOpen(item.url) }
-  const toggleRead = (e: React.MouseEvent) => { stop(e); data.onToggleRead(item.id) }
-  const laterFn = (e: React.MouseEvent) => { stop(e); data.onLater(item.id) }
-  const favFn = (e: React.MouseEvent) => { stop(e); data.onFavorite(item.id) }
-  const del = (e: React.MouseEvent) => {
-    stop(e)
+  const open = (e: React.PointerEvent) => { e.stopPropagation(); e.preventDefault(); data.onOpen(item.url) }
+  const toggleRead = (e: React.PointerEvent) => { e.stopPropagation(); e.preventDefault(); data.onToggleRead(item.id) }
+  const laterFn = (e: React.PointerEvent) => { e.stopPropagation(); e.preventDefault(); data.onLater(item.id) }
+  const favFn = (e: React.PointerEvent) => { e.stopPropagation(); e.preventDefault(); data.onFavorite(item.id) }
+  const del = (e: React.PointerEvent) => {
+    e.stopPropagation(); e.preventDefault()
     data.onDelete(item.id)
   }
 
@@ -65,18 +66,18 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
         <div
           className={`list-row beam-border ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
           {...dragProps}
-          onClick={() => data.onSelect(item.id)}>
+          {...press(() => data.onSelect(item.id))}>
           <div className="list-top">
             <span className={`list-badge ${item.source_type}`}>{SOURCE_LABEL[item.source_type]}</span>
             <span className="list-time">{relTime(item.published_at || item.fetched_at)}</span>
           </div>
           <div className="list-title">{item.title}</div>
           <div className="list-actions" onClick={stop} onDragStart={stop}>
-            <button className="act" title="用系统默认浏览器打开" onClick={open}><Icon name="external" size={14} /></button>
-            <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onClick={toggleRead}><Icon name="check" size={14} /></button>
-            <button className={`act ${later ? 'on' : ''}`} title="稍后读" onClick={laterFn}><Icon name="later" size={14} /></button>
-            <button className={`act ${fav ? 'on' : ''}`} title="收藏" onClick={favFn}><Icon name="favorite" size={14} fill={fav ? 'currentColor' : 'none'} /></button>
-            <button className="act danger" title="删除" onClick={del}><Icon name="trash" size={14} /></button>
+            <button className="act" title="用系统默认浏览器打开" onPointerDown={open} onClick={stop}><Icon name="external" size={14} /></button>
+            <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onPointerDown={toggleRead} onClick={stop}><Icon name="check" size={14} /></button>
+            <button className={`act ${later ? 'on' : ''}`} title="稍后读" onPointerDown={laterFn} onClick={stop}><Icon name="later" size={14} /></button>
+            <button className={`act ${fav ? 'on' : ''}`} title="收藏" onPointerDown={favFn} onClick={stop}><Icon name="favorite" size={14} fill={fav ? 'currentColor' : 'none'} /></button>
+            <button className="act danger" title="删除" onPointerDown={del} onClick={stop}><Icon name="trash" size={14} /></button>
           </div>
         </div>
       </div>
@@ -84,29 +85,29 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
   }
 
   return (
-    <div style={style}>
-      <div
-        className={`card beam-border ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
-        {...dragProps}
-        onClick={() => data.onSelect(item.id)}>
-        <div className="card-meta">
-          <span className={`badge ${item.source_type}`}>
-            {SOURCE_LABEL[item.source_type]} · {item.source_name}
-          </span>
-          <span className="card-time">{relTime(item.published_at || item.fetched_at)}</span>
-        </div>
-        <p className="card-title">{item.title}</p>
-        {item.summary && <p className="card-summary">{plainTextFromHtml(item.summary)}</p>}
+      <div style={style}>
+        <div
+          className={`card beam-border ${data.selectedId === item.id ? 'selected' : ''} ${read ? '' : 'unread'}`}
+          {...dragProps}
+          {...press(() => data.onSelect(item.id))}>
+          <div className="card-meta">
+            <span className={`badge ${item.source_type}`}>
+              {SOURCE_LABEL[item.source_type]} · {item.source_name}
+            </span>
+            <span className="card-time">{relTime(item.published_at || item.fetched_at)}</span>
+          </div>
+          <p className="card-title">{item.title}</p>
+          {item.summary && <p className="card-summary">{plainTextFromHtml(item.summary)}</p>}
 
-        <div className="card-actions" onClick={stop} onDragStart={stop}>
-          <button className="act" title="用系统默认浏览器打开" onClick={open}><Icon name="external" size={15} /></button>
-          <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onClick={toggleRead}><Icon name="check" size={15} /></button>
-          <button className={`act ${later ? 'on' : ''}`} title="稍后读" onClick={laterFn}><Icon name="later" size={15} /></button>
-          <button className={`act ${fav ? 'on' : ''}`} title="收藏" onClick={favFn}><Icon name="favorite" size={15} fill={fav ? 'currentColor' : 'none'} /></button>
-          <button className="act danger" title="删除" onClick={del}><Icon name="trash" size={15} /></button>
+          <div className="card-actions" onClick={stop} onDragStart={stop}>
+            <button className="act" title="用系统默认浏览器打开" onPointerDown={open} onClick={stop}><Icon name="external" size={15} /></button>
+            <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onPointerDown={toggleRead} onClick={stop}><Icon name="check" size={15} /></button>
+            <button className={`act ${later ? 'on' : ''}`} title="稍后读" onPointerDown={laterFn} onClick={stop}><Icon name="later" size={15} /></button>
+            <button className={`act ${fav ? 'on' : ''}`} title="收藏" onPointerDown={favFn} onClick={stop}><Icon name="favorite" size={15} fill={fav ? 'currentColor' : 'none'} /></button>
+            <button className="act danger" title="删除" onPointerDown={del} onClick={stop}><Icon name="trash" size={15} /></button>
+          </div>
         </div>
       </div>
-    </div>
   )
 }
 
@@ -189,23 +190,23 @@ export function ItemList() {
               <button
                 className={listMode === 'card' ? 'active' : ''}
                 title="卡片视图"
-                onClick={() => setListModeAndPersist('card')}>
+                {...pressBtn(() => setListModeAndPersist('card'))}>
                 <Icon name="board" size={15} />
               </button>
               <button
                 className={listMode === 'list' ? 'active' : ''}
                 title="列表视图"
-                onClick={() => setListModeAndPersist('list')}>
+                {...pressBtn(() => setListModeAndPersist('list'))}>
                 <Icon name="list" size={15} />
               </button>
             </div>
             {(view === 'rss' || view === 'podcast' || view === 'video') && (
               <>
-                <button className="mini" title={`把${viewLabel}未读全部标为已读`} onClick={() => void markAllRead(view)}>
+                <button className="mini" title={`把${viewLabel}未读全部标为已读`} {...pressBtn(() => void markAllRead(view))}>
                   <Icon name="check" size={13} /> 标为已读
                 </button>
                 {view === 'rss' && (
-                  <button className="mini" title="清空 RSS（保留收藏与白板引用）" onClick={onClear}>
+                  <button className="mini" title="清空 RSS（保留收藏与白板引用）" {...pressBtn(() => onClear())}>
                     <Icon name="trash" size={13} /> 清空
                   </button>
                 )}

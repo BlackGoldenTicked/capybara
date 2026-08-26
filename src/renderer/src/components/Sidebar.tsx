@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, Fragment, type CSSProperties, type RefObje
 import { useStore } from '../store'
 import type { View } from '../env'
 import { Icon, type IconName } from './icons'
+import { press, pressBtn } from '../lib/press'
 
 // 折叠态（图标栏）仍按原顺序展示全部视图（侧栏收起时）
 const NAV: Array<{ key: View; label: string; icon: IconName }> = [
@@ -34,7 +35,7 @@ function Section({ id, title, collapsedSec, onToggle, action, children }: {
   const open = !collapsedSec[id]
   return (
     <div className="sec">
-      <div className="sec-head" onClick={() => onToggle(id)}>
+      <div className="sec-head" {...press(() => onToggle(id))}>
         <Icon name={open ? 'chevronDown' : 'chevronRight'} size={13} />
         <span className="sec-title">{title}</span>
         {action}
@@ -89,17 +90,17 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
       <aside className={`sidebar collapsed ${dragging ? 'dragging' : ''}`} style={style} title="展开侧栏请向右拖动分隔条">
         {NAV.map((n) => (
           <button key={n.key} className={`rail-btn ${screen === 'library' && view === n.key && !activeSourceType ? 'active' : ''}`}
-            title={`${n.label}（${counts[n.key] || 0}）`} onClick={() => setView(n.key)}>
+            title={`${n.label}（${counts[n.key] || 0}）`} {...pressBtn(() => setView(n.key))}>
             <span className="rail-icon"><Icon name={n.icon} size={19} /></span>
           </button>
         ))}
-        <button className={`rail-btn ${activeSourceType === 'github' ? 'active' : ''}`} title={`GitHub ★（${sourceCounts['github'] || 0}）`} onClick={() => setSourceType('github')}><span className="rail-icon"><Icon name="github" size={19} /></span></button>
-        <button className={`rail-btn ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} title={`Twitter 书签（${sourceCounts['x_bookmark'] || 0}）`} onClick={() => setSourceType('x_bookmark')}><span className="rail-icon"><Icon name="twitter" size={19} /></span></button>
+        <button className={`rail-btn ${activeSourceType === 'github' ? 'active' : ''}`} title={`GitHub ★（${sourceCounts['github'] || 0}）`} {...pressBtn(() => setSourceType('github'))}><span className="rail-icon"><Icon name="github" size={19} /></span></button>
+        <button className={`rail-btn ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} title={`Twitter 书签（${sourceCounts['x_bookmark'] || 0}）`} {...pressBtn(() => setSourceType('x_bookmark'))}><span className="rail-icon"><Icon name="twitter" size={19} /></span></button>
         <div className="rail-sep" />
-        <button className={`rail-btn ${screen === 'board' ? 'active' : ''}`} title="白板" onClick={() => setScreen('board')}><span className="rail-icon"><Icon name="board" size={19} /></span></button>
-        <button className="rail-btn" title="新建白板" onClick={() => void createBoard()}><span className="rail-icon"><Icon name="plus" size={19} /></span></button>
+        <button className={`rail-btn ${screen === 'board' ? 'active' : ''}`} title="白板" {...pressBtn(() => setScreen('board'))}><span className="rail-icon"><Icon name="board" size={19} /></span></button>
+        <button className="rail-btn" title="新建白板" {...pressBtn(() => void createBoard())}><span className="rail-icon"><Icon name="plus" size={19} /></span></button>
         <div className="rail-sep" />
-        <button className={`rail-btn ${settingsOpen ? 'active' : ''}`} title="系统配置" onClick={() => openSettings()}><span className="rail-icon"><Icon name="settings" size={19} /></span></button>
+        <button className={`rail-btn ${settingsOpen ? 'active' : ''}`} title="系统配置" {...pressBtn(() => openSettings())}><span className="rail-icon"><Icon name="settings" size={19} /></span></button>
       </aside>
     )
   }
@@ -117,7 +118,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
         {/* 「全部」分组标题：补左侧图标列，使标题文字与下方条目文字在同一基线对齐 */}
         <div className={`nav-group-title ${screen === 'library' && view === 'all' && !activeSourceType ? 'active' : ''}`}
           role="button" tabIndex={0}
-          onClick={() => setView('all')}
+          {...press(() => setView('all'))}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView('all') } }}>
           <span className="side-ico"><Icon name="all" size={16} /></span>
           <span>全部</span>
@@ -126,7 +127,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
         {COLLECT.map((n) => (
           <div key={n.key} role="button" tabIndex={0}
             className={`side-item ${screen === 'library' && view === n.key && !activeSourceType ? 'active' : ''}`}
-            onClick={() => setView(n.key)}
+            {...press(() => setView(n.key))}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView(n.key) } }}>
             <span className="side-ico"><Icon name={n.icon} size={16} /></span>
             <span>{n.label}</span>
@@ -139,7 +140,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
 
       {/* GitHub ★（常驻，不折叠） */}
       <div className={`side-item ${activeSourceType === 'github' ? 'active' : ''}`} role="button" tabIndex={0}
-        onClick={() => setSourceType('github')}
+        {...press(() => setSourceType('github'))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSourceType('github') } }}>
         <span className="side-ico"><Icon name="github" size={16} /></span>
         <span>GitHub ★</span>
@@ -150,7 +151,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
 
       {/* Twitter 书签（常驻，不折叠） */}
       <div className={`side-item ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} role="button" tabIndex={0}
-        onClick={() => setSourceType('x_bookmark')}
+        {...press(() => setSourceType('x_bookmark'))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSourceType('x_bookmark') } }}>
         <span className="side-ico"><Icon name="twitter" size={16} /></span>
         <span>书签</span>
@@ -195,7 +196,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
 
       {/* 系统设置（底部，常驻，不折叠） */}
       <div className={`side-item sys-item ${settingsOpen ? 'active' : ''}`} role="button" tabIndex={0}
-        onClick={() => openSettings()}
+        {...press(() => openSettings())}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSettings() } }}>
         <span className="side-ico"><Icon name="settings" size={16} /></span>
         <span>系统设置</span>

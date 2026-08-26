@@ -6,6 +6,7 @@ import { GithubStarManager } from './GithubStarManager'
 import { TwitterBookmarkManager } from './TwitterBookmarkManager'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
+import { press, pressBtn } from '../lib/press'
 import {
   THEME_OPTIONS, COLOR_THEMES,
   type ThemeMode, type ColorThemeKey, type FontWeight
@@ -57,11 +58,11 @@ export function SettingsView() {
   const { settingsTab, setSettingsTab, refreshAll, closeSettings } = useStore()
 
   return (
-    <div className="settings-modal-mask" onClick={closeSettings}>
-      <section className="settings settings-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="settings-modal-mask" {...press(() => closeSettings())}>
+      <section className="settings settings-modal" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
         <nav className="settings-nav">
           {TABS.map((t) => (
-            <button key={t.key} className={`set-nav ${settingsTab === t.key ? 'active' : ''}`} onClick={() => setSettingsTab(t.key)}>
+            <button key={t.key} className={`set-nav ${settingsTab === t.key ? 'active' : ''}`} {...pressBtn(() => setSettingsTab(t.key))}>
               <Icon name={t.icon} size={16} />
               <span>{t.label}</span>
             </button>
@@ -80,7 +81,7 @@ export function SettingsView() {
             {settingsTab === 'thanks' && <ThanksTab />}
           </TabErrorBoundary>
         </div>
-        <button className="settings-close" title="关闭设置" onClick={closeSettings}><Icon name="close" size={16} /></button>
+        <button className="settings-close" title="关闭设置" {...pressBtn(() => closeSettings())}><Icon name="close" size={16} /></button>
       </section>
     </div>
   )
