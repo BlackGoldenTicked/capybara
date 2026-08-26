@@ -51,6 +51,18 @@ export default function App() {
     void (window.capybara.invoke('settings:get', 'feed_w') as Promise<string>).then((r) => { const n = Number(r); if (n >= 140) setFeedW(n) })
     void (window.capybara.invoke('settings:get', 'side_collapsed') as Promise<string>).then((r) => { if (r === '1') setSideCollapsed(true) })
     void (window.capybara.invoke('app:version') as Promise<string>).then((r) => setVersion(r || ''))
+    // 启动时自动拉取 GitHub Star：有 Token + 已设置用户名才触发，静默失败不弹窗
+    void (async () => {
+      try {
+        const [{ has }, ghUser] = await Promise.all([
+          window.capybara.invoke('github:tokenStatus') as Promise<{ has: boolean }>,
+          window.capybara.invoke('settings:get', 'github_stars_user') as Promise<string>
+        ])
+        if (has && ghUser?.trim()) {
+          await useStore.getState().fetchGithubStars(ghUser.trim())
+        }
+      } catch (e) { console.warn('[auto-fetch] GitHub Star 拉取失败:', (e as Error).message) }
+    })()
   }, [load, loadFeeds, loadBoards])
 
   // 全局轻触音效：仅在可交互元素上触发，随设置开关；首次手势预热音频上下文
