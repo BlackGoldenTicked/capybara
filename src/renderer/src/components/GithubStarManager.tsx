@@ -96,6 +96,7 @@ export function GithubStarManager() {
             <label htmlFor="github-login-btn">授权状态</label>
             <div className="src-actions" id="github-login-btn">
               <button onClick={() => void deviceLogin()} disabled={loggingIn}>{loggingIn ? '等待浏览器授权…' : '一键登录 GitHub'}</button>
+              <span className="src-hint">{hasToken ? '✓ 已授权' : '未授权'}</span>
             </div>
           </div>
         </div>
