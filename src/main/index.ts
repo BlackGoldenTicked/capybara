@@ -308,6 +308,16 @@ function createWindow() {
   })
   if (process.env.ELECTRON_RENDERER_URL) mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   else mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  // 拦截所有 window.open / target="_blank" 调用：一律用系统默认浏览器打开，不在 Electron 内开新窗口
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    if (details.url) {
+      try {
+        const u = new URL(details.url)
+        if (u.protocol === 'http:' || u.protocol === 'https:') void shell.openExternal(details.url)
+      } catch { /* 非法 URL 忽略 */ }
+    }
+    return { action: 'deny' }
+  })
   mainWindow.on('closed', () => { mainWindow = null })
   // 网络诊断日志转发目标：开发者模式关闭时窗口仍持有引用，仅面板不渲染
   setNetLogWindow(mainWindow)
