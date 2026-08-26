@@ -1,6 +1,6 @@
 {
   "name": "capybara",
-  "version": "0.7.192",
+  "version": "0.7.193",
   "private": true,
   "description": "Capybara - personal knowledge pipeline desktop client",
   "main": "out/main/index.js",
@@ -9,7 +9,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "bg": "node build/gen-bg.mjs",
-    "dmg": "python3 build/build-dmg.py",
+    "dmg": "python3 build/make-dmg.py",
     "dist": "electron-vite build && electron-builder"
   },
   "build": {
@@ -70,6 +70,7 @@
     "dompurify": "^3.4.13",
     "linkedom": "^0.18.13",
     "lucide-react": "^1.28.0",
+    "marked": "^18.0.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-window": "^1.8.11",

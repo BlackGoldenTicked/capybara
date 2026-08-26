@@ -16,6 +16,37 @@ import {
 } from './db'
 import { startIngestServer } from './ingest'
 import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
+import { fetchStarsByUsername, githubHeaders } from './sources/github'
+import { startGithubDeviceLogin, abortGithubDeviceLogin, hasGithubToken, setGithubToken, getGithubToken } from './sources/github-auth'
+import { marked } from 'marked'
+import * as cheerio from 'cheerio'
+
+/**
+ * 修正仓库 README 渲染后的相对 URL：
+ * - 相对图片 → raw.githubusercontent.com（直出文件内容）
+ * - 相对链接 → github.com 的 blob 页（保持可点击跳转）
+ * - 协议相对 URL（//x.y）→ 补 https
+ */
+function fixRepoRelativeUrls(html: string, owner: string, repo: string): string {
+  try {
+    const $ = cheerio.load(html)
+    const RAW = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD`
+    const BLOB = `https://github.com/${owner}/${repo}/blob/HEAD`
+    $('img[src]').each((_, el) => {
+      const src = $(el).attr('src') ?? ''
+      if (/^(https?:|data:)/i.test(src)) return
+      if (src.startsWith('//')) { $(el).attr('src', 'https:' + src); return }
+      $(el).attr('src', `${RAW}/${src.replace(/^\.?\//, '')}`)
+    })
+    $('a[href]').each((_, el) => {
+      const href = $(el).attr('href') ?? ''
+      if (/^(https?:|mailto:|#|data:)/i.test(href)) return
+      if (href.startsWith('//')) { $(el).attr('href', 'https:' + href); return }
+      $(el).attr('href', `${BLOB}/${href.replace(/^\.?\//, '')}`)
+    })
+    return $.html()
+  } catch { return html }
+}
 import { extractArticle } from './sources/readability'
 import { validateRssUrl } from './sources/rss'
 import { backupWebDAV } from './sync'
@@ -553,63 +584,16 @@ function registerIpc() {
     'discover:feeds': ((opts: Parameters<typeof discoverFeeds>[0]) => discoverFeeds(opts)) as never,
     'discover:add': ((xml_url: string, title: string, kind: MediaKind) => addFeed({ type: 'rss', name: title || xml_url, url: xml_url, schedule_min: 120, kind })) as never,
 
-    // ===== GitHub ★：按用户名拉取 starred 仓库，写入阅读列表（source_type=github） =====
+    // ===== GitHub ★：按用户名拉取 starred 仓库（Link header 全量分页 + 丰富元数据） =====
     'github:fetchStars': (async (username: string) => {
       const name = (username || '').trim()
       if (!name) throw new Error('请填写 GitHub 用户名')
-      const token = getSetting('github_token') || ''
-      const headers: Record<string, string> = {
-        'User-Agent': 'Capybara',
-        'Accept': 'application/vnd.github.star+json'
-      }
-      if (token) headers['Authorization'] = `Bearer ${token}`
-      let page = 1, added = 0
-      const seen = new Set<string>()
-      // 全量分页拉取，sort=created 按 star 时间从新到旧排序，无上限
-      while (true) {
-        const url = `https://api.github.com/users/${encodeURIComponent(name)}/starred?per_page=100&page=${page}&sort=created&direction=desc`
-        const res = await fetch(url, { headers, signal: AbortSignal.timeout(30000) })
-        if (res.status === 403) throw new Error('GitHub API 速率超限（60 次/小时），可在系统配置填入 Token 提升额度')
-        if (!res.ok) throw new Error('GitHub API 错误 ' + res.status)
-        // starred API 带 Accept: application/vnd.github+json 时返回数组（无 starred_at）；
-        // 带 application/vnd.github.star+json 时返回 [{ starred_at, repo }]。这里用后者拿 star 时间。
-        const data = await res.json() as Array<{
-          starred_at?: string
-          repo?: {
-            html_url: string; full_name: string; description?: string
-            owner?: { login: string; avatar_url?: string }
-            pushed_at?: string; created_at?: string
-          }
-        }>
-        if (!data.length) break
-        for (const entry of data) {
-          // 兼容两种返回格式：star+json（有 repo 包装）或普通 JSON（直接是 repo）
-          const r = entry.repo ?? entry as unknown as {
-            html_url: string; full_name: string; description?: string
-            owner?: { login: string; avatar_url?: string }
-            pushed_at?: string; created_at?: string
-          }
-          if (!r.html_url) continue
-          if (seen.has(r.html_url)) continue
-          seen.add(r.html_url)
-          // published_at 优先用 starred_at（用户 star 的时间）， fallback 到 pushed_at/created_at
-          const publishedAt = entry.starred_at || r.pushed_at || r.created_at || new Date().toISOString()
-          const item = upsertItem({
-            source_type: 'github', source_name: 'GitHub ★', url: r.html_url, title: r.full_name,
-            author: r.owner?.login ?? '', summary: r.description || '', cover_url: r.owner?.avatar_url || '',
-            published_at: publishedAt
-          })
-          if (item.changed) added++
-        }
-        // 不足一页说明已到末尾
-        if (data.length < 100) break
-        page++
-      }
+      const { added, total } = await fetchStarsByUsername(name)
       setSetting('github_stars_user', name)
       notifyRefresh()
-      return { added, total: seen.size }
+      return { added, total }
     }) as never,
-    // ===== GitHub ★：按需拉取仓库 README，渲染为 HTML 正文 =====
+    // ===== GitHub ★：按需拉取仓库 README（raw Markdown → marked 渲染 → 修相对链接） =====
     'github:fetchReadme': (async (itemId: number) => {
       const item = getItem(itemId)
       if (!item || item.source_type !== 'github') return { html: '' }
@@ -617,33 +601,20 @@ function registerIpc() {
       const m = item.url.match(/github\.com\/([^/]+)\/([^/]+)/)
       if (!m) return { html: '' }
       const [, owner, repo] = m
-      const token = getSetting('github_token') || ''
-      const headers: Record<string, string> = {
-        'User-Agent': 'Capybara',
-        'Accept': 'application/vnd.github.v3.html'
-      }
-      if (token) headers['Authorization'] = `Bearer ${token}`
+      const token = getGithubToken()
       try {
         const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme`, {
-          headers, signal: AbortSignal.timeout(15000)
+          headers: githubHeaders(token, 'application/vnd.github.raw+json'), signal: AbortSignal.timeout(15000)
         })
         if (res.status === 404) return { html: '<p style="color:var(--text-2)">该仓库暂无 README 文件</p>' }
         if (res.status === 403) return { html: '<p style="color:var(--text-2)">GitHub API 速率超限，请稍后再试或在设置中填入 Token</p>' }
         if (!res.ok) return { html: '' }
-        // v3.html 返回渲染后的 HTML（GitHub 把 Markdown 转成了带锚点的 HTML）
-        let html = await res.text()
-        // GitHub 返回的 HTML 是 <article> 包裹的片段，直接作为正文存储
-        if (html.startsWith('{')) {
-          // 可能返回了 JSON（Accept 头不匹配时 fallback），提取 content
-          try {
-            const j = JSON.parse(html) as { content?: string; encoding?: string }
-            if (j.encoding === 'base64' && j.content) {
-              html = Buffer.from(j.content, 'base64').toString('utf-8')
-            } else if (j.content) {
-              html = j.content
-            }
-          } catch { /* 用原始文本 */ }
-        }
+        // raw 格式直接返回 Markdown 源文本，本地用 marked 渲染（比 GitHub 服务端渲染保留更多结构，可提取目录）
+        const md = await res.text()
+        let html = ''
+        try { html = await marked.parse(md) } catch { html = `<pre>${md.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] ?? c))}</pre>` }
+        // README 中的相对图片/链接 → 绝对 URL（否则渲染时全挂）
+        html = fixRepoRelativeUrls(html, owner, repo)
         // 存入数据库，后续打开即不再重复请求
         if (html) {
           upsertItem({
@@ -656,6 +627,21 @@ function registerIpc() {
       } catch {
         return { html: '' }
       }
+    }) as never,
+
+    // ===== GitHub ★：OAuth Device Flow 一键登录 =====
+    'github:deviceLogin': (async () => {
+      return await startGithubDeviceLogin()
+    }) as never,
+    'github:abortLogin': (() => {
+      abortGithubDeviceLogin()
+    }) as never,
+    // ===== GitHub ★：Token 状态/手动写入（safeStorage 加密存储） =====
+    'github:tokenStatus': (() => {
+      return { has: hasGithubToken() }
+    }) as never,
+    'github:setToken': ((token: string) => {
+      setGithubToken(token || '')
     }) as never,
 
     // ===== Twitter/X 书签：导入本地导出文件（X API 读取书签需付费凭证，走导入最现实） =====
