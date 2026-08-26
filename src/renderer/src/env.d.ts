@@ -105,6 +105,7 @@ export interface NetLogEntry {
 interface CapybaraBridge {
   invoke(channel: string, ...args: unknown[]): Promise<unknown>
   onSourcesUpdated(cb: () => void): void
+  onGithubProgress(cb: (progress: { fetched: number; page: number }) => void): void
   onNetLog(cb: (entry: NetLogEntry) => void): void
   getPathForFile(file: File): string
 }

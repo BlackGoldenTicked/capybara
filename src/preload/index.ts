@@ -38,6 +38,10 @@ contextBridge.exposeInMainWorld('capybara', {
   onSourcesUpdated: (cb: () => void) => {
     ipcRenderer.on('sources:updated', () => cb())
   },
+  /** 订阅 GitHub Star 拉取进度（每拉完一页触发） */
+  onGithubProgress: (cb: (progress: { fetched: number; page: number }) => void) => {
+    ipcRenderer.on('github:progress', (_e, payload) => cb(payload))
+  },
   /** 订阅主进程网络诊断日志（开发者模式开启时，应用内面板会显示） */
   onNetLog: (cb: (entry: unknown) => void) => {
     ipcRenderer.on('net:log', (_e, payload) => cb(payload))

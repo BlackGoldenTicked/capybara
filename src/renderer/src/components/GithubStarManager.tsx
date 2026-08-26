@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { Icon } from './icons'
 
@@ -11,11 +11,18 @@ export function GithubStarManager() {
   const [ghMsg, setGhMsg] = useState('')
   const [loggingIn, setLoggingIn] = useState(false)
   const [userCode, setUserCode] = useState('')
+  const [fetching, setFetching] = useState(false)
+  const [progress, setProgress] = useState<{ fetched: number; page: number } | null>(null)
+  // 保持回调引用最新，避免 useEffect 闭包捕获旧值
+  const progressCb = useRef<(p: { fetched: number; page: number }) => void>(() => {})
+  progressCb.current = (p: { fetched: number; page: number }) => setProgress(p)
 
   useEffect(() => {
     void (window.capybara.invoke('settings:get', 'github_stars_user') as Promise<string>).then((r) => setGhUser(r || ''))
     void (window.capybara.invoke('settings:get', 'github_client_id') as Promise<string>).then((r) => setClientId(r || ''))
     void (window.capybara.invoke('github:tokenStatus') as Promise<{ has: boolean }>).then((r) => setHasToken(Boolean(r?.has)))
+    // 订阅主进程发来的 GitHub Star 拉取进度
+    window.capybara.onGithubProgress((p) => progressCb.current(p))
   }, [])
 
   // 一键登录：OAuth Device Flow（两步：先获取验证码并展示，再轮询 token）
@@ -58,12 +65,18 @@ export function GithubStarManager() {
 
   const fetchStars = async () => {
     if (!ghUser.trim()) { setGhMsg('请填写 GitHub 用户名'); return }
+    setFetching(true)
+    setProgress(null)
     setGhMsg('拉取中…')
     try {
       const r = await fetchGithubStars(ghUser.trim())
       setGhMsg(`已拉取 ${r.total} 个 Star / 新增 ${r.added} 条`)
       showToast('GitHub ★ 已更新')
     } catch (e) { setGhMsg('失败：' + (e as Error).message) }
+    finally {
+      setFetching(false)
+      setProgress(null)
+    }
   }
 
   return (
@@ -78,8 +91,8 @@ export function GithubStarManager() {
         <div className="src-field src-actions-field">
           <div aria-hidden="true" />
           <div className="src-actions">
-            <button onClick={() => void fetchStars()}><Icon name="github" size={14} /> 拉取 Star</button>
-            <span className="src-hint src-grow">{ghMsg || (hasToken ? '已授权（Token 加密存储）' : '未设置 Token（公开 API 速率 60 次/小时）')}</span>
+            <button onClick={() => void fetchStars()} disabled={fetching}><Icon name="github" size={14} /> {fetching ? '拉取中…' : '拉取 Star'}</button>
+            <span className="src-hint src-grow">{fetching && progress ? `拉取中… 已获取 ${progress.fetched} 个（第 ${progress.page} 页）` : (ghMsg || (hasToken ? '已授权（Token 加密存储）' : '未设置 Token（公开 API 速率 60 次/小时）'))}</span>
           </div>
         </div>
       </div>

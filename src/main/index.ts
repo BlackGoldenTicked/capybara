@@ -598,7 +598,9 @@ function registerIpc() {
     'github:fetchStars': (async (username: string) => {
       const name = (username || '').trim()
       if (!name) throw new Error('请填写 GitHub 用户名')
-      const { added, total } = await fetchStarsByUsername(name)
+      const { added, total } = await fetchStarsByUsername(name, (fetched, page) => {
+        mainWindow?.webContents.send('github:progress', { fetched, page })
+      })
       setSetting('github_stars_user', name)
       notifyRefresh()
       return { added, total }

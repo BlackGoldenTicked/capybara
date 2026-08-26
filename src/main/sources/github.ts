@@ -118,9 +118,12 @@ export async function fetchGithubStars(feed: Feed): Promise<number> {
 
 /**
  * IPC 入口：按用户名拉取 starred 仓库（无 Token 也可用公开 API，速率 60 次/小时）。
- * 返回 { added, total }。
+ * 返回 { added, total }。onProgress 回调在每拉完一页时触发，供 UI 实时显示进度。
  */
-export async function fetchStarsByUsername(username: string): Promise<{ added: number; total: number }> {
+export async function fetchStarsByUsername(
+  username: string,
+  onProgress?: (fetched: number, page: number) => void
+): Promise<{ added: number; total: number }> {
   const token = getGithubToken()
   let page = 1
   let added = 0
@@ -141,6 +144,9 @@ export async function fetchStarsByUsername(username: string): Promise<{ added: n
       seen.add(entry.repo.html_url)
       if (writeStar(entry, 'GitHub ★')) added++
     }
+
+    // 每拉完一页通知前端进度
+    onProgress?.(seen.size, page)
 
     if (!hasNextPage(res.headers.get('link'))) break
     page++
