@@ -87,7 +87,7 @@ function writeStar(entry: { repo: RawRepo; starredAt?: string }, sourceName: str
 
 /**
  * 调度器入口：通过 GitHub REST API 同步当前登录用户的 starred repos（需 Token）。
- * 全量分页拉取（Link header 判断末页），sort=created 按 star 时间从新到旧，无上限。
+ * 增量同步：sort=created&direction=desc 从新到旧分页拉取，当一整页全是已存在的 star 时提前终止。
  */
 export async function fetchGithubStars(feed: Feed): Promise<number> {
   const token = getGithubToken()
@@ -103,10 +103,14 @@ export async function fetchGithubStars(feed: Feed): Promise<number> {
     const data = await res.json() as StarEntry[]
     if (!data.length) break
 
+    let newInPage = 0
     for (const raw of data) {
       const entry = normalizeEntry(raw)
-      if (entry) { if (writeStar(entry, 'GitHub Star')) added++ }
+      if (entry) { if (writeStar(entry, 'GitHub Star')) { added++; newInPage++ } }
     }
+
+    // 增量终止：本页没有新增条目 → 后续更旧的页也不会有新数据，提前终止
+    if (newInPage === 0) break
 
     if (!hasNextPage(res.headers.get('link'))) break
     await new Promise((r) => setTimeout(r, 500))
@@ -119,6 +123,7 @@ export async function fetchGithubStars(feed: Feed): Promise<number> {
 
 /**
  * IPC 入口：按用户名拉取 starred 仓库（无 Token 也可用公开 API，速率 60 次/小时）。
+ * 增量同步：sort=created&direction=desc 从新到旧分页拉取，当一整页全是已存在的 star 时提前终止。
  * 返回 { added, total }。onProgress 回调在每拉完一页时触发，供 UI 实时显示进度。
  */
 export async function fetchStarsByUsername(
@@ -142,20 +147,23 @@ export async function fetchStarsByUsername(
     const data = await res.json() as StarEntry[]
     if (!data.length) break
 
+    let newInPage = 0
     for (const raw of data) {
       const entry = normalizeEntry(raw)
       if (!entry || !entry.repo.html_url) continue
       if (seen.has(entry.repo.html_url)) continue
       seen.add(entry.repo.html_url)
-      if (writeStar(entry, 'GitHub ★')) added++
+      if (writeStar(entry, 'GitHub ★')) { added++; newInPage++ }
     }
-    // 页间暂停：避免连续请求触发 GitHub 限流，给 storeCover 并发下载留出网络带宽
-    await new Promise((r) => setTimeout(r, 500))
-
     // 每拉完一页通知前端进度
     onProgress?.(seen.size, page)
 
+    // 增量终止：本页没有新增条目 → 后续更旧的页也不会有新数据，提前终止
+    if (newInPage === 0) break
+
     if (!hasNextPage(res.headers.get('link'))) break
+    // 页间暂停：避免连续请求触发 GitHub 限流，给 storeCover 并发下载留出网络带宽
+    await new Promise((r) => setTimeout(r, 500))
     page++
   }
   return { added, total: seen.size }
