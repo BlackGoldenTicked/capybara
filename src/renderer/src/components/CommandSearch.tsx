@@ -34,7 +34,7 @@ export function CommandSearch() {
     setLoading(true)
     searchTimer = setTimeout(async () => {
       try {
-        const rows = await window.capybara.invoke('items:list', 'all', query.trim(), null, null) as ItemRow[]
+        const rows = await window.capybara.invoke('items:list', 'all', query.trim(), '__search_all__', null) as ItemRow[]
         setResults(rows.slice(0, 50))
       } catch { setResults([]) }
       setLoading(false)

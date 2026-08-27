@@ -627,9 +627,10 @@ function buildListWhere(view: View, search: string, sourceType: string | null, s
     const q = `%${search}%`; args.push(q, q, q)
   }
   // 按来源过滤（GitHub ★ / Twitter 书签）时忽略 status 视图，展示该来源全部条目
-  if (sourceType) {
+  // '__search_all__' = 全局搜索模式（Cmd+K），不按来源类型过滤，搜索全部条目
+  if (sourceType && sourceType !== '__search_all__') {
     conds.push('i.source_type = ?'); args.push(sourceType)
-  } else {
+  } else if (sourceType !== '__search_all__') {
     // GitHub ★ / Twitter 书签是独立侧栏集合，不混入 RSS 类视图（含「全部」/「未读」），避免主阅读流被污染
     conds.push("i.source_type NOT IN ('github','x_bookmark')")
     if (view === 'rss') { conds.push("i.status = 'inbox' AND i.is_read = 0 AND i.kind = 'article'") }

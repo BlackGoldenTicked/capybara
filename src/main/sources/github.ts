@@ -109,9 +109,10 @@ export async function fetchGithubStars(feed: Feed): Promise<number> {
       if (entry) { if (writeStar(entry, 'GitHub Star')) { added++; newInPage++ } }
     }
 
-    // 增量终止：本页没有新增条目 → 后续更旧的页也不会有新数据，提前终止
+    // 增量终止：本页全部已存在 → 后续更旧的页也不会有新数据，提前终止
     if (newInPage === 0) break
 
+    // 只要有新数据就继续翻页（遇到全存在页自然会 break）
     if (!hasNextPage(res.headers.get('link'))) break
     await new Promise((r) => setTimeout(r, 500))
     page++

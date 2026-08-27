@@ -112,10 +112,10 @@ font-family: var(--font-ui);
 /* ===== 侧栏重组：常驻分组 + 分割线 ===== */
 .nav-group { margin-top: 6px; }
 .nav-group-title {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px; border-radius: 7px; cursor: pointer; user-select: none;
-  color: var(--color-text-tertiary); font-size: 11px; letter-spacing: 0.3px;
-  transition: background .12s var(--ease-out), color .12s var(--ease-out);
+display: flex; align-items: center; gap: 8px;
+padding: 6px 8px; border-radius: 7px; cursor: pointer; user-select: none;
+color: var(--color-text-tertiary); font-size: 13px; letter-spacing: 0.3px;
+transition: background .12s var(--ease-out), color .12s var(--ease-out);
 }
 .nav-group-title:hover { background: var(--color-background-tertiary); color: var(--color-text-secondary); }
 .nav-group-title.active { color: var(--color-text-info); font-weight: 600; }
@@ -1215,7 +1215,7 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 /* 阅读模式：舒适衬线排版（参考主流阅读器：~68ch 行宽、1.9 行高、链接与引用克制）。
    左对齐（两端对齐在中文下会产生难看的行尾大空隙，故不用 justify）。 */
 .reader-content.reading {
-  font-family: Georgia, 'Times New Roman', 'Songti SC', 'Noto Serif CJK SC', serif;
+  font-family: var(--font-reading, Georgia, 'Times New Roman', 'Songti SC', 'Noto Serif CJK SC', serif);
   font-size: 17px; line-height: 1.9; color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
 }
