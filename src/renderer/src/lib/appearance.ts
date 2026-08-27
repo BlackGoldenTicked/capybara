@@ -154,6 +154,8 @@ export function applyAppearance(a: Appearance): void {
   const stack = uiFontStack(a.fontFamily)
   root.style.setProperty('--font-reading', stack)
   root.style.setProperty('--font-ui', stack)
+  // 同时直接设置 body 元素的 font-family，确保字体立即生效（双保险：CSS 变量 + inline style）
+  if (document.body) document.body.style.fontFamily = stack
   root.style.setProperty('--font-weight', String(FONT_WEIGHT_VALUE(a.fontWeight)))
 
   // 镜像到 localStorage，下次启动首帧前由 bootAppearance 同步应用

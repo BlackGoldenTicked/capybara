@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, protocol, shell, dialog, nativeImage } fro
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
+import { execSync } from 'node:child_process'
 import {
   initDb, listItems, listItemsPage, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
   View, ItemStatus, MediaKind,
@@ -325,48 +326,67 @@ function createWindow() {
   if (getSetting('developer_mode') === '1') mainWindow.webContents.openDevTools()
 }
 
-/** 扫描系统字体目录，返回去重并清洗后的字体家族名称列表 */
+/** 扫描系统字体，返回去重后的字体家族名称列表（使用 system_profiler 获取真实 Family Name） */
 function scanSystemFonts(): string[] {
-  const dirs = [
-    '/System/Library/Fonts',
-    '/Library/Fonts',
-    path.join(os.homedir(), 'Library/Fonts')
-  ]
   const families = new Set<string>()
   const blacklist = new Set([
     'LastResort', 'Apple Color Emoji', 'Keyboard', 'CJK Symbols Fallback',
     'Symbols Fallback', 'AquaKana', 'Apple Braille', 'Apple Chancery',
-    'Bodoni Ornaments', 'Hoefler Text Ornaments', 'Apple Symbols'
+    'Bodoni Ornaments', 'Hoefler Text Ornaments', 'Apple Symbols',
+    '.Keyboard', '.SF NS Mono', '.SF NS'
   ])
-  // 常见字体文件名中的样式后缀（去掉这些以提取纯 family 名）
-  const styleSuffixes = [
-    '-Regular', '-Bold', '-Light', '-Medium', '-Thin', '-Italic', '-Oblique',
-    '-BoldItalic', '-SemiBold', '-ExtraBold', '-Black', '-Heavy',
-    '-UltraLight', '-Condensed', '-Extended', '-DemiBold', '-ExtraLight',
-    '-Semibold', '-Book', '-Roman', '-Normal', 'Regular', 'Bold', 'Light',
-    'Medium', 'Thin', 'Italic', 'Oblique', 'Black', 'Heavy', ' Bold Italic',
-    ' Medium Italic', ' Light Italic'
-  ]
 
-  for (const dir of dirs) {
-    if (!fs.existsSync(dir)) continue
-    try {
-      const files = fs.readdirSync(dir)
-      for (const file of files) {
-        const lower = file.toLowerCase()
-        if (!lower.endsWith('.ttf') && !lower.endsWith('.otf') && !lower.endsWith('.ttc') && !lower.endsWith('.dfont'))
-          continue
-        let name = file.replace(/\.(ttf|otf|ttc|dfont)$/i, '')
-        // 去掉 Collection 后缀（.ttc 文件名通常是 PostScript 名称）
-        for (const sfx of styleSuffixes) {
-          if (name.endsWith(sfx)) { name = name.slice(0, -sfx.length); break }
-        }
-        name = name.trim()
-        if (name.length > 1 && !name.startsWith('.') && !blacklist.has(name)) {
+  try {
+    // system_profiler SPFontsDataType 返回所有已安装字体的详细信息
+    // 每个字体块包含 "Family: XXX" 行，提取即得 CSS font-family 可识别的名称
+    const output = execSync('system_profiler SPFontsDataType 2>/dev/null', {
+      encoding: 'utf-8',
+      timeout: 15000,
+      maxBuffer: 20 * 1024 * 1024 // 字体列表可能很大
+    })
+    for (const line of output.split('\n')) {
+      const m = line.match(/^\s+Family:\s+(.+)$/)
+      if (m) {
+        const name = m[1].trim()
+        if (name.length > 1 && !blacklist.has(name)) {
           families.add(name)
         }
       }
-    } catch { /* 目录不可读则跳过 */ }
+    }
+  } catch {
+    // system_profiler 失败时回退到文件名扫描
+    const dirs = [
+      '/System/Library/Fonts',
+      '/Library/Fonts',
+      path.join(os.homedir(), 'Library/Fonts')
+    ]
+    const styleSuffixes = [
+      '-Regular', '-Bold', '-Light', '-Medium', '-Thin', '-Italic', '-Oblique',
+      '-BoldItalic', '-SemiBold', '-ExtraBold', '-Black', '-Heavy',
+      '-UltraLight', '-Condensed', '-Extended', '-DemiBold', '-ExtraLight',
+      '-Semibold', '-Book', '-Roman', '-Normal', 'Regular', 'Bold', 'Light',
+      'Medium', 'Thin', 'Italic', 'Oblique', 'Black', 'Heavy', ' Bold Italic',
+      ' Medium Italic', ' Light Italic'
+    ]
+    for (const dir of dirs) {
+      if (!fs.existsSync(dir)) continue
+      try {
+        const files = fs.readdirSync(dir)
+        for (const file of files) {
+          const lower = file.toLowerCase()
+          if (!lower.endsWith('.ttf') && !lower.endsWith('.otf') && !lower.endsWith('.ttc') && !lower.endsWith('.dfont'))
+            continue
+          let name = file.replace(/\.(ttf|otf|ttc|dfont)$/i, '')
+          for (const sfx of styleSuffixes) {
+            if (name.endsWith(sfx)) { name = name.slice(0, -sfx.length); break }
+          }
+          name = name.trim()
+          if (name.length > 1 && !name.startsWith('.') && !blacklist.has(name)) {
+            families.add(name)
+          }
+        }
+      } catch { /* 目录不可读则跳过 */ }
+    }
   }
 
   // 补充常见缺漏的系统中文字体
