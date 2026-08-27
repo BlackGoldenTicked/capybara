@@ -51,7 +51,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
   dragging?: boolean
   searchRef?: RefObject<HTMLInputElement>
 }) {
-  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, search, setSearch, openSettings, settingsOpen } = useStore()
+  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, search, setSearch, openSettings, settingsOpen, ghSyncing, ghSyncError, retryGithubStars } = useStore()
   const [editingBoard, setEditingBoard] = useState<number | null>(null)
   const [boardName, setBoardName] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
@@ -94,7 +94,11 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
             <span className="rail-icon"><Icon name={n.icon} size={19} /></span>
           </button>
         ))}
-        <button className={`rail-btn ${activeSourceType === 'github' ? 'active' : ''}`} title={`GitHub ★（${sourceCounts['github'] || 0}）`} {...pressBtn(() => setSourceType('github'))}><span className="rail-icon"><Icon name="github" size={19} /></span></button>
+        <button className={`rail-btn ${activeSourceType === 'github' ? 'active' : ''}`} title={`GitHub ★（${sourceCounts['github'] || 0}）${ghSyncing ? ' · 同步中…' : ghSyncError ? ' · 同步失败，点击重试' : ''}`} {...pressBtn(() => ghSyncError ? retryGithubStars() : setSourceType('github'))}>
+          <span className="rail-icon">
+            {ghSyncing ? <Icon name="refresh" size={19} className="spin" /> : <Icon name="github" size={19} />}
+          </span>
+        </button>
         <button className={`rail-btn ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} title={`Twitter 书签（${sourceCounts['x_bookmark'] || 0}）`} {...pressBtn(() => setSourceType('x_bookmark'))}><span className="rail-icon"><Icon name="twitter" size={19} /></span></button>
         <div className="rail-sep" />
         <button className={`rail-btn ${screen === 'board' ? 'active' : ''}`} title="白板" {...pressBtn(() => setScreen('board'))}><span className="rail-icon"><Icon name="board" size={19} /></span></button>
@@ -142,9 +146,17 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
       <div className={`side-item ${activeSourceType === 'github' ? 'active' : ''}`} role="button" tabIndex={0}
         {...press(() => setSourceType('github'))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSourceType('github') } }}>
-        <span className="side-ico"><Icon name="github" size={16} /></span>
+        <span className="side-ico">
+          {ghSyncing ? <Icon name="refresh" size={16} className="spin" /> : <Icon name="github" size={16} />}
+        </span>
         <span>GitHub ★</span>
-        <span className="count">{sourceCounts['github'] || ''}</span>
+        {ghSyncError ? (
+          <span className="gh-sync-retry" title={`同步失败：${ghSyncError}`} onClick={(e) => { e.stopPropagation(); void retryGithubStars() }}>
+            重试
+          </span>
+        ) : (
+          <span className="count">{sourceCounts['github'] || ''}</span>
+        )}
       </div>
 
       <div className="nav-sep" />

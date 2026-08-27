@@ -28,6 +28,8 @@ interface State {
   links: BoardLink[]
   toast: string
   zenMode: boolean
+  ghSyncing: boolean
+  ghSyncError: string
 
   appearance: Appearance
   soundEnabled: boolean
@@ -87,6 +89,7 @@ interface State {
   updateLink: (id: number, label: string) => Promise<void>
   autoPos: () => { x: number; y: number }
   fetchGithubStars: (username: string) => Promise<{ added: number; total: number }>
+  retryGithubStars: () => Promise<void>
   importTwitterBookmarks: () => Promise<{ added: number; total: number }>
 
   initAppearance: () => Promise<void>
@@ -113,6 +116,7 @@ export const useStore = create<State>((set, get) => ({
   items: [], itemsPage: 0, itemsDone: false, itemsLoadingMore: false, counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
   selectedId: null, search: '', quickAddOpen: false,
   activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '', zenMode: false,
+  ghSyncing: false, ghSyncError: '',
 
   appearance: DEFAULT_APPEARANCE,
   soundEnabled: false,
@@ -376,9 +380,33 @@ export const useStore = create<State>((set, get) => ({
   },
 
   fetchGithubStars: async (username) => {
-    const r = await window.capybara.invoke('github:fetchStars', username) as { added: number; total: number }
-    await get().load()
-    return r
+    set({ ghSyncing: true, ghSyncError: '' })
+    try {
+      const r = await window.capybara.invoke('github:fetchStars', username) as { added: number; total: number }
+      await get().load()
+      if (r.added > 0) {
+        set({ toast: `GitHub Star 已同步，新增 ${r.added} 条` })
+        setTimeout(() => { if (get().toast === `GitHub Star 已同步，新增 ${r.added} 条`) set({ toast: '' }) }, 3000)
+      } else {
+        set({ toast: 'GitHub Star 已是最新' })
+        setTimeout(() => { if (get().toast === 'GitHub Star 已是最新') set({ toast: '' }) }, 2000)
+      }
+      return r
+    } catch (e) {
+      const msg = (e as Error).message || 'GitHub Star 同步失败'
+      set({ ghSyncError: msg })
+      throw e
+    } finally {
+      set({ ghSyncing: false })
+    }
+  },
+
+  retryGithubStars: async () => {
+    const username = await (window.capybara.invoke('settings:get', 'github_stars_user') as Promise<string>)
+    if (!username?.trim()) return
+    try {
+      await get().fetchGithubStars(username.trim())
+    } catch { /* 错误已在 fetchGithubStars 中处理 */ }
   },
   importTwitterBookmarks: async () => {
     const r = await window.capybara.invoke('twitter:importBookmarks') as { added: number; total: number }
