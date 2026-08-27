@@ -154,9 +154,25 @@ export function applyAppearance(a: Appearance): void {
   const stack = uiFontStack(a.fontFamily)
   root.style.setProperty('--font-reading', stack)
   root.style.setProperty('--font-ui', stack)
-  // 同时直接设置 body 元素的 font-family，确保字体立即生效（双保险：CSS 变量 + inline style）
-  if (document.body) document.body.style.fontFamily = stack
   root.style.setProperty('--font-weight', String(FONT_WEIGHT_VALUE(a.fontWeight)))
+
+  // 注入全局字体覆盖样式：确保所有元素（含 input/button/select/textarea）
+  // 都使用用户选择的字体，不被任何 CSS 规则的 fallback 覆盖
+  let styleEl = document.getElementById('font-override') as HTMLStyleElement | null
+  if (!styleEl) {
+    styleEl = document.createElement('style')
+    styleEl.id = 'font-override'
+    document.head.appendChild(styleEl)
+  }
+  styleEl.textContent = `
+    html, body, input, textarea, select, button,
+    .reader-content, .reader-content.reading {
+      font-family: ${stack} !important;
+    }
+    code, pre, .feed-header .keys, .feed-row .fr-url, .diag-mono {
+      font-family: ${DEFAULT_MONO_STACK} !important;
+    }
+  `
 
   // 镜像到 localStorage，下次启动首帧前由 bootAppearance 同步应用
   cacheAppearance(a)

@@ -6,7 +6,7 @@
  * Step 3: 全量刷新诊断（所有源刷新，每源 HTTP/耗时/条目）
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '../store'
 import { Icon } from './icons'
 
@@ -339,6 +339,9 @@ export function DiagPanel() {
         )}
       </section>
 
+      {/* ===== 字体诊断 ===== */}
+      <FontDiagSection />
+
       {/* ===== 诊断结论 ===== */}
       <section className="diag-conclusion">
         <h3>📋 诊断结论</h3>
@@ -349,5 +352,96 @@ export function DiagPanel() {
         </ul>
       </section>
     </div>
+  )
+}
+
+// ============== 字体诊断 ==============
+
+function FontDiagSection() {
+  const { appearance, updateAppearance, showToast } = useStore()
+  const [fontList, setFontList] = useState<string[]>([])
+  const [scanning, setScanning] = useState(false)
+  const [currentFont, setCurrentFont] = useState('')
+
+  useEffect(() => {
+    setCurrentFont(appearance.fontFamily || '系统默认')
+  }, [appearance.fontFamily])
+
+  // 重新扫描系统字体
+  const rescanFonts = async () => {
+    setScanning(true)
+    try {
+      const list = await window.capybara.invoke('app:fontList') as string[]
+      setFontList(list)
+      showToast(`已重新扫描，共 ${list.length} 个可用字体`)
+    } catch {
+      showToast('字体扫描失败')
+    }
+    setScanning(false)
+  }
+
+  // 清除已保存的字体设置，恢复系统默认
+  const resetFont = () => {
+    updateAppearance({ fontFamily: '' })
+    showToast('已清除字体设置，恢复系统默认')
+  }
+
+  // 测试某个字体是否生效：设置后检查 computed style
+  const testFont = async (font: string) => {
+    updateAppearance({ fontFamily: font })
+    // 等待 React 重渲染后检查 computed style
+    setTimeout(() => {
+      const computed = window.getComputedStyle(document.body).fontFamily
+      const expected = `"${font}"`
+      const matched = computed.startsWith(expected) || computed.includes(font)
+      showToast(matched ? `✓ "${font}" 已生效` : `⚠ "${font}" 可能未生效（computed: ${computed.slice(0, 60)}）`)
+    }, 100)
+  }
+
+  return (
+    <section className="diag-step">
+      <h3>
+        <span className="diag-step-num">⚙</span> 字体诊断
+      </h3>
+      <div className="diag-step-controls">
+        <span className="diag-result-row">当前字体: <b>{currentFont}</b></span>
+        <button onClick={rescanFonts} disabled={scanning} className="diag-btn">
+          {scanning ? '扫描中…' : '重新扫描系统字体'}
+        </button>
+        <button onClick={resetFont} className="diag-btn force">
+          清除字体设置
+        </button>
+      </div>
+
+      <div className="diag-step-controls" style={{ marginTop: 8 }}>
+        <select
+          value={appearance.fontFamily}
+          onChange={(e) => testFont(e.target.value)}
+          className="diag-select"
+          style={{ maxWidth: 260 }}
+        >
+          <option value="">系统默认</option>
+          {(fontList.length > 0 ? fontList : []).map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+        <span className="diag-mono dim">选择字体后会自动应用并检测是否生效</span>
+      </div>
+
+      {fontList.length > 0 && (
+        <details className="diag-details">
+          <summary>可用字体列表（{fontList.length} 个）</summary>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px 12px', fontSize: 12 }}>
+            {fontList.map((f) => (
+              <span key={f} className="diag-mono" style={{ cursor: 'pointer', padding: '2px 4px', borderRadius: 4 }}
+                onClick={() => testFont(f)}
+                title={`点击测试 "${f}"`}>
+                {f}
+              </span>
+            ))}
+          </div>
+        </details>
+      )}
+    </section>
   )
 }
