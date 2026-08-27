@@ -21,6 +21,7 @@ interface State {
   selectedId: number | null
   search: string
   quickAddOpen: boolean
+  cmdkOpen: boolean
   activeBoardId: number | null
   activeSourceType: string | null
   activeFeed: string | null
@@ -52,6 +53,7 @@ interface State {
   setSourceType: (t: string | null) => void
   setSearch: (s: string) => void
   setQuickAddOpen: (open: boolean) => void
+  setCmdkOpen: (open: boolean) => void
   setActiveFeed: (name: string | null) => void
   showToast: (msg: string) => void
   toggleZenMode: () => void
@@ -114,7 +116,8 @@ export const useStore = create<State>((set, get) => ({
   screen: 'library',
   view: 'all',
   items: [], itemsPage: 0, itemsDone: false, itemsLoadingMore: false, counts: emptyCounts, sourceCounts: {}, feeds: [], boards: [],
-  selectedId: null, search: '', quickAddOpen: false,
+  quickAddOpen: false,
+  cmdkOpen: false,
   activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '', zenMode: false,
   ghSyncing: false, ghSyncError: '',
 
@@ -143,6 +146,7 @@ export const useStore = create<State>((set, get) => ({
   },
   setSearch: (search) => { set({ search }); void get().load() },
   setQuickAddOpen: (quickAddOpen) => set({ quickAddOpen }),
+  setCmdkOpen: (cmdkOpen) => set({ cmdkOpen }),
   setActiveFeed: (name) => {
     const next = get().activeFeed === name ? null : name
     set({ activeFeed: next, selectedId: null })

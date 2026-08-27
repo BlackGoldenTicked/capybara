@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, Fragment, type CSSProperties, type RefObject, type ReactNode } from 'react'
+import { useState, useRef, useEffect, Fragment, type CSSProperties, type ReactNode } from 'react'
 import { useStore } from '../store'
 import type { View } from '../env'
 import { Icon, type IconName } from './icons'
@@ -45,13 +45,12 @@ function Section({ id, title, collapsedSec, onToggle, action, children }: {
   )
 }
 
-export function Sidebar({ collapsed = false, style, dragging = false, searchRef }: {
+export function Sidebar({ collapsed = false, style, dragging = false }: {
   collapsed?: boolean
   style?: CSSProperties
   dragging?: boolean
-  searchRef?: RefObject<HTMLInputElement>
 }) {
-  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, search, setSearch, openSettings, settingsOpen, ghSyncing, ghSyncError, retryGithubStars } = useStore()
+  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, openSettings, settingsOpen, ghSyncing, ghSyncError, retryGithubStars } = useStore()
   const [editingBoard, setEditingBoard] = useState<number | null>(null)
   const [boardName, setBoardName] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
@@ -111,12 +110,6 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
 
   return (
     <aside className={`sidebar ${dragging ? 'dragging' : ''}`} style={style}>
-      <div className="sidebar-search">
-        <input ref={searchRef} className="sidebar-search-input"
-          placeholder="搜索标题、摘要、正文…"
-          value={search} onChange={(e) => setSearch(e.target.value)} />
-      </div>
-
       {/* 全部（常驻，不折叠）：未读收件箱 + 三个分类，组内不加分隔线 */}
       <nav className="nav-group">
         {/* 「全部」分组标题：补左侧图标列，使标题文字与下方条目文字在同一基线对齐 */}
@@ -154,7 +147,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
           <span className="gh-sync-status">同步中…</span>
         ) : ghSyncError ? (
           <span className="gh-sync-retry" title={`同步失败：${ghSyncError}，点击重试`} onClick={(e) => { e.stopPropagation(); void retryGithubStars() }}>
-            同步失败·重试
+            失败·重试
           </span>
         ) : (
           <span className="count">{sourceCounts['github'] || ''}</span>

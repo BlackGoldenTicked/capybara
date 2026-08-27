@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar'
 import { ItemList } from './components/ItemList'
 import { ReaderPane } from './components/ReaderPane'
 import { QuickAdd } from './components/QuickAdd'
+import { CommandSearch } from './components/CommandSearch'
 import { BoardView } from './components/BoardView'
 import { SettingsView } from './components/SettingsView'
 import { FeedsPanel } from './components/FeedsPanel'
@@ -30,8 +31,7 @@ type DividerWhich = 'side' | 'feed' | 'list'
 interface DragState { which: DividerWhich; startX: number; startW: number }
 
 export default function App() {
-  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, toast: toastMsg, view, activeSourceType, developerMode, zenMode, exitZenMode, settingsOpen, closeSettings } = useStore()
-  const searchRef = useRef<HTMLInputElement>(null)
+  const { screen, load, loadFeeds, loadBoards, moveSelection, setStatus, selectedId, items, setQuickAddOpen, setCmdkOpen, toast: toastMsg, view, activeSourceType, developerMode, zenMode, exitZenMode, settingsOpen, closeSettings } = useStore()
   const dragRef = useRef<DragState | null>(null)
 
   const [sideW, setSideW] = useState(196)
@@ -85,13 +85,25 @@ export default function App() {
     window.capybara.onSourcesUpdated(cb)
   }, [])
 
+  // Cmd+K / Ctrl+K：弹出全局搜索
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setCmdkOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [setCmdkOpen])
+
   // 全局快捷键：使用「设置 → 快捷键」中可配置的组合键
   useEffect(() => {
     const runAction = (action: ShortcutAction, st: ReturnType<typeof useStore.getState>) => {
       const item = st.items.find((i) => i.id === st.selectedId)
       switch (action) {
         case 'openSettings': st.openSettings('appearance'); break
-        case 'focusSearch': searchRef.current?.focus(); break
+        case 'focusSearch': setCmdkOpen(true); break
         case 'refresh': void st.refreshAll(); break
         case 'quickAdd': st.setQuickAddOpen(true); break
         case 'goRss': st.setView('rss'); break
@@ -135,7 +147,7 @@ export default function App() {
       }
 
       // 「/」便利键：聚焦搜索（与可配置快捷键并存，且输入时不触发）
-      if (e.key === '/' && !typing) { e.preventDefault(); searchRef.current?.focus(); return }
+      if (e.key === '/' && !typing) { e.preventDefault(); setCmdkOpen(true); return }
 
       const st = useStore.getState()
       const combo = eventToCombo(e)
@@ -202,7 +214,7 @@ export default function App() {
         <span className="hint">{version || 'v0.7.6'}</span>
       </div>
       <div className="main">
-        {!isZen && !sideHidden && <Sidebar collapsed={sideCollapsed} style={sidebarStyle} dragging={dragging} searchRef={searchRef} />}
+        {!isZen && !sideHidden && <Sidebar collapsed={sideCollapsed} style={sidebarStyle} dragging={dragging} />}
         {!isZen && !sideHidden && <div className="divider v" onPointerDown={onDividerDown('side')} onPointerMove={onDividerMove} onPointerUp={onDividerUp} />}
         <div className="content">
           <ErrorBoundary>
@@ -222,6 +234,7 @@ export default function App() {
         </div>
       </div>
       <QuickAdd />
+<CommandSearch />
       {settingsOpen && <ErrorBoundary><SettingsView /></ErrorBoundary>}
       {toastMsg && <div className="toast">{toastMsg}</div>}
       {developerMode && <NetPanel />}
