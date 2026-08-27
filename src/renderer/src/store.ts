@@ -403,10 +403,15 @@ export const useStore = create<State>((set, get) => ({
 
   retryGithubStars: async () => {
     const username = await (window.capybara.invoke('settings:get', 'github_stars_user') as Promise<string>)
-    if (!username?.trim()) return
+    if (!username?.trim()) {
+      get().showToast('未配置 GitHub 用户名，请先在设置中填写')
+      return
+    }
     try {
       await get().fetchGithubStars(username.trim())
-    } catch { /* 错误已在 fetchGithubStars 中处理 */ }
+    } catch (e) {
+      get().showToast('同步失败：' + ((e as Error).message || '未知错误'))
+    }
   },
   importTwitterBookmarks: async () => {
     const r = await window.capybara.invoke('twitter:importBookmarks') as { added: number; total: number }

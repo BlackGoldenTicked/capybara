@@ -94,7 +94,7 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
             <span className="rail-icon"><Icon name={n.icon} size={19} /></span>
           </button>
         ))}
-        <button className={`rail-btn ${activeSourceType === 'github' ? 'active' : ''}`} title={`GitHub ★（${sourceCounts['github'] || 0}）${ghSyncing ? ' · 同步中…' : ghSyncError ? ' · 同步失败，点击重试' : ''}`} {...pressBtn(() => ghSyncError ? retryGithubStars() : setSourceType('github'))}>
+        <button className={`rail-btn ${activeSourceType === 'github' ? 'active' : ''}`} title={`GitHub ★（${sourceCounts['github'] || 0}）${ghSyncing ? ' · 同步中…' : ghSyncError ? ` · 同步失败：${ghSyncError}` : ''}`} {...pressBtn(() => ghSyncError ? retryGithubStars() : setSourceType('github'))}>
           <span className="rail-icon">
             {ghSyncing ? <Icon name="refresh" size={19} className="spin" /> : <Icon name="github" size={19} />}
           </span>
@@ -150,9 +150,11 @@ export function Sidebar({ collapsed = false, style, dragging = false, searchRef 
           {ghSyncing ? <Icon name="refresh" size={16} className="spin" /> : <Icon name="github" size={16} />}
         </span>
         <span>GitHub ★</span>
-        {ghSyncError ? (
-          <span className="gh-sync-retry" title={`同步失败：${ghSyncError}`} onClick={(e) => { e.stopPropagation(); void retryGithubStars() }}>
-            重试
+        {ghSyncing ? (
+          <span className="gh-sync-status">同步中…</span>
+        ) : ghSyncError ? (
+          <span className="gh-sync-retry" title={`同步失败：${ghSyncError}，点击重试`} onClick={(e) => { e.stopPropagation(); void retryGithubStars() }}>
+            同步失败·重试
           </span>
         ) : (
           <span className="count">{sourceCounts['github'] || ''}</span>
