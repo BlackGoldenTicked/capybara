@@ -371,7 +371,7 @@ function FontDiagSection() {
   const rescanFonts = async () => {
     setScanning(true)
     try {
-      const list = await window.capybara.invoke('app:fontList') as string[]
+      const list = await window.capybara.invoke('app:fontListRefresh') as string[]
       setFontList(list)
       showToast(`已重新扫描，共 ${list.length} 个可用字体`)
     } catch {

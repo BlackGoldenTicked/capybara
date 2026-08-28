@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, protocol, shell, dialog, nativeImage } fro
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
-import { execSync } from 'node:child_process'
+// execSync 已废弃：不再使用 system_profiler 等同步子进程命令（会阻塞主进程导致 UI 卡死）
 import {
   initDb, listItems, listItemsPage, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
   View, ItemStatus, MediaKind,
@@ -326,77 +326,50 @@ function createWindow() {
   if (getSetting('developer_mode') === '1') mainWindow.webContents.openDevTools()
 }
 
-/** 扫描系统字体，返回去重后的字体家族名称列表（使用 system_profiler 获取真实 Family Name） */
+/** 扫描用户安装的字体（~/Library/Fonts），返回去重后的字体家族名称列表
+ *  只返回用户自行安装的字体，排除系统自带字体（/System/Library/Fonts、/Library/Fonts）
+ *  注意：不使用 system_profiler（该命令同步执行需 10-30 秒，会阻塞主进程导致 UI 卡死）
+ *  改为直接扫描目录文件名，毫秒级完成 */
 function scanSystemFonts(): string[] {
-  const families = new Set<string>()
-  const blacklist = new Set([
-    'LastResort', 'Apple Color Emoji', 'Keyboard', 'CJK Symbols Fallback',
-    'Symbols Fallback', 'AquaKana', 'Apple Braille', 'Apple Chancery',
-    'Bodoni Ornaments', 'Hoefler Text Ornaments', 'Apple Symbols',
-    '.Keyboard', '.SF NS Mono', '.SF NS'
-  ])
+  // 缓存：同一进程内只扫描一次，避免每次打开设置页都重新扫描
+  if (fontCache) return fontCache
 
-  try {
-    // system_profiler SPFontsDataType 返回所有已安装字体的详细信息
-    // 每个字体块包含 "Family: XXX" 行，提取即得 CSS font-family 可识别的名称
-    const output = execSync('system_profiler SPFontsDataType 2>/dev/null', {
-      encoding: 'utf-8',
-      timeout: 15000,
-      maxBuffer: 20 * 1024 * 1024 // 字体列表可能很大
-    })
-    for (const line of output.split('\n')) {
-      const m = line.match(/^\s+Family:\s+(.+)$/)
-      if (m) {
-        const name = m[1].trim()
-        if (name.length > 1 && !blacklist.has(name)) {
+  const families = new Set<string>()
+  const userFontDir = path.join(os.homedir(), 'Library/Fonts')
+
+  const styleSuffixes = [
+    '-Regular', '-Bold', '-Light', '-Medium', '-Thin', '-Italic', '-Oblique',
+    '-BoldItalic', '-SemiBold', '-ExtraBold', '-Black', '-Heavy',
+    '-UltraLight', '-Condensed', '-Extended', '-DemiBold', '-ExtraLight',
+    '-Semibold', '-Book', '-Roman', '-Normal', 'Regular', 'Bold', 'Light',
+    'Medium', 'Thin', 'Italic', 'Oblique', 'Black', 'Heavy',
+    'VariableFont_wght', '[wght]'
+  ]
+  if (fs.existsSync(userFontDir)) {
+    try {
+      const files = fs.readdirSync(userFontDir)
+      for (const file of files) {
+        const lower = file.toLowerCase()
+        if (!lower.endsWith('.ttf') && !lower.endsWith('.otf') && !lower.endsWith('.ttc') && !lower.endsWith('.dfont'))
+          continue
+        let name = file.replace(/\.(ttf|otf|ttc|dfont)$/i, '')
+        for (const sfx of styleSuffixes) {
+          if (name.endsWith(sfx)) { name = name.slice(0, -sfx.length); break }
+        }
+        name = name.trim()
+        if (name.length > 1 && !name.startsWith('.')) {
           families.add(name)
         }
       }
-    }
-  } catch {
-    // system_profiler 失败时回退到文件名扫描
-    const dirs = [
-      '/System/Library/Fonts',
-      '/Library/Fonts',
-      path.join(os.homedir(), 'Library/Fonts')
-    ]
-    const styleSuffixes = [
-      '-Regular', '-Bold', '-Light', '-Medium', '-Thin', '-Italic', '-Oblique',
-      '-BoldItalic', '-SemiBold', '-ExtraBold', '-Black', '-Heavy',
-      '-UltraLight', '-Condensed', '-Extended', '-DemiBold', '-ExtraLight',
-      '-Semibold', '-Book', '-Roman', '-Normal', 'Regular', 'Bold', 'Light',
-      'Medium', 'Thin', 'Italic', 'Oblique', 'Black', 'Heavy', ' Bold Italic',
-      ' Medium Italic', ' Light Italic'
-    ]
-    for (const dir of dirs) {
-      if (!fs.existsSync(dir)) continue
-      try {
-        const files = fs.readdirSync(dir)
-        for (const file of files) {
-          const lower = file.toLowerCase()
-          if (!lower.endsWith('.ttf') && !lower.endsWith('.otf') && !lower.endsWith('.ttc') && !lower.endsWith('.dfont'))
-            continue
-          let name = file.replace(/\.(ttf|otf|ttc|dfont)$/i, '')
-          for (const sfx of styleSuffixes) {
-            if (name.endsWith(sfx)) { name = name.slice(0, -sfx.length); break }
-          }
-          name = name.trim()
-          if (name.length > 1 && !name.startsWith('.') && !blacklist.has(name)) {
-            families.add(name)
-          }
-        }
-      } catch { /* 目录不可读则跳过 */ }
-    }
+    } catch { /* 目录不可读则跳过 */ }
   }
 
-  // 补充常见缺漏的系统中文字体
-  const always = ['PingFang SC', 'PingFang TC', 'Hiragino Sans GB']
-  for (const a of always) {
-    if (!families.has(a)) families.add(a)
-  }
-
-  return [...families].sort((a, b) => a.localeCompare(b, 'zh-Hans'))
+  fontCache = [...families].sort((a, b) => a.localeCompare(b, 'zh-Hans'))
+  return fontCache
 }
+
+/** 字体扫描缓存（进程内），null 表示尚未扫描 */
+let fontCache: string[] | null = null
 function notifyRefresh() {
   mainWindow?.webContents.send('sources:updated')
 }
@@ -405,6 +378,8 @@ function registerIpc() {
   const handlers: Record<string, (...args: never[]) => unknown> = {
     'app:version': () => app.getVersion(),
     'app:fontList': (() => scanSystemFonts()) as never,
+    // 强制重新扫描系统字体（清除缓存）
+    'app:fontListRefresh': (() => { fontCache = null; return scanSystemFonts() }) as never,
     // 应用图标（Dock logo）：列出内置 logo 目录下所有 PNG，供设置页切换
     'app:logoList': (() => listLogos()) as never,
     // 切换 Dock 图标：持久化选择 + 立即应用到 Dock

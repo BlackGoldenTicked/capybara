@@ -115,7 +115,7 @@ export function GithubStarManager() {
         </div>
         {userCode && (
           <div className="src-field">
-            <label>验证码（已复制到剪贴板，粘贴到 GitHub 授权页）</label>
+            <label>验证码</label>
             <div className="github-code-display">{userCode}</div>
           </div>
         )}

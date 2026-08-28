@@ -9,6 +9,7 @@ import { DiagPanel } from './DiagPanel'
 import { press, pressBtn } from '../lib/press'
 import {
   THEME_OPTIONS, COLOR_THEMES,
+  uiFontStack,
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
@@ -196,7 +197,7 @@ function AppearanceTab() {
             borderRadius: 'var(--ds-radius-md, 12px)',
             backgroundColor: 'var(--ds-on-surface, rgba(127, 127, 127, 0.06))',
             fontSize: `${fontPx}px`,
-            fontFamily: appearance.fontFamily || 'inherit',
+            fontFamily: uiFontStack(appearance.fontFamily),
             fontWeight: appearance.fontWeight === 'thin' ? 300 : appearance.fontWeight === 'bold' ? 700 : 400,
             marginBottom: 10,
             transition: 'font-size var(--ds-motion-soft, 240ms ease)'
