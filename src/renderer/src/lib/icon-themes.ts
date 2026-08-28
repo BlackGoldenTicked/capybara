@@ -26,6 +26,8 @@ export type IconName =
   | 'tag' | 'trash' | 'check' | 'external' | 'chevronDown' | 'chevronRight'
   | 'upload' | 'book' | 'github' | 'twitter' | 'palette' | 'music' | 'keyboard' | 'undo' | 'info' | 'activity'
   | 'list' | 'rows' | 'panelLeftClose' | 'panelLeftOpen' | 'heart' | 'sparkles'
+  | 'alignLeft' | 'alignRight' | 'alignTop' | 'alignBottom' | 'distributeH' | 'distributeV'
+  | 'star' | 'maximize'
 
 /** 图标主题 ID。'default' 为内置 Lucide 线性集。 */
 export type IconThemeId = string

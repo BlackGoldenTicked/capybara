@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { ItemRow, Card, CardKind, CardPayload, BoardLink } from '../env'
 import { CardEditor } from './CardEditor'
+import { BoardListview } from './BoardListview'
 import { Icon, type IconName } from './icons'
 
 const CARD_TYPES: Array<{ kind: CardKind; label: string; icon: IconName; desc: string }> = [
@@ -24,6 +25,9 @@ function safeParse(p: string): CardPayload { try { return p ? JSON.parse(p) : {}
 /** 这些元素上的按下不应触发画布平移 / 也不应被画布吞掉点击 */
 const NO_PAN = 'button, a, input, textarea, .board-toolbar, .board-center-palette, .card-edit, .card-del, .card-link-dot'
 
+/** 框选多卡片的功能键（可配置为 Shift/Alt/Ctrl，默认 Shift） */
+const MULTI_SELECT_KEY = 'shift'
+
 export function BoardView() {
   const { cards, links, activeBoardId, boards, createBoard, addRefCard, addCard, moveCard, deleteCard, showToast, addLink, deleteLink, updateLink, renameBoard, deleteBoard, autoPos } = useStore()
   const [itemMap, setItemMap] = useState<Record<number, ItemRow>>({})
@@ -41,10 +45,21 @@ export function BoardView() {
   const [editingLinkId, setEditingLinkId] = useState<number | null>(null)
   const [linkLabelDraft, setLinkLabelDraft] = useState('')
 
+  // 选中状态：单选 / 多选 / 框选
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [selectBox, setSelectBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  // 剪贴板：复制的卡片数据
+  const clipboardRef = useRef<Card[]>([])
+  // 撤销/重做栈
+  const undoStack = useRef<Array<{ type: string; data: unknown }>>([])
+  const redoStack = useRef<Array<{ type: string; data: unknown }>>([])
+  // 视图模式：board 白板 / list 列表
+  const [viewMode, setViewMode] = useState<'board' | 'list'>('board')
+
   // 拖拽期间的本地覆盖位置（rAF 节流，松手才提交一次，避免每帧全画布重渲染 #3）
   const [localPos, setLocalPos] = useState<Record<number, { x: number; y: number }>>({})
   const rafRef = useRef<number | null>(null)
-  const dragRef = useRef<{ mode: 'pan' | 'node' | null; id?: number; sx: number; sy: number; ox: number; oy: number; moved: boolean }>(
+  const dragRef = useRef<{ mode: 'pan' | 'node' | 'select' | null; id?: number; sx: number; sy: number; ox: number; oy: number; moved: boolean }>(
     { mode: null, sx: 0, sy: 0, ox: 0, oy: 0, moved: false }
   )
   const linkRef = useRef<{ fromId: number } | null>(null)
@@ -76,6 +91,18 @@ export function BoardView() {
     if (t.closest(NO_PAN)) return        // 关键修复：UI 控件上的按下不触发平移，也不吞点击
     if (linkRef.current) return
     if (t.closest('.board-card')) return // 卡片拖动单独处理
+    // 按住功能键时启动框选模式
+    if (e.shiftKey) {
+      const rect = canvasRef.current!.getBoundingClientRect()
+      const sx = (e.clientX - rect.left - pan.x) / zoom
+      const sy = (e.clientY - rect.top - pan.y) / zoom
+      dragRef.current = { mode: 'select', sx: e.clientX, sy: e.clientY, ox: sx, oy: sy, moved: false }
+      setSelectBox({ x: sx, y: sy, w: 0, h: 0 })
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+      return
+    }
+    // 点击空白处取消选中
+    setSelectedIds(new Set())
     dragRef.current = { mode: 'pan', sx: e.clientX, sy: e.clientY, ox: pan.x, oy: pan.y, moved: false }
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }
@@ -87,6 +114,14 @@ export function BoardView() {
     }
     const d = dragRef.current
     if (d.mode === 'pan') setPan({ x: d.ox + (e.clientX - d.sx), y: d.oy + (e.clientY - d.sy) })
+    else if (d.mode === 'select') {
+      const rect = canvasRef.current!.getBoundingClientRect()
+      const cx = (e.clientX - rect.left - pan.x) / zoom
+      const cy = (e.clientY - rect.top - pan.y) / zoom
+      const x = Math.min(d.ox, cx), y = Math.min(d.oy, cy)
+      const w = Math.abs(cx - d.ox), h = Math.abs(cy - d.oy)
+      setSelectBox({ x, y, w, h })
+    }
     else if (d.mode === 'node' && d.id != null) {
       d.moved = true
       const nx = d.ox + (e.clientX - d.sx) / zoom
@@ -112,13 +147,145 @@ export function BoardView() {
       if (p) { void moveCard(d.id, p.x, p.y) }
       setLocalPos((prev) => { const n = { ...prev }; delete n[d.id!]; return n })
     }
+    // 框选结束：计算选中的卡片
+    if (d.mode === 'select' && selectBox) {
+      const box = selectBox
+      const hit = cards.filter((c) => {
+        const p = posOf(c)
+        const h = cardHeightsRef.current[c.id] || c.h
+        return p.x < box.x + box.w && p.x + c.w > box.x && p.y < box.y + box.h && p.y + h > box.y
+      })
+      setSelectedIds(new Set(hit.map((c) => c.id)))
+      setSelectBox(null)
+    }
     dragRef.current = { mode: null, sx: 0, sy: 0, ox: 0, oy: 0, moved: false }
   }
+
+  // ===== 连接点扩展：点击端点创建新卡片+连线 =====
+  const expandFromDot = async (fromCard: Card, side: 'top' | 'right' | 'bottom' | 'left') => {
+    const offset = 280
+    const fp = posOf(fromCard)
+    let nx = fp.x, ny = fp.y
+    if (side === 'right') nx += offset
+    else if (side === 'left') nx -= offset
+    else if (side === 'bottom') ny += offset + 60
+    else if (side === 'top') ny -= offset + 60
+    const newCard = await addCard({ kind: 'text', x: nx, y: ny, title: '', body: '' })
+    await addLink(fromCard.id, newCard.id)
+    setEditingId(newCard.id)
+    showToast('已创建新卡片并连线')
+  }
+
+  // ===== 批量对齐 =====
+  const alignSelected = (type: 'left' | 'right' | 'top' | 'bottom') => {
+    const sel = cards.filter((c) => selectedIds.has(c.id))
+    if (sel.length < 2) return
+    if (type === 'left') { const min = Math.min(...sel.map((c) => c.x)); sel.forEach((c) => void moveCard(c.id, min, c.y)) }
+    else if (type === 'right') { const max = Math.max(...sel.map((c) => c.x + c.w)); sel.forEach((c) => void moveCard(c.id, max - c.w, c.y)) }
+    else if (type === 'top') { const min = Math.min(...sel.map((c) => c.y)); sel.forEach((c) => void moveCard(c.id, c.x, min)) }
+    else if (type === 'bottom') { const max = Math.max(...sel.map((c) => c.y + (cardHeightsRef.current[c.id] || c.h))); sel.forEach((c) => void moveCard(c.id, c.x, max - (cardHeightsRef.current[c.id] || c.h))) }
+    showToast(`已${type === 'left' ? '左' : type === 'right' ? '右' : type === 'top' ? '上' : '下'}对齐`)
+  }
+  const distributeSelected = (dir: 'h' | 'v') => {
+    const sel = cards.filter((c) => selectedIds.has(c.id))
+    if (sel.length < 3) return
+    if (dir === 'h') {
+      const sorted = [...sel].sort((a, b) => a.x - b.x)
+      const totalW = sorted.reduce((s, c) => s + c.w, 0)
+      const gap = (sorted[sorted.length - 1].x + sorted[sorted.length - 1].w - sorted[0].x - totalW) / (sorted.length - 1)
+      let x = sorted[0].x
+      sorted.forEach((c) => { void moveCard(c.id, x, c.y); x += c.w + gap })
+    } else {
+      const sorted = [...sel].sort((a, b) => a.y - b.y)
+      const totalH = sorted.reduce((s, c) => s + (cardHeightsRef.current[c.id] || c.h), 0)
+      const gap = (sorted[sorted.length - 1].y + (cardHeightsRef.current[sorted[sorted.length - 1].id] || sorted[sorted.length - 1].h) - sorted[0].y - totalH) / (sorted.length - 1)
+      let y = sorted[0].y
+      sorted.forEach((c) => { void moveCard(c.id, c.x, y); y += (cardHeightsRef.current[c.id] || c.h) + gap })
+    }
+    showToast('已等距分布')
+  }
+
+  // ===== 键盘交互 =====
+  useEffect(() => {
+    if (viewMode !== 'board') return
+    const onKey = (e: KeyboardEvent) => {
+      // 编辑卡片时不拦截键盘
+      if (editingId != null || editingName || pickerOpen) return
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+
+      // ESC 取消选中
+      if (e.key === 'Escape') { setSelectedIds(new Set()); setLinking(null); return }
+      // Ctrl+A 全选
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') { e.preventDefault(); setSelectedIds(new Set(cards.map((c) => c.id))); return }
+      // Ctrl+Z 撤销 / Ctrl+Shift+Z 重做
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault(); const action = undoStack.current.pop(); if (action) { redoStack.current.push(action); showToast('已撤销'); return }
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'z' && e.shiftKey || e.key === 'y')) {
+        e.preventDefault(); const action = redoStack.current.pop(); if (action) { undoStack.current.push(action); showToast('已重做'); return }
+      }
+
+      if (selectedIds.size === 0) return
+      const ids = [...selectedIds]
+
+      // Delete/Backspace 删除
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        ids.forEach((id) => void deleteCard(id))
+        undoStack.current.push({ type: 'delete', data: ids.map((id) => cards.find((c) => c.id === id)).filter(Boolean) })
+        setSelectedIds(new Set())
+        showToast(`已删除 ${ids.length} 个卡片`)
+        return
+      }
+      // Enter 打开编辑
+      if (e.key === 'Enter' && ids.length === 1) { e.preventDefault(); setEditingId(ids[0]); return }
+      // Ctrl+C 复制
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        e.preventDefault()
+        clipboardRef.current = ids.map((id) => cards.find((c) => c.id === id)).filter(Boolean) as Card[]
+        showToast(`已复制 ${ids.length} 个卡片`)
+        return
+      }
+      // Ctrl+V 粘贴
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        e.preventDefault()
+        const clip = clipboardRef.current
+        clip.forEach((c, i) => {
+          void addCard({ kind: c.kind, x: c.x + 30, y: c.y + 30, title: c.title, body: c.body, payload: c.payload, item_id: c.item_id ?? undefined })
+        })
+        showToast(`已粘贴 ${clip.length} 个卡片`)
+        return
+      }
+      // 方向键移动
+      const step = e.shiftKey ? 20 : 5
+      let dx = 0, dy = 0
+      if (e.key === 'ArrowLeft') dx = -step
+      else if (e.key === 'ArrowRight') dx = step
+      else if (e.key === 'ArrowUp') dy = -step
+      else if (e.key === 'ArrowDown') dy = step
+      if (dx !== 0 || dy !== 0) {
+        e.preventDefault()
+        ids.forEach((id) => {
+          const c = cards.find((x) => x.id === id); if (!c) return
+          void moveCard(id, c.x + dx, c.y + dy)
+        })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [viewMode, editingId, editingName, pickerOpen, selectedIds, cards, deleteCard, addCard, moveCard, showToast])
 
   const startNodeDrag = (e: React.PointerEvent, card: Card) => {
     const t = e.target as HTMLElement
     if (t.closest('a,button,input,textarea,.card-del,.card-edit,.card-link-dot')) return
     e.stopPropagation()
+    // 选中逻辑：Shift 多选，普通点击单选
+    if (e.shiftKey) {
+      setSelectedIds((prev) => { const n = new Set(prev); if (n.has(card.id)) n.delete(card.id); else n.add(card.id); return n })
+    } else if (!selectedIds.has(card.id)) {
+      setSelectedIds(new Set([card.id]))
+    }
     dragRef.current = { mode: 'node', id: card.id, sx: e.clientX, sy: e.clientY, ox: card.x, oy: card.y, moved: false }
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }
@@ -257,6 +424,9 @@ export function BoardView() {
           ))}
         </span>
         <span className="board-tools">
+          <button title="切换列表视图" onClick={() => setViewMode((v) => v === 'board' ? 'list' : 'board')}>
+            <Icon name="list" size={15} /> {viewMode === 'board' ? '列表' : '白板'}
+          </button>
           <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={16} /></button>
           <button title="还原视图" onClick={fit} style={{ minWidth: 52, fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
           <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={16} /></button>
@@ -268,6 +438,30 @@ export function BoardView() {
         </span>
       </div>
 
+      {/* 批量对齐工具栏 */}
+      {selectedIds.size >= 2 && viewMode === 'board' && (
+        <div className="board-align-bar">
+          <span>已选 {selectedIds.size} 项</span>
+          <button title="左对齐" onClick={() => alignSelected('left')}><Icon name="alignLeft" size={15} /></button>
+          <button title="右对齐" onClick={() => alignSelected('right')}><Icon name="alignRight" size={15} /></button>
+          <button title="上对齐" onClick={() => alignSelected('top')}><Icon name="alignTop" size={15} /></button>
+          <button title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={15} /></button>
+          <button title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={15} /></button>
+          <button title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={15} /></button>
+          <button className="danger" title="批量删除" onClick={() => { [...selectedIds].forEach((id) => void deleteCard(id)); setSelectedIds(new Set()); showToast('已批量删除') }}><Icon name="trash" size={14} /></button>
+        </div>
+      )}
+
+      {viewMode === 'list' ? (
+        <BoardListview cards={cards} links={links} onJumpToCard={(id) => {
+          setViewMode('board')
+          // 选中并居中到目标卡片
+          setSelectedIds(new Set([id]))
+          const c = cards.find((x) => x.id === id)
+          if (c) setPan({ x: -c.x + 200, y: -c.y + 200 })
+        }} />
+      ) : (
+      <>
       <input ref={fileRef} type="file" hidden onChange={onFileChosen} />
       <div className="board-canvas" ref={canvasRef}
         onWheel={onWheel} onPointerDown={startPan} onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}
@@ -296,7 +490,8 @@ export function BoardView() {
               const d = `M ${sa.x} ${sa.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${sb.x} ${sb.y}`
               return (
                 <g key={lk.id} className="edge">
-                  <path d={d} className="edge-hit" fill="none" />
+                  {/* 连线交互优化：扩大可触发选区至连线四周整圈，高亮半透明 */}
+                  <path d={d} className="edge-hit-wide" fill="none" />
                   <path d={d} className="edge-line" markerEnd="url(#arrow)" fill="none" />
                   <circle className="edge-del" cx={mid.x} cy={mid.y} r={9}
                     onClick={(e) => { e.stopPropagation(); void deleteLink(lk.id); showToast('已删除连线') }}>
@@ -314,12 +509,18 @@ export function BoardView() {
             })()}
           </svg>
 
+          {/* 框选矩形 */}
+          {selectBox && (
+            <div className="board-select-box" style={{ left: selectBox.x, top: selectBox.y, width: selectBox.w, height: selectBox.h }} />
+          )}
+
           {cardsView.map(({ card, p }) => {
             const pos = posOf(card)
             const it = card.item_id != null ? itemMap[card.item_id] : undefined
             const assetSrc = p.file ? `board-asset://${p.file}` : (p.url || '')
+            const isSelected = selectedIds.has(card.id)
             return (
-              <div key={card.id} data-card-id={card.id} className={`board-card kind-${card.kind}`}
+              <div key={card.id} data-card-id={card.id} className={`board-card kind-${card.kind} ${isSelected ? 'card-selected' : ''}`}
                 style={{ left: pos.x, top: pos.y, width: card.w }}
                 ref={(el) => {
                   // 实测卡片渲染高度（card.h 字段是 140 默认值不可靠）
@@ -336,13 +537,13 @@ export function BoardView() {
                 onMouseEnter={() => setHoveredId(card.id)} onMouseLeave={() => setHoveredId((prev) => prev === card.id ? null : prev)}>
                 <span className="card-edit" title="编辑" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditingId(card.id) }}><Icon name="edit" size={13} /></span>
                 <span className="card-del" title="删除" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); void deleteCard(card.id) }}><Icon name="close" size={13} /></span>
-                {/* 连线手柄：四边中点，hover 或被作为连线目标时显示 */}
-                {(hoveredId === card.id || linking != null) && (
+                {/* 连线手柄：四边中点，hover 或选中或被作为连线目标时显示 */}
+                {(hoveredId === card.id || isSelected || linking != null) && (
                   <>
-                    <span className="card-link-dot card-link-top" title="从上边连线" onPointerDown={(e) => startLink(e, card)} />
-                    <span className="card-link-dot card-link-right" title="从右边连线" onPointerDown={(e) => startLink(e, card)} />
-                    <span className="card-link-dot card-link-bottom" title="从下边连线" onPointerDown={(e) => startLink(e, card)} />
-                    <span className="card-link-dot card-link-left" title="从左边连线" onPointerDown={(e) => startLink(e, card)} />
+                    <span className="card-link-dot card-link-top" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'top') }} />
+                    <span className="card-link-dot card-link-right" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'right') }} />
+                    <span className="card-link-dot card-link-bottom" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'bottom') }} />
+                    <span className="card-link-dot card-link-left" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'left') }} />
                   </>
                 )}
                 {card.kind === 'ref' && (
@@ -370,14 +571,21 @@ export function BoardView() {
                 {card.kind === 'image' && assetSrc && (
                   <>
                     <p className="bc-kind"><Icon name="image" size={12} /> 图片</p>
-                    <img className="bc-media" src={assetSrc} alt={p.name || card.title} />
+                    <img className="bc-media" src={assetSrc} alt={p.name || card.title}
+                      draggable={false} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                     {p.name && <p className="bc-fname">{p.name}</p>}
                   </>
                 )}
-                {card.kind === 'video' && assetSrc && (
+                {card.kind === 'image' && !assetSrc && (
+                  <>
+                    <p className="bc-kind"><Icon name="image" size={12} /> 图片</p>
+                    <p className="bc-summary">（图片加载中或不可用）</p>
+                  </>
+                )}
+                {card.kind === 'video' && (
                   <>
                     <p className="bc-kind"><Icon name="video" size={12} /> 视频</p>
-                    <video className="bc-media" src={assetSrc} controls preload="metadata" />
+                    <div className="bc-video-disabled"><Icon name="video" size={20} /><span>播放已禁用</span></div>
                   </>
                 )}
                 {card.kind === 'file' && (
@@ -410,6 +618,8 @@ export function BoardView() {
           )
         })()}
       </div>
+      </>
+      )}
 
       {editingId != null && (() => {
         const cv = cardsView.find((c) => c.card.id === editingId)

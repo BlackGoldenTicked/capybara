@@ -14,7 +14,8 @@ import {
   Minus, X, Pencil, EyeOff, Eye, Bookmark, Send, Maximize,
   Tag, Trash2, Check, ExternalLink, ChevronDown, ChevronRight,
   Upload, BookOpen, Palette, Music, Keyboard, Undo2, Info, Activity,
-  List, Rows3, Podcast, Film, PanelLeftClose, PanelLeftOpen, Heart, Sparkles,
+  List, Rows3, Podcast, Film, PanelLeftClose, PanelLeftOpen, Heart, Sparkles, Star,
+  AlignStartVertical, AlignEndVertical, AlignStartHorizontal, AlignEndHorizontal, AlignHorizontalSpaceAround, AlignVerticalSpaceAround,
   type LucideProps
 } from 'lucide-react'
 import type { IconThemeMap, IconName } from './icon-themes'
@@ -50,5 +51,8 @@ export const LUCIDE_ICON_MAP: IconThemeMap = {
   upload: Upload, book: BookOpen, github: BrandGithub, twitter: BrandTwitter,
   palette: Palette, music: Music, keyboard: Keyboard, undo: Undo2, info: Info, activity: Activity, maximize: Maximize,
   list: List, rows: Rows3, panelLeftClose: PanelLeftClose, panelLeftOpen: PanelLeftOpen,
-  heart: Heart, sparkles: Sparkles
+  heart: Heart, sparkles: Sparkles,
+  alignLeft: AlignStartVertical, alignRight: AlignEndVertical, alignTop: AlignStartHorizontal, alignBottom: AlignEndHorizontal,
+  distributeH: AlignHorizontalSpaceAround, distributeV: AlignVerticalSpaceAround,
+  star: Star
 }

@@ -1164,6 +1164,90 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .card-link-bottom { left: 50%; bottom: 0; }
 .card-link-left { left: 0; top: 50%; }
 
+/* ===== 选中态、框选、对齐工具栏 ===== */
+.board-card.card-selected {
+  outline: 2px solid var(--accent-info);
+  outline-offset: 2px;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-info) 30%, transparent);
+}
+.board-card.card-selected:hover {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent-info) 40%, transparent);
+}
+.board-select-box {
+  position: absolute; background: color-mix(in srgb, var(--accent-info) 12%, transparent);
+  border: 1px dashed var(--accent-info); pointer-events: none; z-index: 2;
+}
+.board-align-bar {
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%); z-index: 15;
+  display: flex; align-items: center; gap: 4px; padding: 6px 10px;
+  background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary);
+  border-radius: 999px; box-shadow: 0 4px 14px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+}
+.board-align-bar span { font-size: 12px; color: var(--color-text-secondary); margin-right: 6px; }
+.board-align-bar button {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: 0.5px solid var(--color-border-tertiary); border-radius: 6px;
+  background: transparent; cursor: pointer; color: var(--color-text-secondary);
+}
+.board-align-bar button:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+.board-align-bar button.danger:hover { color: var(--color-text-warning); border-color: var(--color-border-warning); }
+
+/* 连线交互优化：扩大可触发选区至四周整圈 */
+.edge-hit-wide { stroke: color-mix(in srgb, var(--accent-info) 15%, transparent); stroke-width: 20px; pointer-events: stroke; cursor: pointer; }
+.edge-hit-wide:hover { stroke: color-mix(in srgb, var(--accent-info) 30%, transparent); }
+
+/* ===== 视频禁用占位 ===== */
+.bc-video-disabled {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 20px 10px; color: var(--color-text-tertiary); font-size: 12px;
+  background: var(--color-background-tertiary); border-radius: 6px; margin-top: 2px;
+}
+.video-disabled-placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 30px 10px; color: var(--color-text-tertiary); font-size: 13px;
+  background: var(--color-background-tertiary); border-radius: var(--border-radius-md); width: 100%;
+}
+
+/* ===== 列表视图 ===== */
+.board-listview {
+  flex: 1; overflow: auto; padding: 12px 0; background: var(--color-background-primary);
+}
+.listview-header {
+  display: flex; align-items: center; gap: 8px; padding: 0 16px 10px;
+  font-size: 13px; color: var(--color-text-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 8px;
+}
+.listview-body { padding: 0 8px; }
+.listview-empty { text-align: center; color: var(--color-text-tertiary); padding: 40px; font-size: 13px; }
+.list-row {
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px;
+  cursor: pointer; font-size: 13px; position: relative; line-height: 1.4;
+  border-left: 2px solid transparent; transition: background .1s;
+}
+.list-row:hover { background: var(--color-background-secondary); }
+.list-row.row-ref { opacity: 0.6; }
+.list-row.row-cycle { color: var(--color-text-warning); font-style: italic; }
+.list-indent-line {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: var(--color-border-tertiary); pointer-events: none;
+}
+.list-toggle {
+  display: flex; align-items: center; justify-content: center; width: 16px; height: 16px;
+  flex-shrink: 0; color: var(--color-text-tertiary);
+}
+.list-toggle-placeholder { width: 16px; flex-shrink: 0; }
+.list-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0; color: var(--color-text-secondary);
+  background: var(--color-background-secondary);
+}
+.list-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-badge {
+  font-size: 10px; padding: 1px 6px; border-radius: 999px; flex-shrink: 0;
+}
+.ref-badge { background: var(--color-background-tertiary); color: var(--color-text-tertiary); }
+.cycle-badge { background: color-mix(in srgb, var(--color-text-warning) 15%, transparent); color: var(--color-text-warning); }
+.list-children-count { font-size: 11px; color: var(--color-text-tertiary); flex-shrink: 0; }
+
 /* ===== 白板：顶部添加卡片面板 ===== */
 .board-center-palette {
   position: absolute; top: 12px; left: 0; right: 0; z-index: 10;

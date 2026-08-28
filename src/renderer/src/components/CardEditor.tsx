@@ -85,7 +85,13 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
           <div className="edit-body">
             <div className="asset-preview">
               {card.kind === 'image' && assetSrc && <img src={assetSrc} alt={p.name || title} />}
-              {card.kind === 'video' && assetSrc && <video src={assetSrc} controls />}
+              {/* 视频: 禁用播放，仅保留基础载体框架 */}
+              {card.kind === 'video' && (
+                <div className="video-disabled-placeholder">
+                  <Icon name="video" size={24} />
+                  <span>视频播放已禁用</span>
+                </div>
+              )}
               {card.kind === 'file' && (
                 <div className="file-meta">
                   <span className="file-icon"><Icon name="file" size={20} /></span>
@@ -103,11 +109,11 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
 
         <div className="modal-foot">
           <button className="danger" onClick={() => { onDelete(); onClose() }}><Icon name="trash" size={14} /> 删除卡片</button>
-          <button onClick={onClose}>完成</button>
           <button className="primary" onClick={() => {
             if (card.kind === 'text') saveText()
             else if (card.kind === 'link') saveLink()
             else saveAsset()
+            onClose()
           }}><Icon name="check" size={14} /> 保存</button>
         </div>
       </div>
