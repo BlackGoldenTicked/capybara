@@ -9,17 +9,9 @@
  */
 
 import { useSyncExternalStore } from 'react'
-import { resolveIcon, onIconThemeChange, getIconThemeMap } from '../lib/icon-themes'
+import { resolveIcon, onIconThemeChange, getIconThemeMap, type IconName } from '../lib/icon-themes'
 
-export type IconName =
-  | 'rss' | 'read' | 'inbox' | 'later' | 'favorite' | 'archived' | 'all'
-  | 'podcast' | 'video'
-  | 'settings' | 'search' | 'gallery' | 'board' | 'writer' | 'plus' | 'refresh'
-  | 'type' | 'link' | 'image' | 'file' | 'ref'
-  | 'minus' | 'close' | 'edit' | 'eyeOff' | 'eye' | 'bookmark' | 'send'
-  | 'tag' | 'trash' | 'check' | 'external' | 'chevronDown' | 'chevronRight'
-  | 'upload' | 'book' | 'github' | 'twitter' | 'palette' | 'music' | 'keyboard' | 'undo' | 'info' | 'activity'
-  | 'list' | 'rows' | 'panelLeftClose' | 'panelLeftOpen' | 'heart' | 'sparkles'
+export type { IconName }
 
 /** 语义图标组件：从当前主题解析并渲染 */
 export function Icon({ name, size = 16, strokeWidth = 1.75, className, style, ...rest }: {

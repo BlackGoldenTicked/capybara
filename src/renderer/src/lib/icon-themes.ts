@@ -14,8 +14,18 @@
  * 4. 业务代码无感知：始终用 <Icon name="rss" /> 调用
  */
 
-import type { IconName } from '../components/icons'
-import { LUCIDE_ICON_MAP } from '../components/icons-map-lucide'
+import { LUCIDE_ICON_MAP } from './icons-map-lucide'
+
+/** 图标语义名：所有 UI 中用到的图标名，不同主题必须覆盖这些名称 */
+export type IconName =
+  | 'rss' | 'read' | 'inbox' | 'later' | 'favorite' | 'archived' | 'all'
+  | 'podcast' | 'video'
+  | 'settings' | 'search' | 'gallery' | 'board' | 'writer' | 'plus' | 'refresh'
+  | 'type' | 'link' | 'image' | 'file' | 'ref'
+  | 'minus' | 'close' | 'edit' | 'eyeOff' | 'eye' | 'bookmark' | 'send'
+  | 'tag' | 'trash' | 'check' | 'external' | 'chevronDown' | 'chevronRight'
+  | 'upload' | 'book' | 'github' | 'twitter' | 'palette' | 'music' | 'keyboard' | 'undo' | 'info' | 'activity'
+  | 'list' | 'rows' | 'panelLeftClose' | 'panelLeftOpen' | 'heart' | 'sparkles'
 
 /** 图标主题 ID。'default' 为内置 Lucide 线性集。 */
 export type IconThemeId = string

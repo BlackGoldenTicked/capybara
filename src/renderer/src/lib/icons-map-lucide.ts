@@ -17,7 +17,7 @@ import {
   List, Rows3, Podcast, Film, PanelLeftClose, PanelLeftOpen, Heart, Sparkles,
   type LucideProps
 } from 'lucide-react'
-import type { IconThemeMap } from './icon-themes'
+import type { IconThemeMap, IconName } from './icon-themes'
 
 // Brand icons (GitHub / X) were dropped from lucide-react; defined inline as
 // filled marks so the sidebar stays recognizable. Same shape as lucide's API.
