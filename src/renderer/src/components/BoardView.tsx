@@ -506,7 +506,6 @@ export function BoardView() {
           <button title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={15} /></button>
           <button title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={15} /></button>
           <button title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={15} /></button>
-          <button className="danger" title="批量删除" onClick={() => { [...selectedIds].forEach((id) => void deleteCard(id)); setSelectedIds(new Set()); showToast('已批量删除') }}><Icon name="trash" size={14} /></button>
         </div>
       )}
 
