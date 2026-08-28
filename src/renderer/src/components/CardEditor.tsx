@@ -30,8 +30,13 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
 
   const saveText = () => onSave({ title, body })
   const saveLink = () => onSave({ title, body: note, payload: JSON.stringify({ url, note }) })
-  const saveAsset = (sourcePath?: string) =>
-    onSave({ body: note, payload: JSON.stringify({ ...p, note, url: p.url }), _sourcePath: sourcePath })
+  const saveAsset = (sourcePath?: string) => {
+    // 用当前 note 构建 payload，保留原有的 file/name/size 等字段
+    const newPayload = JSON.stringify({ ...p, note })
+    const patch: Parameters<typeof onSave>[0] = { body: note, payload: newPayload }
+    if (sourcePath) (patch as Partial<Card> & { _sourcePath?: string })._sourcePath = sourcePath
+    onSave(patch)
+  }
 
   const onReplace = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]

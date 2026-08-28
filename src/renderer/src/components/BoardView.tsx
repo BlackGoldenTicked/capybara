@@ -25,8 +25,7 @@ function safeParse(p: string): CardPayload { try { return p ? JSON.parse(p) : {}
 /** 这些元素上的按下不应触发画布平移 / 也不应被画布吞掉点击 */
 const NO_PAN = 'button, a, input, textarea, .board-toolbar, .board-center-palette, .card-edit, .card-del, .card-link-dot'
 
-/** 框选多卡片的功能键（可配置为 Shift/Alt/Ctrl，默认 Shift） */
-const MULTI_SELECT_KEY = 'shift'
+/** 框选多卡片的功能键（默认 Shift，仅硬编码；若需配置可从 settings 读取） */
 
 export function BoardView() {
   const { cards, links, activeBoardId, boards, createBoard, addRefCard, addCard, moveCard, deleteCard, showToast, addLink, deleteLink, updateLink, renameBoard, deleteBoard, autoPos } = useStore()
@@ -48,11 +47,18 @@ export function BoardView() {
   // 选中状态：单选 / 多选 / 框选
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [selectBox, setSelectBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  // 框选 ref 镜像，避免 endDrag 中 stale 闭包
+  const selectBoxRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null)
   // 剪贴板：复制的卡片数据
   const clipboardRef = useRef<Card[]>([])
   // 撤销/重做栈
-  const undoStack = useRef<Array<{ type: string; data: unknown }>>([])
-  const redoStack = useRef<Array<{ type: string; data: unknown }>>([])
+  interface UndoAction {
+    type: 'delete' | 'move'
+    cards: Card[]                  // 删除：被删的卡片快照；移动：旧坐标
+    links?: BoardLink[]            // 删除时附带的连线
+  }
+  const undoStack = useRef<UndoAction[]>([])
+  const redoStack = useRef<UndoAction[]>([])
   // 视图模式：board 白板 / list 列表
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board')
 
@@ -120,7 +126,9 @@ export function BoardView() {
       const cy = (e.clientY - rect.top - pan.y) / zoom
       const x = Math.min(d.ox, cx), y = Math.min(d.oy, cy)
       const w = Math.abs(cx - d.ox), h = Math.abs(cy - d.oy)
-      setSelectBox({ x, y, w, h })
+      const box = { x, y, w, h }
+      selectBoxRef.current = box
+      setSelectBox(box)
     }
     else if (d.mode === 'node' && d.id != null) {
       d.moved = true
@@ -147,9 +155,9 @@ export function BoardView() {
       if (p) { void moveCard(d.id, p.x, p.y) }
       setLocalPos((prev) => { const n = { ...prev }; delete n[d.id!]; return n })
     }
-    // 框选结束：计算选中的卡片
-    if (d.mode === 'select' && selectBox) {
-      const box = selectBox
+    // 框选结束：计算选中的卡片（用 ref 避免 stale 闭包）
+    if (d.mode === 'select' && selectBoxRef.current) {
+      const box = selectBoxRef.current
       const hit = cards.filter((c) => {
         const p = posOf(c)
         const h = cardHeightsRef.current[c.id] || c.h
@@ -157,6 +165,7 @@ export function BoardView() {
       })
       setSelectedIds(new Set(hit.map((c) => c.id)))
       setSelectBox(null)
+      selectBoxRef.current = null
     }
     dragRef.current = { mode: null, sx: 0, sy: 0, ox: 0, oy: 0, moved: false }
   }
@@ -206,6 +215,40 @@ export function BoardView() {
   }
 
   // ===== 键盘交互 =====
+  // ref 镜像：避免 effect 依赖 selectedIds/cards 导致频繁重绑
+  const selectedIdsRef = useRef<Set<number>>(new Set())
+  selectedIdsRef.current = selectedIds
+  const cardsRef = useRef<Card[]>(cards)
+  cardsRef.current = cards
+  const linksRef = useRef<BoardLink[]>(links)
+  linksRef.current = links
+
+  // 撤销：执行逆操作
+  const executeUndo = (action: UndoAction) => {
+    if (action.type === 'delete') {
+      // 逆操作：重新创建被删卡片 + 连线
+      action.cards.forEach((c) => { void addCard({ kind: c.kind, x: c.x, y: c.y, w: c.w, h: c.h, title: c.title, body: c.body, payload: c.payload, item_id: c.item_id ?? undefined }) })
+      // 连线会在新卡片上重建（但 ID 会变，所以连线只能手动恢复）
+      showToast('已撤销删除')
+    } else if (action.type === 'move') {
+      // 逆操作：恢复旧坐标
+      action.cards.forEach((c) => { void moveCard(c.id, c.x, c.y) })
+      showToast('已撤销移动')
+    }
+  }
+  // 重做：重新执行操作
+  const executeRedo = (action: UndoAction) => {
+    if (action.type === 'delete') {
+      action.cards.forEach((c) => { void deleteCard(c.id) })
+      showToast('已重做删除')
+    } else if (action.type === 'move') {
+      // move 的 redo 需要新坐标——存储在 action 中
+      const newCoords = (action as UndoAction & { newCoords?: { id: number; x: number; y: number }[] }).newCoords
+      if (newCoords) newCoords.forEach((nc) => { void moveCard(nc.id, nc.x, nc.y) })
+      showToast('已重做移动')
+    }
+  }
+
   useEffect(() => {
     if (viewMode !== 'board') return
     const onKey = (e: KeyboardEvent) => {
@@ -217,23 +260,28 @@ export function BoardView() {
       // ESC 取消选中
       if (e.key === 'Escape') { setSelectedIds(new Set()); setLinking(null); return }
       // Ctrl+A 全选
-      if ((e.metaKey || e.ctrlKey) && e.key === 'a') { e.preventDefault(); setSelectedIds(new Set(cards.map((c) => c.id))); return }
-      // Ctrl+Z 撤销 / Ctrl+Shift+Z 重做
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') { e.preventDefault(); setSelectedIds(new Set(cardsRef.current.map((c) => c.id))); return }
+      // Ctrl+Z 撤销
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault(); const action = undoStack.current.pop(); if (action) { redoStack.current.push(action); showToast('已撤销'); return }
+        e.preventDefault(); const action = undoStack.current.pop(); if (action) { redoStack.current.push(action); executeUndo(action) } return
       }
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'z' && e.shiftKey || e.key === 'y')) {
-        e.preventDefault(); const action = redoStack.current.pop(); if (action) { undoStack.current.push(action); showToast('已重做'); return }
+      // Ctrl+Shift+Z 重做
+      if ((e.metaKey || e.ctrlKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+        e.preventDefault(); const action = redoStack.current.pop(); if (action) { undoStack.current.push(action); executeRedo(action) } return
       }
 
-      if (selectedIds.size === 0) return
-      const ids = [...selectedIds]
+      const sel = selectedIdsRef.current
+      if (sel.size === 0) return
+      const ids = [...sel]
+      const curCards = cardsRef.current
 
       // Delete/Backspace 删除
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault()
+        const deleted = ids.map((id) => curCards.find((c) => c.id === id)).filter(Boolean) as Card[]
+        const deletedLinks = linksRef.current.filter((l) => ids.includes(l.from_id) || ids.includes(l.to_id))
+        undoStack.current.push({ type: 'delete', cards: deleted, links: deletedLinks })
         ids.forEach((id) => void deleteCard(id))
-        undoStack.current.push({ type: 'delete', data: ids.map((id) => cards.find((c) => c.id === id)).filter(Boolean) })
         setSelectedIds(new Set())
         showToast(`已删除 ${ids.length} 个卡片`)
         return
@@ -243,15 +291,15 @@ export function BoardView() {
       // Ctrl+C 复制
       if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
         e.preventDefault()
-        clipboardRef.current = ids.map((id) => cards.find((c) => c.id === id)).filter(Boolean) as Card[]
+        clipboardRef.current = ids.map((id) => curCards.find((c) => c.id === id)).filter(Boolean) as Card[]
         showToast(`已复制 ${ids.length} 个卡片`)
         return
       }
-      // Ctrl+V 粘贴
+      // Ctrl+V 粘贴（附件卡片通过 payload.file 共享资产文件，不复制物理文件）
       if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
         e.preventDefault()
         const clip = clipboardRef.current
-        clip.forEach((c, i) => {
+        clip.forEach((c) => {
           void addCard({ kind: c.kind, x: c.x + 30, y: c.y + 30, title: c.title, body: c.body, payload: c.payload, item_id: c.item_id ?? undefined })
         })
         showToast(`已粘贴 ${clip.length} 个卡片`)
@@ -266,15 +314,15 @@ export function BoardView() {
       else if (e.key === 'ArrowDown') dy = step
       if (dx !== 0 || dy !== 0) {
         e.preventDefault()
-        ids.forEach((id) => {
-          const c = cards.find((x) => x.id === id); if (!c) return
-          void moveCard(id, c.x + dx, c.y + dy)
-        })
+        const oldCoords = ids.map((id) => { const c = curCards.find((x) => x.id === id); return c ? { id, x: c.x, y: c.y } : null }).filter(Boolean) as { id: number; x: number; y: number }[]
+        const newCoords = oldCoords.map((oc) => ({ id: oc.id, x: oc.x + dx, y: oc.y + dy }))
+        undoStack.current.push({ type: 'move', cards: ids.map((id) => { const c = curCards.find((x) => x.id === id); return c! }).map((c) => ({ ...c })), ...{ newCoords } } as UndoAction)
+        newCoords.forEach((nc) => { void moveCard(nc.id, nc.x, nc.y) })
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [viewMode, editingId, editingName, pickerOpen, selectedIds, cards, deleteCard, addCard, moveCard, showToast])
+  }, [viewMode, editingId, editingName, pickerOpen])
 
   const startNodeDrag = (e: React.PointerEvent, card: Card) => {
     const t = e.target as HTMLElement
@@ -360,7 +408,7 @@ export function BoardView() {
 
   // 卡片 payload 只解析一次（性能 #20）
   const cardsView = useMemo(() => cards.map((c) => ({ card: c, p: safeParse(c.payload) })), [cards])
-  const cardMap = new Map(cardsView.map((cv) => [cv.card.id, cv]))
+  const cardMap = useMemo(() => new Map(cardsView.map((cv) => [cv.card.id, cv])), [cardsView])
   const center = (c: Card) => { const p = posOf(c); const h = cardHeightsRef.current[c.id] || c.h; return { x: p.x + c.w / 2, y: p.y + h / 2 } }
   const linkMid = (a: Card, b: Card) => { const ca = center(a), cb = center(b); return { x: (ca.x + cb.x) / 2, y: (ca.y + cb.y) / 2 } }
   /**
@@ -537,13 +585,21 @@ export function BoardView() {
                 onMouseEnter={() => setHoveredId(card.id)} onMouseLeave={() => setHoveredId((prev) => prev === card.id ? null : prev)}>
                 <span className="card-edit" title="编辑" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditingId(card.id) }}><Icon name="edit" size={13} /></span>
                 <span className="card-del" title="删除" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); void deleteCard(card.id) }}><Icon name="close" size={13} /></span>
-                {/* 连线手柄：四边中点，hover 或选中或被作为连线目标时显示 */}
+                {/* 连线手柄：四边中点，点击扩展创建新卡片；拖拽离开则连线 */}
                 {(hoveredId === card.id || isSelected || linking != null) && (
                   <>
-                    <span className="card-link-dot card-link-top" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'top') }} />
-                    <span className="card-link-dot card-link-right" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'right') }} />
-                    <span className="card-link-dot card-link-bottom" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'bottom') }} />
-                    <span className="card-link-dot card-link-left" title="点击创建新卡片" onPointerDown={(e) => startLink(e, card)} onClick={(e) => { e.stopPropagation(); void expandFromDot(card, 'left') }} />
+                    <span className="card-link-dot card-link-top" title="点击创建新卡片"
+                      onPointerDown={(e) => startLink(e, card)}
+                      onClick={(e) => { e.stopPropagation(); if (!linkRef.current) void expandFromDot(card, 'top') }} />
+                    <span className="card-link-dot card-link-right" title="点击创建新卡片"
+                      onPointerDown={(e) => startLink(e, card)}
+                      onClick={(e) => { e.stopPropagation(); if (!linkRef.current) void expandFromDot(card, 'right') }} />
+                    <span className="card-link-dot card-link-bottom" title="点击创建新卡片"
+                      onPointerDown={(e) => startLink(e, card)}
+                      onClick={(e) => { e.stopPropagation(); if (!linkRef.current) void expandFromDot(card, 'bottom') }} />
+                    <span className="card-link-dot card-link-left" title="点击创建新卡片"
+                      onPointerDown={(e) => startLink(e, card)}
+                      onClick={(e) => { e.stopPropagation(); if (!linkRef.current) void expandFromDot(card, 'left') }} />
                   </>
                 )}
                 {card.kind === 'ref' && (

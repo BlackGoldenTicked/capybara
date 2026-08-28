@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, protocol, shell, dialog, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol, shell, dialog, nativeImage, net } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
+import url from 'node:url'
 // execSync 已废弃：不再使用 system_profiler 等同步子进程命令（会阻塞主进程导致 UI 卡死）
 import {
   initDb, listItems, listItemsPage, getItem, counts, updateStatus, markRead, setRead, deleteItem, addItem,
@@ -692,22 +693,16 @@ app.whenReady().then(() => {
   try { initDb() } catch (e) { console.error('[initDb] failed:', (e as Error).message) }
   registerIpc()
   // 注册 board-asset:// 协议，把白板附件目录映射出去供渲染进程加载
-  protocol.registerFileProtocol('board-asset', (request, callback) => {
-    try {
-      const rel = decodeURIComponent(request.url.replace(/^board-asset:\/\//, '')).replace(/^\/+/, '').split('?')[0]
-      callback({ path: path.join(getAssetsDir(), rel) })
-    } catch {
-      callback({ error: -2 })
-    }
+  protocol.handle('board-asset', (request) => {
+    const rel = decodeURIComponent(request.url.replace(/^board-asset:\/\//, '')).replace(/^\/+/, '').replace(/\/+$/, '').split('?')[0]
+    const filePath = path.join(getAssetsDir(), rel)
+    return net.fetch(url.pathToFileURL(filePath).toString())
   })
   // 注册 cover:// 协议，把本地化的封面图目录映射出去（离线可用，修复 #8/#13）
-  protocol.registerFileProtocol('cover', (request, callback) => {
-    try {
-      const rel = decodeURIComponent(request.url.replace(/^cover:\/\//, '')).replace(/^\/+/, '').split('?')[0]
-      callback({ path: path.join(getImagesDir(), rel) })
-    } catch {
-      callback({ error: -2 })
-    }
+  protocol.handle('cover', (request) => {
+    const rel = decodeURIComponent(request.url.replace(/^cover:\/\//, '')).replace(/^\/+/, '').replace(/\/+$/, '').split('?')[0]
+    const filePath = path.join(getImagesDir(), rel)
+    return net.fetch(url.pathToFileURL(filePath).toString())
   })
   // 2) 窗口先行：保证 UI 永远能打开；次级服务（ingest / scheduler）即便抛错也不再拖垮窗口
   createWindow()

@@ -1037,7 +1037,7 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 
 /* ===== 白板：内联重命名 / 连线删除与说明 ===== */
 .board-name-input { font-size: 14px; font-weight: 600; color: var(--color-text-primary); background: var(--color-background-primary); border: 0.5px solid var(--color-border-info); border-radius: 6px; padding: 2px 8px; min-width: 160px; }
-.edge-hit { stroke: transparent; stroke-width: 14px; cursor: pointer; }
+/* 连线交互优化：扩大可触发选区至四周整圈（由 edge-hit 替换为 edge-hit-wide） */
 .edge-line { stroke: var(--color-border-info); stroke-width: 2px; }
 .edge-temp { stroke: var(--accent-info); stroke-width: 2px; stroke-dasharray: 5 4; }
 .edge-del { fill: var(--color-background-primary); stroke: var(--color-border-warning); stroke-width: 1.5px; cursor: pointer; }
@@ -1144,8 +1144,10 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
   background: var(--color-background-info); border-bottom: 0.5px solid var(--color-border-info);
 }
 .board-edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 1; }
+/* 连线交互优化：扩大可触发选区至四周整圈 */
 .edge-line { stroke: var(--accent-info); stroke-width: 2; pointer-events: none; }
-.edge-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+.edge-hit-wide { stroke: color-mix(in srgb, var(--accent-info) 15%, transparent); stroke-width: 20px; pointer-events: stroke; cursor: pointer; }
+.edge-hit-wide:hover { stroke: color-mix(in srgb, var(--accent-info) 30%, transparent); }
 .edge-temp { stroke: var(--accent-info); stroke-width: 2; stroke-dasharray: 5 4; pointer-events: none; }
 .card-link-handle {
   position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
@@ -1191,10 +1193,6 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 }
 .board-align-bar button:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
 .board-align-bar button.danger:hover { color: var(--color-text-warning); border-color: var(--color-border-warning); }
-
-/* 连线交互优化：扩大可触发选区至四周整圈 */
-.edge-hit-wide { stroke: color-mix(in srgb, var(--accent-info) 15%, transparent); stroke-width: 20px; pointer-events: stroke; cursor: pointer; }
-.edge-hit-wide:hover { stroke: color-mix(in srgb, var(--accent-info) 30%, transparent); }
 
 /* ===== 视频禁用占位 ===== */
 .bc-video-disabled {
