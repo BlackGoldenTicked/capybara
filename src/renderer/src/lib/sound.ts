@@ -44,19 +44,30 @@ export function isSoundEnabled() {
   return enabled
 }
 
+/** AudioContext 是否已就绪（running 状态），用于判断是否需要等待 resume */
+let audioReady = false
+
 function ensureAudio(): { ctx: AudioContext; out: GainNode } | null {
   try {
     if (!context) {
       const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
       if (!Ctor) return null
-      context = new Ctor({ latencyHint: 'interactive' })
+      // 使用 'balanced' 而非 'interactive'：interactive 在某些系统上首次初始化更慢
+      context = new Ctor({ latencyHint: 'balanced' })
+      // 监听状态变化，标记就绪
+      context.addEventListener('statechange', () => {
+        audioReady = context?.state === 'running'
+      })
     }
     if (!master) {
       master = context.createGain()
       master.gain.value = volume
       master.connect(context.destination)
     }
-    if (context.state === 'suspended') void context.resume()
+    if (context.state === 'suspended') {
+      // resume 是异步的，但不阻塞音频调度——调度会在 resume 完成后自动播放
+      void context.resume().then(() => { audioReady = true })
+    }
     return { ctx: context, out: master }
   } catch {
     return null
@@ -231,7 +242,9 @@ export function playScrollGear(delta: number, allow = false) {
   }
 }
 
-/** 在首次用户手势时预热 AudioContext，规避自动播放限制。 */
+/** 在首次用户手势时预热 AudioContext，规避自动播放限制。
+ *  幂等：已就绪时直接返回，无额外开销。 */
 export function primeAudio() {
+  if (context && audioReady) return
   ensureAudio()
 }

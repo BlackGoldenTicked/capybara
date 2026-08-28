@@ -90,7 +90,7 @@ export function SettingsView() {
 
 /* ===================== 外观 ===================== */
 function AppearanceTab() {
-  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo } = useStore()
+  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo, showToast } = useStore()
   const [systemFonts, setSystemFonts] = useState<string[]>([])
   const [logos, setLogos] = useState<Array<{ id: string; name: string; thumb: string }>>([])
   const styleGridRef = useRef<HTMLDivElement>(null)
@@ -268,7 +268,7 @@ function AppearanceTab() {
         <label className="switch-row">
           <span>启用界面音效</span>
           <button className={`switch ${soundEnabled ? 'on' : ''}`} role="switch" aria-checked={soundEnabled}
-            onClick={() => setSoundEnabled(!soundEnabled)}><span className="knob" /></button>
+            {...pressBtn(() => setSoundEnabled(!soundEnabled))}><span className="knob" /></button>
         </label>
         <div className="src-row" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
           <span>音量</span>
