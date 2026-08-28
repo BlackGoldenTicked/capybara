@@ -395,6 +395,33 @@ export function BoardView() {
   }
 
   const fit = () => { setPan({ x: 0, y: 0 }); setZoom(1) }
+  // 一键自适应：计算所有卡片的包围盒，缩放到画布可见区内，留 40px padding
+  const fitAll = () => {
+    if (cards.length === 0 || !canvasRef.current) { setPan({ x: 0, y: 0 }); setZoom(1); return }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const c of cards) {
+      const p = posOf(c)
+      const h = cardHeightsRef.current[c.id] || c.h
+      if (p.x < minX) minX = p.x
+      if (p.y < minY) minY = p.y
+      if (p.x + c.w > maxX) maxX = p.x + c.w
+      if (p.y + h > maxY) maxY = p.y + h
+    }
+    const rect = canvasRef.current.getBoundingClientRect()
+    const pad = 40
+    const availW = rect.width - pad * 2
+    const availH = rect.height - pad * 2
+    const contentW = maxX - minX
+    const contentH = maxY - minY
+    // 极少卡片时不要放太大，限制最大缩放为 1.5
+    const scale = Math.min(availW / contentW, availH / contentH, 1.5)
+    const z = Math.max(0.3, Math.min(2.5, scale))
+    // 居中：让卡片组的中心对齐画布中心
+    const cx = (minX + maxX) / 2
+    const cy = (minY + maxY) / 2
+    setZoom(z)
+    setPan({ x: rect.width / 2 - cx * z, y: rect.height / 2 - cy * z })
+  }
   const beginRename = () => { const b = boards.find((x) => x.id === activeBoardId); setEditingName(true); setNameDraft(b?.name ?? '') }
   const nameRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -689,6 +716,7 @@ export function BoardView() {
             <span className="bvc-zoom">{Math.round(zoom * 100)}%</span>
             <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={16} /></button>
             <button title="还原视图" onClick={fit}><Icon name="maximize" size={16} /></button>
+            <button title="自适应全部卡片" onClick={fitAll}><Icon name="frame" size={16} /></button>
             <button className="danger" title="删除白板" onClick={() => {
               if (activeBoardId == null) return
               if (!confirm('确定要删除「' + (board?.name ?? '白板') + '」吗？此操作不可撤销。')) return

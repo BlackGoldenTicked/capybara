@@ -865,6 +865,12 @@ html.dark .toc-rail-tooltip {
 .board-canvas:active { cursor: grabbing; }
 .board-layer { position: absolute; inset: 0; transform-origin: 0 0; }
 .board-card { position: absolute; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 22%, transparent); cursor: grab; user-select: none; }
+.board-card.kind-text { border-top: 3px solid var(--accent-info); }
+.board-card.kind-link { border-top: 3px solid #8b5cf6; }
+.board-card.kind-image { border-top: 3px solid #22c55e; }
+.board-card.kind-video { border-top: 3px solid #d85a30; }
+.board-card.kind-file { border-top: 3px solid #f59e0b; }
+.board-card.kind-ref { border-top: 3px solid #14b8a6; }
 .bc-title { font-size: 13px; font-weight: 500; line-height: 1.4; margin-bottom: 4px; }
 .bc-summary { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .bc-src { font-size: 11px; color: var(--color-text-tertiary); margin-top: 6px; }

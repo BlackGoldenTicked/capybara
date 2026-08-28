@@ -27,7 +27,7 @@ export type IconName =
   | 'upload' | 'book' | 'github' | 'twitter' | 'palette' | 'music' | 'keyboard' | 'undo' | 'info' | 'activity'
   | 'list' | 'rows' | 'panelLeftClose' | 'panelLeftOpen' | 'heart' | 'sparkles'
   | 'alignLeft' | 'alignRight' | 'alignTop' | 'alignBottom' | 'distributeH' | 'distributeV'
-  | 'star' | 'maximize'
+  | 'star' | 'maximize' | 'frame'
 
 /** 图标主题 ID。'default' 为内置 Lucide 线性集。 */
 export type IconThemeId = string

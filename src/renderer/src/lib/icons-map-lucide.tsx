@@ -16,6 +16,7 @@ import {
   Upload, BookOpen, Palette, Music, Keyboard, Undo2, Info, Activity,
   List, Rows3, Podcast, Film, PanelLeftClose, PanelLeftOpen, Heart, Sparkles, Star,
   AlignStartVertical, AlignEndVertical, AlignStartHorizontal, AlignEndHorizontal, AlignHorizontalSpaceAround, AlignVerticalSpaceAround,
+  Frame,
   type LucideProps
 } from 'lucide-react'
 import type { IconThemeMap, IconName } from './icon-themes'
@@ -54,5 +55,5 @@ export const LUCIDE_ICON_MAP: IconThemeMap = {
   heart: Heart, sparkles: Sparkles,
   alignLeft: AlignStartVertical, alignRight: AlignEndVertical, alignTop: AlignStartHorizontal, alignBottom: AlignEndHorizontal,
   distributeH: AlignHorizontalSpaceAround, distributeV: AlignVerticalSpaceAround,
-  star: Star
+  star: Star, maximize: Maximize, frame: Frame
 }
