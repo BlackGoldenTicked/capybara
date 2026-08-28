@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Card, CardPayload, ItemRow } from '../env'
 import { Icon } from './icons'
 
@@ -27,6 +27,15 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
   const fileRef = useRef<HTMLInputElement>(null)
 
   const assetSrc = p.file ? `board-asset://${p.file}` : (p.url || '')
+
+  // ESC 关闭编辑器（全局键盘监听，不干扰 input/textarea 内的 ESC）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onClose() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const saveText = () => onSave({ title, body })
   const saveLink = () => onSave({ title, body: note, payload: JSON.stringify({ url, note }) })
