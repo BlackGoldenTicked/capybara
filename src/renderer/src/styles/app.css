@@ -805,56 +805,68 @@ html.dark .toc-rail-tooltip {
 .net-err { grid-column: 1 / -1; color: var(--color-text-warning); word-break: break-all; font-size: 11px; line-height: 1.5; margin-top: 2px; }
 
 /* ===== 白板 ===== */
-.board { flex: 1; display: flex; flex-direction: column; background: var(--color-background-tertiary); }
+.board { flex: 1; display: flex; flex-direction: row; background: var(--color-background-tertiary); overflow: hidden; }
 .board-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--color-text-tertiary); gap: 6px; }
-/* 顶部标题栏：仅白板名称，静态不占交互 */
-.board-header { display: flex; align-items: center; padding: 8px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
-.board-header .title { font-size: 13px; font-weight: 400; color: var(--color-text-secondary); cursor: pointer; }
-.board-header .title:hover { color: var(--color-text-primary); }
 
-/* 画布上方浮层工具栏：卡片创建按钮 */
-.board-float-toolbar {
-  position: absolute; top: 44px; left: 50%; transform: translateX(-50%); z-index: 12;
-  display: flex; align-items: center; gap: 4px; padding: 5px 8px;
-  background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary);
-  border-radius: 10px; box-shadow: 0 4px 16px color-mix(in srgb, var(--color-text-primary) 14%, transparent);
-  pointer-events: auto;
+/* 右侧边栏：所有工具合并 */
+.board-sidebar {
+  width: 180px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 10px;
+  background: var(--color-background-secondary);
+  border-left: 0.5px solid var(--color-border-tertiary);
+  overflow-y: auto;
 }
-.board-float-toolbar .board-card-btns { display: flex; gap: 3px; }
-.board-float-toolbar .board-card-btns button {
-  padding: 5px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;
+.bs-section { display: flex; flex-direction: column; gap: 4px; }
+.bs-name {
+  font-size: 13px; font-weight: 500; color: var(--color-text-primary);
+  cursor: pointer; padding: 4px 6px; border-radius: 6px;
+}
+.bs-name:hover { background: var(--color-background-tertiary); }
+.bs-label {
+  font-size: 11px; color: var(--color-text-tertiary); text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 0 6px; margin-bottom: 2px;
+}
+.bs-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 8px; font-size: 12px;
   border: 0.5px solid transparent; border-radius: 6px;
   background: transparent; color: var(--color-text-secondary);
-  line-height: 1; white-space: nowrap; cursor: pointer;
+  cursor: pointer; line-height: 1;
   transition: background .12s, color .12s, border-color .12s;
 }
-.board-float-toolbar .board-card-btns button:hover {
-  background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-tertiary);
+.bs-btn:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); border-color: var(--color-border-tertiary); }
+.bs-btn.danger { color: var(--accent-coral); }
+.bs-btn.danger:hover { background: rgba(216,90,48,0.12); }
+.bs-btn .ic { flex: none; }
+.bs-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
 }
-.board-float-toolbar .board-card-btns button .ic { flex: none; }
-
-/* 右下角视图控制浮层 */
-.board-view-controls {
-  position: absolute; right: 14px; bottom: 14px; z-index: 12;
-  display: flex; align-items: center; gap: 3px; padding: 4px 6px;
-  background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary);
-  border-radius: 10px; box-shadow: 0 4px 16px color-mix(in srgb, var(--color-text-primary) 14%, transparent);
-  pointer-events: auto;
-}
-.board-view-controls button {
+.bs-grid button {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; padding: 0;
-  border: 0.5px solid transparent; border-radius: 6px;
+  width: 100%; aspect-ratio: 1; padding: 0;
+  border: 0.5px solid var(--color-border-tertiary); border-radius: 6px;
   background: transparent; color: var(--color-text-secondary);
   cursor: pointer; font-size: 12px;
   transition: background .12s, color .12s;
 }
-.board-view-controls button:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
-.board-view-controls button.danger { color: var(--accent-coral); }
-.board-view-controls button.danger:hover { background: rgba(216,90,48,0.12); }
-.board-view-controls button .ic { flex: none; }
-.board-view-controls .bvc-zoom {
-  font-size: 12px; color: var(--color-text-secondary); min-width: 38px; text-align: center;
+.bs-grid button:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
+.bs-grid button .ic { flex: none; }
+.bs-row {
+  display: flex; align-items: center; gap: 3px; padding: 0 6px;
+}
+.bs-row button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0;
+  border: 0.5px solid transparent; border-radius: 6px;
+  background: transparent; color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.bs-row button:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
+.bs-row button .ic { flex: none; }
+.bs-zoom {
+  font-size: 12px; color: var(--color-text-secondary); min-width: 36px; text-align: center;
   font-variant-numeric: tabular-nums; user-select: none;
 }
 .board-drop-hint {
