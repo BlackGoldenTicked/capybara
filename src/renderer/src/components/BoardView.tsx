@@ -461,51 +461,41 @@ export function BoardView() {
 
   return (
     <section className="board">
-      <div className="board-toolbar" onPointerDown={(e) => e.stopPropagation()}>
-        <div className="board-tb-name">
-          {editingName ? (
-            <input ref={nameRef} className="board-name-input" value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              onBlur={commitRename}
-              onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingName(false) }} />
-          ) : (
-            <span className="title" onDoubleClick={beginRename} title="双击重命名">{board?.name ?? '白板'}</span>
-          )}
-        </div>
-        <div className="board-tb-main">
+      {/* 顶部：仅白板标题 */}
+      <div className="board-header" onPointerDown={(e) => e.stopPropagation()}>
+        {editingName ? (
+          <input ref={nameRef} className="board-name-input" value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingName(false) }} />
+        ) : (
+          <span className="title" onDoubleClick={beginRename} title="双击重命名">{board?.name ?? '白板'}</span>
+        )}
+      </div>
+
+      {/* 画布上方浮层：卡片创建按钮 */}
+      {viewMode === 'board' && (
+        <div className="board-float-toolbar" onPointerDown={(e) => e.stopPropagation()}>
           <span className="board-card-btns">
             {CARD_TYPES.map((t) => (
               <button key={t.kind} title={t.desc} onClick={() => onPickType(t.kind)}>
-                <Icon name={t.icon} size={18} /> {t.label}
+                <Icon name={t.icon} size={16} /> {t.label}
               </button>
             ))}
           </span>
-          <span className="board-tools">
-            <button title="切换列表视图" onClick={() => setViewMode((v) => v === 'board' ? 'list' : 'board')}>
-              <Icon name="list" size={18} /> {viewMode === 'board' ? '列表' : '白板'}
-            </button>
-            <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={18} /></button>
-            <button title="还原视图" onClick={fit} style={{ minWidth: 52, fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
-            <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={18} /></button>
-            <button className="danger" title="删除白板" onClick={() => {
-              if (activeBoardId == null) return
-              if (!confirm('确定要删除「' + (board?.name ?? '白板') + '」吗？此操作不可撤销。')) return
-              void deleteBoard(activeBoardId)
-            }}><Icon name="trash" size={18} /></button>
-          </span>
         </div>
-      </div>
+      )}
 
-      {/* 批量对齐工具栏 */}
+      {/* 选中多卡片时：对齐工具浮在画布上方（卡片组上方） */}
       {selectedIds.size >= 2 && viewMode === 'board' && (
         <div className="board-align-bar">
           <span>已选 {selectedIds.size} 项</span>
-          <button title="左对齐" onClick={() => alignSelected('left')}><Icon name="alignLeft" size={18} /></button>
-          <button title="右对齐" onClick={() => alignSelected('right')}><Icon name="alignRight" size={18} /></button>
-          <button title="上对齐" onClick={() => alignSelected('top')}><Icon name="alignTop" size={18} /></button>
-          <button title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={18} /></button>
-          <button title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={18} /></button>
-          <button title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={18} /></button>
+          <button title="左对齐" onClick={() => alignSelected('left')}><Icon name="alignLeft" size={16} /></button>
+          <button title="右对齐" onClick={() => alignSelected('right')}><Icon name="alignRight" size={16} /></button>
+          <button title="上对齐" onClick={() => alignSelected('top')}><Icon name="alignTop" size={16} /></button>
+          <button title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={16} /></button>
+          <button title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={16} /></button>
+          <button title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={16} /></button>
         </div>
       )}
 
@@ -688,6 +678,24 @@ export function BoardView() {
               onKeyDown={(e) => { if (e.key === 'Enter') commitEditLink(); if (e.key === 'Escape') setEditingLinkId(null) }} />
           )
         })()}
+
+        {/* 右下角视图控制浮层 */}
+        {viewMode === 'board' && (
+          <div className="board-view-controls" onPointerDown={(e) => e.stopPropagation()}>
+            <button title="切换列表视图" onClick={() => setViewMode((v) => v === 'board' ? 'list' : 'board')}>
+              <Icon name="list" size={16} />
+            </button>
+            <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={16} /></button>
+            <span className="bvc-zoom">{Math.round(zoom * 100)}%</span>
+            <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={16} /></button>
+            <button title="还原视图" onClick={fit}><Icon name="maximize" size={16} /></button>
+            <button className="danger" title="删除白板" onClick={() => {
+              if (activeBoardId == null) return
+              if (!confirm('确定要删除「' + (board?.name ?? '白板') + '」吗？此操作不可撤销。')) return
+              void deleteBoard(activeBoardId)
+            }}><Icon name="trash" size={16} /></button>
+          </div>
+        )}
       </div>
       </>
       )}
