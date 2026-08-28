@@ -808,67 +808,44 @@ html.dark .toc-rail-tooltip {
 .board { flex: 1; display: flex; flex-direction: row; background: var(--color-background-tertiary); overflow: hidden; }
 .board-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--color-text-tertiary); gap: 6px; }
 
-/* 右侧边栏：所有工具合并 */
-.board-sidebar {
-  width: 180px; flex-shrink: 0;
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 14px 10px;
-  background: var(--color-background-secondary);
-  border-left: 0.5px solid var(--color-border-tertiary);
-  overflow-y: auto;
+/* 右侧悬浮 Dock 工具栏：类似 macOS Dock 放右边 */
+.board-dock {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 20;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px 5px;
+  background: color-mix(in srgb, var(--color-background-primary) 88%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 0.5px solid color-mix(in srgb, var(--color-border-secondary) 50%, transparent);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-text-primary) 12%, transparent);
+  pointer-events: auto;
 }
-.bs-section { display: flex; flex-direction: column; gap: 4px; }
-.bs-name {
-  font-size: 13px; font-weight: 500; color: var(--color-text-primary);
-  cursor: pointer; padding: 4px 6px; border-radius: 6px;
+.dock-group {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 4px 0;
 }
-.bs-name:hover { background: var(--color-background-tertiary); }
-.bs-label {
-  font-size: 11px; color: var(--color-text-tertiary); text-transform: uppercase;
-  letter-spacing: 0.5px; padding: 0 6px; margin-bottom: 2px;
+.dock-group:not(:last-child) {
+  border-bottom: 0.5px solid color-mix(in srgb, var(--color-border-tertiary) 40%, transparent);
+  padding-bottom: 8px;
 }
-.bs-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 8px; font-size: 12px;
-  border: 0.5px solid transparent; border-radius: 6px;
-  background: transparent; color: var(--color-text-secondary);
-  cursor: pointer; line-height: 1;
-  transition: background .12s, color .12s, border-color .12s;
-}
-.bs-btn:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); border-color: var(--color-border-tertiary); }
-.bs-btn.danger { color: var(--accent-coral); }
-.bs-btn.danger:hover { background: rgba(216,90,48,0.12); }
-.bs-btn .ic { flex: none; }
-.bs-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
-}
-.bs-grid button {
+.dock-item {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 100%; aspect-ratio: 1; padding: 0;
-  border: 0.5px solid var(--color-border-tertiary); border-radius: 6px;
-  background: transparent; color: var(--color-text-secondary);
-  cursor: pointer; font-size: 12px;
-  transition: background .12s, color .12s;
-}
-.bs-grid button:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
-.bs-grid button .ic { flex: none; }
-.bs-row {
-  display: flex; align-items: center; gap: 3px; padding: 0 6px;
-}
-.bs-row button {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; padding: 0;
-  border: 0.5px solid transparent; border-radius: 6px;
+  width: 32px; height: 32px; padding: 0;
+  border: none; border-radius: 8px;
   background: transparent; color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background .12s, color .12s;
+  transition: transform .15s var(--ease-out), background .12s, color .12s;
 }
-.bs-row button:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
-.bs-row button .ic { flex: none; }
-.bs-zoom {
-  font-size: 12px; color: var(--color-text-secondary); min-width: 36px; text-align: center;
-  font-variant-numeric: tabular-nums; user-select: none;
+.dock-item:hover {
+  background: color-mix(in srgb, var(--color-background-secondary) 70%, transparent);
+  color: var(--color-text-primary);
+  transform: scale(1.12);
 }
+.dock-item:active { transform: scale(0.95); }
+.dock-item.danger { color: var(--accent-coral); }
+.dock-item.danger:hover { background: rgba(216,90,48,0.14); }
+.dock-item .ic { flex: none; }
 .board-drop-hint {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
   color: var(--color-text-tertiary); font-size: 13px; pointer-events: none; text-align: center;
