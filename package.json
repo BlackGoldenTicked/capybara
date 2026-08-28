@@ -1,6 +1,6 @@
 {
   "name": "capybara",
-  "version": "0.7.222",
+  "version": "0.7.223",
   "private": true,
   "description": "Capybara - personal knowledge pipeline desktop client",
   "main": "out/main/index.js",

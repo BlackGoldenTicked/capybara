@@ -500,12 +500,12 @@ export function BoardView() {
       {selectedIds.size >= 2 && viewMode === 'board' && (
         <div className="board-align-bar">
           <span>已选 {selectedIds.size} 项</span>
-          <button title="左对齐" onClick={() => alignSelected('left')}><Icon name="alignLeft" size={15} /></button>
-          <button title="右对齐" onClick={() => alignSelected('right')}><Icon name="alignRight" size={15} /></button>
-          <button title="上对齐" onClick={() => alignSelected('top')}><Icon name="alignTop" size={15} /></button>
-          <button title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={15} /></button>
-          <button title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={15} /></button>
-          <button title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={15} /></button>
+          <button title="左对齐" onClick={() => alignSelected('left')}><Icon name="alignLeft" size={18} /></button>
+          <button title="右对齐" onClick={() => alignSelected('right')}><Icon name="alignRight" size={18} /></button>
+          <button title="上对齐" onClick={() => alignSelected('top')}><Icon name="alignTop" size={18} /></button>
+          <button title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={18} /></button>
+          <button title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={18} /></button>
+          <button title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={18} /></button>
         </div>
       )}
 

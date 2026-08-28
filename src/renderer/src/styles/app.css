@@ -1184,19 +1184,20 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
   border: 1px dashed var(--accent-info); pointer-events: none; z-index: 2;
 }
 .board-align-bar {
-  position: absolute; top: 52px; left: 50%; transform: translateX(-50%); z-index: 15;
-  display: flex; align-items: center; gap: 4px; padding: 6px 10px;
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 15;
+  display: flex; align-items: center; gap: 4px; padding: 5px 10px;
   background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary);
   border-radius: 999px; box-shadow: 0 4px 14px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
 }
-.board-align-bar span { font-size: 12px; color: var(--color-text-secondary); margin-right: 6px; }
+.board-align-bar span { font-size: 12px; color: var(--color-text-secondary); margin-right: 2px; white-space: nowrap; }
 .board-align-bar button {
   display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border: 0.5px solid var(--color-border-tertiary); border-radius: 6px;
+  width: 32px; height: 32px; border: 0.5px solid var(--color-border-tertiary); border-radius: 6px;
   background: transparent; cursor: pointer; color: var(--color-text-secondary);
+  padding: 0;
 }
 .board-align-bar button:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
-.board-align-bar button.danger:hover { color: var(--color-text-warning); border-color: var(--color-border-warning); }
+.board-align-bar button .ic { flex: none; }
 
 /* ===== 视频禁用占位 ===== */
 .bc-video-disabled {
