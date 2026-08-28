@@ -15,6 +15,8 @@ import { useMemo, useState, useCallback } from 'react'
 import type { Card, BoardLink } from '../env'
 import { Icon } from './icons'
 
+function safeParse(p: string): Record<string, unknown> { try { return p ? JSON.parse(p) : {} } catch { return {} } }
+
 interface Props {
   cards: Card[]
   links: BoardLink[]
@@ -124,6 +126,12 @@ export function BoardListview({ cards, links, onJumpToCard }: Props) {
 
   const cardMap = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards])
 
+  const cardPayloads = useMemo(() => {
+    const map = new Map<number, Record<string, unknown>>()
+    for (const c of cards) map.set(c.id, safeParse(c.payload))
+    return map
+  }, [cards])
+
   const toggle = useCallback((id: number) => {
     setExpandedSet((prev) => {
       const next = new Set(prev)
@@ -146,11 +154,14 @@ export function BoardListview({ cards, links, onJumpToCard }: Props) {
         {rows.map((row, i) => {
           const card = cardMap.get(row.cardId)
           if (!card) return null
+          const p = cardPayloads.get(row.cardId) ?? {}
+          const subtitle = card.body || (p.url as string) || (p.note as string) || ''
+          const isEven = i % 2 === 0
           return (
             <div
               key={`${row.cardId}-${i}`}
-              className={`list-row ${row.isRef ? 'row-ref' : ''} ${row.isCycle ? 'row-cycle' : ''}`}
-              style={{ paddingLeft: `${row.depth * 24 + 12}px` }}
+              className={`list-row ${row.isRef ? 'row-ref' : ''} ${row.isCycle ? 'row-cycle' : ''} ${isEven ? 'row-even' : 'row-odd'}`}
+              style={{ paddingLeft: `${row.depth * 20 + 8}px` }}
               onClick={() => {
                 if (row.isCycle) return
                 if (row.hasChildren && !row.isRef) toggle(row.cardId)
@@ -160,21 +171,24 @@ export function BoardListview({ cards, links, onJumpToCard }: Props) {
             >
               {/* 层级竖线 */}
               {row.depth > 0 && Array.from({ length: row.depth }).map((_, j) => (
-                <span key={j} className="list-indent-line" style={{ left: `${j * 24 + 8}px` }} />
+                <span key={j} className="list-indent-line" style={{ left: `${j * 20 + 6}px` }} />
               ))}
               {/* 展开/收起箭头 */}
               {row.hasChildren && !row.isRef ? (
                 <span className="list-toggle">
-                  <Icon name={row.expanded ? 'chevronDown' : 'chevronRight'} size={14} />
+                  <Icon name={row.expanded ? 'chevronDown' : 'chevronRight'} size={13} />
                 </span>
               ) : (
                 <span className="list-toggle-placeholder" />
               )}
               {/* 节点内容 */}
               <span className={`list-icon kind-${card.kind}`}>
-                <Icon name={card.kind === 'text' ? 'type' : card.kind === 'link' ? 'link' : card.kind === 'image' ? 'image' : card.kind === 'video' ? 'video' : card.kind === 'file' ? 'file' : 'ref'} size={14} />
+                <Icon name={card.kind === 'text' ? 'type' : card.kind === 'link' ? 'link' : card.kind === 'image' ? 'image' : card.kind === 'video' ? 'video' : card.kind === 'file' ? 'file' : 'ref'} size={13} />
               </span>
-              <span className="list-title">{card.title || `#${card.id}`}</span>
+              <span className="list-content">
+                <span className="list-title">{card.title || `#${card.id}`}</span>
+                {subtitle && <span className="list-subtitle">{subtitle}</span>}
+              </span>
               {row.isRef && <span className="list-badge ref-badge">引用</span>}
               {row.isCycle && <span className="list-badge cycle-badge">回到 {row.cycleTarget}</span>}
               {row.hasChildren && !row.isRef && !row.expanded && (
