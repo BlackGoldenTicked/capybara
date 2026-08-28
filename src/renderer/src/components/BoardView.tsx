@@ -334,8 +334,8 @@ export function BoardView() {
     const t = e.target as HTMLElement
     if (t.closest('a,button,input,textarea,.card-del,.card-edit,.card-link-dot')) return
     e.stopPropagation()
-    // 选中逻辑：Shift 多选，普通点击单选
-    if (e.shiftKey) {
+    // 选中逻辑：Shift 或 Ctrl/Cmd 多选，普通点击单选
+    if (e.shiftKey || e.metaKey || e.ctrlKey) {
       setSelectedIds((prev) => { const n = new Set(prev); if (n.has(card.id)) n.delete(card.id); else n.add(card.id); return n })
     } else if (!selectedIds.has(card.id)) {
       setSelectedIds(new Set([card.id]))
