@@ -462,34 +462,40 @@ export function BoardView() {
   return (
     <section className="board">
       <div className="board-toolbar" onPointerDown={(e) => e.stopPropagation()}>
-        {editingName ? (
-          <input ref={nameRef} className="board-name-input" value={nameDraft}
-            onChange={(e) => setNameDraft(e.target.value)}
-            onBlur={commitRename}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingName(false) }} />
-        ) : (
-          <span className="title" onDoubleClick={beginRename} title="双击重命名">{board?.name ?? '白板'}</span>
-        )}
-        <span className="board-card-btns">
-          {CARD_TYPES.map((t) => (
-            <button key={t.kind} title={t.desc} onClick={() => onPickType(t.kind)}>
-              <Icon name={t.icon} size={15} /> {t.label}
+        <div className="board-tb-left">
+          {editingName ? (
+            <input ref={nameRef} className="board-name-input" value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingName(false) }} />
+          ) : (
+            <span className="title" onDoubleClick={beginRename} title="双击重命名">{board?.name ?? '白板'}</span>
+          )}
+        </div>
+        <div className="board-tb-center">
+          <span className="board-card-btns">
+            {CARD_TYPES.map((t) => (
+              <button key={t.kind} title={t.desc} onClick={() => onPickType(t.kind)}>
+                <Icon name={t.icon} size={15} /> {t.label}
+              </button>
+            ))}
+          </span>
+        </div>
+        <div className="board-tb-right">
+          <span className="board-tools">
+            <button title="切换列表视图" onClick={() => setViewMode((v) => v === 'board' ? 'list' : 'board')}>
+              <Icon name="list" size={15} /> {viewMode === 'board' ? '列表' : '白板'}
             </button>
-          ))}
-        </span>
-        <span className="board-tools">
-          <button title="切换列表视图" onClick={() => setViewMode((v) => v === 'board' ? 'list' : 'board')}>
-            <Icon name="list" size={15} /> {viewMode === 'board' ? '列表' : '白板'}
-          </button>
-          <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={16} /></button>
-          <button title="还原视图" onClick={fit} style={{ minWidth: 52, fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
-          <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={16} /></button>
-          <button className="danger" title="删除白板" onClick={() => {
-            if (activeBoardId == null) return
-            if (!confirm('确定要删除「' + (board?.name ?? '白板') + '」吗？此操作不可撤销。')) return
-            void deleteBoard(activeBoardId)
-          }}><Icon name="trash" size={15} /></button>
-        </span>
+            <button title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={16} /></button>
+            <button title="还原视图" onClick={fit} style={{ minWidth: 52, fontVariantNumeric: 'tabular-nums' }}>{Math.round(zoom * 100)}%</button>
+            <button title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={16} /></button>
+            <button className="danger" title="删除白板" onClick={() => {
+              if (activeBoardId == null) return
+              if (!confirm('确定要删除「' + (board?.name ?? '白板') + '」吗？此操作不可撤销。')) return
+              void deleteBoard(activeBoardId)
+            }}><Icon name="trash" size={15} /></button>
+          </span>
+        </div>
       </div>
 
       {/* 批量对齐工具栏 */}
