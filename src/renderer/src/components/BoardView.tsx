@@ -139,7 +139,7 @@ export function BoardView() {
       rafRef.current = requestAnimationFrame(() => setLocalPos((prev) => ({ ...prev, [id]: { x: nx, y: ny } })))
     }
   }
-  const endDrag = (e: React.PointerEvent) => {
+  const endDrag = async (e: React.PointerEvent) => {
     if (linkRef.current) {
       const from = linkRef.current.fromId
       linkRef.current = null
@@ -152,8 +152,14 @@ export function BoardView() {
     const d = dragRef.current
     if (d.mode === 'node' && d.id != null && d.moved) {
       const p = localPos[d.id]
-      if (p) { void moveCard(d.id, p.x, p.y) }
+      // 先重置 dragRef，避免 onMove 在 await 期间继续写入 localPos
+      dragRef.current = { mode: null, sx: 0, sy: 0, ox: 0, oy: 0, moved: false }
+      if (p) {
+        // 等 store 乐观更新完成后再清 localPos，否则 cards 尚未更新就删覆盖 → 闪回起点
+        await moveCard(d.id, p.x, p.y)
+      }
       setLocalPos((prev) => { const n = { ...prev }; delete n[d.id!]; return n })
+      return
     }
     // 框选结束：计算选中的卡片（用 ref 避免 stale 闭包）
     if (d.mode === 'select' && selectBoxRef.current) {
