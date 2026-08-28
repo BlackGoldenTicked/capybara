@@ -90,13 +90,8 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
           <div className="edit-body">
             <div className="asset-preview">
               {card.kind === 'image' && assetSrc && <img src={assetSrc} alt={p.name || title} />}
-              {/* 视频: 禁用播放，仅保留基础载体框架 */}
-              {card.kind === 'video' && (
-                <div className="video-disabled-placeholder">
-                  <Icon name="video" size={24} />
-                  <span>视频播放已禁用</span>
-                </div>
-              )}
+              {card.kind === 'video' && assetSrc && <video src={assetSrc} controls preload="metadata" />}
+              {card.kind === 'video' && !assetSrc && <p className="ref-edit-sum">视频文件不可用</p>}
               {card.kind === 'file' && (
                 <div className="file-meta">
                   <span className="file-icon"><Icon name="file" size={20} /></span>

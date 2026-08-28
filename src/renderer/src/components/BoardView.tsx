@@ -628,7 +628,7 @@ export function BoardView() {
                   <>
                     <p className="bc-kind"><Icon name="image" size={12} /> 图片</p>
                     <img className="bc-media" src={assetSrc} alt={p.name || card.title}
-                      draggable={false} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      draggable={false} />
                     {p.name && <p className="bc-fname">{p.name}</p>}
                   </>
                 )}
@@ -638,10 +638,16 @@ export function BoardView() {
                     <p className="bc-summary">（图片加载中或不可用）</p>
                   </>
                 )}
-                {card.kind === 'video' && (
+                {card.kind === 'video' && assetSrc && (
                   <>
                     <p className="bc-kind"><Icon name="video" size={12} /> 视频</p>
-                    <div className="bc-video-disabled"><Icon name="video" size={20} /><span>播放已禁用</span></div>
+                    <video className="bc-media" src={assetSrc} controls preload="metadata" />
+                  </>
+                )}
+                {card.kind === 'video' && !assetSrc && (
+                  <>
+                    <p className="bc-kind"><Icon name="video" size={12} /> 视频</p>
+                    <p className="bc-summary">（视频加载中或不可用）</p>
                   </>
                 )}
                 {card.kind === 'file' && (

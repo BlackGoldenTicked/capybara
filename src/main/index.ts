@@ -694,13 +694,16 @@ app.whenReady().then(() => {
   registerIpc()
   // 注册 board-asset:// 协议，把白板附件目录映射出去供渲染进程加载
   protocol.handle('board-asset', (request) => {
-    const rel = decodeURIComponent(request.url.replace(/^board-asset:\/\//, '')).replace(/^\/+/, '').replace(/\/+$/, '').split('?')[0]
+    const u = new URL(request.url)
+    // standard scheme 下 file 名在 host 或 pathname 中，取 host + pathname 拼合
+    const rel = decodeURIComponent(u.host + u.pathname).replace(/^\/+/, '').replace(/\/+$/, '')
     const filePath = path.join(getAssetsDir(), rel)
     return net.fetch(url.pathToFileURL(filePath).toString())
   })
   // 注册 cover:// 协议，把本地化的封面图目录映射出去（离线可用，修复 #8/#13）
   protocol.handle('cover', (request) => {
-    const rel = decodeURIComponent(request.url.replace(/^cover:\/\//, '')).replace(/^\/+/, '').replace(/\/+$/, '').split('?')[0]
+    const u = new URL(request.url)
+    const rel = decodeURIComponent(u.host + u.pathname).replace(/^\/+/, '').replace(/\/+$/, '')
     const filePath = path.join(getImagesDir(), rel)
     return net.fetch(url.pathToFileURL(filePath).toString())
   })
