@@ -807,13 +807,12 @@ html.dark .toc-rail-tooltip {
 /* ===== 白板 ===== */
 .board { flex: 1; display: flex; flex-direction: column; background: var(--color-background-tertiary); }
 .board-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--color-text-tertiary); gap: 6px; }
-.board-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); position: relative; }
-.board-tb-left { display: flex; align-items: center; flex: 0 0 auto; min-width: 80px; }
-.board-tb-center { display: flex; align-items: center; justify-content: center; flex: 1 1 auto; }
-.board-tb-right { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; min-width: 80px; }
+.board-toolbar { display: flex; align-items: center; justify-content: center; padding: 8px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); position: relative; gap: 12px; }
+.board-tb-name { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; }
+.board-tb-main { display: flex; align-items: center; gap: 12px; }
 .board-toolbar .title { font-size: 13px; font-weight: 400; color: var(--color-text-secondary); }
 .board-tools { display: flex; gap: 6px; }
-.board-tools button { padding: 4px 8px; font-size: 12px; }
+.board-tools button { padding: 5px 9px; font-size: 12px; }
 .board-tools button.danger { color: var(--accent-coral); }
 .board-tools button.danger:hover { background: rgba(216,90,48,0.16); }
 .board-card-btns { display: flex; gap: 4px; }
