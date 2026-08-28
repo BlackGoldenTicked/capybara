@@ -356,22 +356,33 @@ transition: background .12s var(--ease-out), color .12s var(--ease-out);
 
 /* 卡片操作图标：悬停 / 选中时显示在右上角，点击执行打开 / 已读 / 稍后读 / 收藏 / 删除 */
 .card-actions {
-  position: absolute; top: 6px; right: 6px; display: flex; gap: 2px;
-  padding: 2px; border-radius: 8px; background: var(--card-bg);
-  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 22%, transparent);
-  opacity: 0; transform: translateY(-2px); transition: opacity .12s var(--ease-out), transform .12s var(--ease-out);
-  z-index: 2;
+position: absolute; top: 6px; right: 6px; display: flex; gap: 2px;
+padding: 2px; border-radius: 8px; background: var(--card-bg);
+box-shadow: 0 1px 4px color-mix(in srgb, var(--color-text-primary) 22%, transparent);
+opacity: 0; transform: translateY(-2px); transition: opacity .12s var(--ease-out), transform .12s var(--ease-out);
+z-index: 2;
 }
 .card:hover .card-actions, .card.selected .card-actions { opacity: 1; transform: translateY(0); }
 .ico { width: 15px; height: 15px; display: block; }
 .act {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 6px;
-  background: transparent; color: var(--color-text-tertiary); cursor: pointer;
+display: inline-flex; align-items: center; justify-content: center;
+width: 24px; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 6px;
+background: transparent; color: var(--color-text-secondary); cursor: pointer;
+transition: background .12s var(--ease-out), color .12s var(--ease-out);
 }
-.act:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
-.act.on { color: var(--accent-info); }
+/* 语义色：默认即有辨识度，hover 加深，激活态强调 */
+.act[data-act="open"] { color: color-mix(in srgb, var(--accent-info) 72%, var(--color-text-secondary)); }
+.act[data-act="open"]:hover { color: var(--accent-info); }
+.act[data-act="read"] { color: color-mix(in srgb, #30a14e 72%, var(--color-text-secondary)); }
+.act[data-act="read"]:hover { color: #30a14e; }
+.act[data-act="later"] { color: color-mix(in srgb, #e8a317 72%, var(--color-text-secondary)); }
+.act[data-act="later"]:hover { color: #e8a317; }
+.act[data-act="fav"] { color: color-mix(in srgb, #e5484d 72%, var(--color-text-secondary)); }
+.act[data-act="fav"]:hover { color: #e5484d; }
+.act:hover { background: var(--color-background-tertiary); }
+.act.on { color: var(--accent-info) !important; }
 .act.on:hover { background: var(--color-background-info); }
+.act.danger { color: color-mix(in srgb, var(--color-text-warning) 72%, var(--color-text-secondary)); }
 .act.danger:hover { background: var(--color-background-warning); color: var(--color-text-warning); }
 
 /* ===== 列表视图行（卡片式：标签+时间一行 + 标题两行，不显示描述） ===== */

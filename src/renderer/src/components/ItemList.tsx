@@ -73,10 +73,10 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
           </div>
           <div className="list-title">{item.title}</div>
           <div className="list-actions" onClick={stop} onDragStart={stop}>
-            <button className="act" title="用系统默认浏览器打开" onPointerDown={open} onClick={stop}><Icon name="external" size={14} /></button>
-            <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onPointerDown={toggleRead} onClick={stop}><Icon name="check" size={14} /></button>
-            <button className={`act ${later ? 'on' : ''}`} title="稍后读" onPointerDown={laterFn} onClick={stop}><Icon name="later" size={14} /></button>
-            <button className={`act ${fav ? 'on' : ''}`} title="收藏" onPointerDown={favFn} onClick={stop}><Icon name="favorite" size={14} fill={fav ? 'currentColor' : 'none'} /></button>
+            <button className="act" data-act="open" title="用系统默认浏览器打开" onPointerDown={open} onClick={stop}><Icon name="external" size={14} /></button>
+            <button className={`act ${read ? 'on' : ''}`} data-act="read" title={read ? '标记为未读' : '标记为已读'} onPointerDown={toggleRead} onClick={stop}><Icon name="check" size={14} /></button>
+            <button className={`act ${later ? 'on' : ''}`} data-act="later" title="稍后读" onPointerDown={laterFn} onClick={stop}><Icon name="later" size={14} /></button>
+            <button className={`act ${fav ? 'on' : ''}`} data-act="fav" title="收藏" onPointerDown={favFn} onClick={stop}><Icon name="favorite" size={14} fill={fav ? 'currentColor' : 'none'} /></button>
             <button className="act danger" title="删除" onPointerDown={del} onClick={stop}><Icon name="trash" size={14} /></button>
           </div>
         </div>
@@ -100,10 +100,10 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
           {item.summary && <p className="card-summary">{plainTextFromHtml(item.summary)}</p>}
 
           <div className="card-actions" onClick={stop} onDragStart={stop}>
-            <button className="act" title="用系统默认浏览器打开" onPointerDown={open} onClick={stop}><Icon name="external" size={15} /></button>
-            <button className={`act ${read ? 'on' : ''}`} title={read ? '标记为未读' : '标记为已读'} onPointerDown={toggleRead} onClick={stop}><Icon name="check" size={15} /></button>
-            <button className={`act ${later ? 'on' : ''}`} title="稍后读" onPointerDown={laterFn} onClick={stop}><Icon name="later" size={15} /></button>
-            <button className={`act ${fav ? 'on' : ''}`} title="收藏" onPointerDown={favFn} onClick={stop}><Icon name="favorite" size={15} fill={fav ? 'currentColor' : 'none'} /></button>
+            <button className="act" data-act="open" title="用系统默认浏览器打开" onPointerDown={open} onClick={stop}><Icon name="external" size={15} /></button>
+            <button className={`act ${read ? 'on' : ''}`} data-act="read" title={read ? '标记为未读' : '标记为已读'} onPointerDown={toggleRead} onClick={stop}><Icon name="check" size={15} /></button>
+            <button className={`act ${later ? 'on' : ''}`} data-act="later" title="稍后读" onPointerDown={laterFn} onClick={stop}><Icon name="later" size={15} /></button>
+            <button className={`act ${fav ? 'on' : ''}`} data-act="fav" title="收藏" onPointerDown={favFn} onClick={stop}><Icon name="favorite" size={15} fill={fav ? 'currentColor' : 'none'} /></button>
             <button className="act danger" title="删除" onPointerDown={del} onClick={stop}><Icon name="trash" size={15} /></button>
           </div>
         </div>
