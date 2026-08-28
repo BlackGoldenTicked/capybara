@@ -410,6 +410,7 @@ function registerIpc() {
         shortcuts: g('shortcuts'),
         developerMode: bool('developer_mode'),
         logo: g('logo') ?? '默认.png',
+        themeBundle: g('theme_bundle') || 'default',
         layout: {
           sideW: num('side_w', 196),
           listW: num('list_w', 320),

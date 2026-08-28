@@ -12,6 +12,7 @@ import {
   uiFontStack,
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
+import { listThemeBundles, type ThemeBundle } from '../lib/theme-bundles'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
 import {
   SHORTCUT_GROUPS, DEFAULT_SHORTCUTS, formatCombo, eventToCombo,
@@ -90,7 +91,7 @@ export function SettingsView() {
 
 /* ===================== 外观 ===================== */
 function AppearanceTab() {
-  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo, showToast } = useStore()
+  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo, showToast, themeBundleId, setThemeBundle } = useStore()
   const [systemFonts, setSystemFonts] = useState<string[]>([])
   const [logos, setLogos] = useState<Array<{ id: string; name: string; thumb: string }>>([])
   const styleGridRef = useRef<HTMLDivElement>(null)
@@ -131,6 +132,41 @@ function AppearanceTab() {
 
   return (
     <div className="set-scroll">
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">主题套装</p>
+          <span className="cur-chip">{listThemeBundles().find((b: ThemeBundle) => b.id === themeBundleId)?.label || '自定义'}</span>
+        </div>
+        <p className="src-hint">一键切换图标风格 + 音效风格，全局即时生效。后续接入新素材包后会在此列出可选套装。</p>
+        <div className="bundle-grid">
+          {listThemeBundles().map((b: ThemeBundle) => (
+            <button key={b.id} className={`bundle-opt ${themeBundleId === b.id ? 'active' : ''}`}
+              onClick={() => setThemeBundle(b.id)}>
+              <div className="bundle-preview">
+                <Icon name="sparkles" size={20} />
+                <Icon name="music" size={16} />
+              </div>
+              <div className="bundle-info">
+                <span className="bundle-name">{b.label}</span>
+                {b.description && <span className="bundle-desc">{b.description}</span>}
+              </div>
+            </button>
+          ))}
+          {themeBundleId === 'custom' && (
+            <div className="bundle-opt active">
+              <div className="bundle-preview">
+                <Icon name="sparkles" size={20} />
+                <Icon name="music" size={16} />
+              </div>
+              <div className="bundle-info">
+                <span className="bundle-name">自定义</span>
+                <span className="bundle-desc">图标与音效来自不同主题</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="set-card">
         <p className="src-label">主题</p>
         <div className="seg">
