@@ -1,4 +1,4 @@
-import { Fragment, useState, useRef } from 'react'
+import { Fragment, useState } from 'react'
 import { useStore } from '../store'
 import { feedColor } from '../lib/feedColor'
 import { Icon } from './icons'
@@ -37,21 +37,8 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
     try { await refreshAll() } finally { setRefreshingId(null) }
   }
 
-  // 取消订阅二次确认
+  // 取消订阅确认：进入确认态后显示「取消 | 确定」两个小按钮
   const [confirmUnsub, setConfirmUnsub] = useState<number | null>(null)
-  const unsubTimerRef = useRef<number>(0)
-  const handleUnsubscribe = (f: { id: number; name: string; url: string }) => {
-    if (confirmUnsub === f.id) {
-      window.clearTimeout(unsubTimerRef.current)
-      void deleteFeed(f.id)
-      setConfirmUnsub(null)
-      showToast(`已取消订阅「${f.name || f.url}」`)
-    } else {
-      setConfirmUnsub(f.id)
-      // 3 秒后自动取消确认状态，避免用户忘记
-      unsubTimerRef.current = window.setTimeout(() => setConfirmUnsub(null), 3000)
-    }
-  }
 
   return (
     <aside className="feeds-panel" style={style}>
@@ -88,19 +75,38 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
                     <span className="feed-dot" style={{ background: feedColor(f.name) }} />
                     <span className="feed-name">{f.name}</span>
                     {err && <span className="feed-err-dot" aria-label="抓取失败" />}
-                    <button
-                      className={`feed-refresh ${refreshingId === f.id ? 'spinning' : ''}`}
-                      title="只刷新此源"
-                      onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void refreshOne(f.id) }}
-                      onClick={(e) => e.stopPropagation()}>
-                      <Icon name="refresh" size={12} />
-                    </button>
-                    <button
-                      className={`feed-unsub ${confirmUnsub === f.id ? 'confirm' : ''}`}
-                      title={confirmUnsub === f.id ? '再次点击确认取消订阅' : '取消订阅'}
-                      onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); handleUnsubscribe(f) }}>
-                      <Icon name="trash" size={12} />
-                    </button>
+                    {confirmUnsub === f.id ? (
+                      <span className="feed-unsub-confirm" onPointerDown={(e) => e.stopPropagation()}>
+                        <button
+                          className="feed-unsub-cancel"
+                          title="取消"
+                          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setConfirmUnsub(null) }}>
+                          取消
+                        </button>
+                        <button
+                          className="feed-unsub-ok"
+                          title="确认删除订阅"
+                          onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void deleteFeed(f.id); setConfirmUnsub(null); showToast(`已取消订阅「${f.name || f.url}」`) }}>
+                          确定
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        className="feed-refresh"
+                        title="只刷新此源"
+                        onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void refreshOne(f.id) }}
+                        onClick={(e) => e.stopPropagation()}>
+                        <Icon name="refresh" size={12} />
+                      </button>
+                    )}
+                    {confirmUnsub !== f.id && (
+                      <button
+                        className="feed-unsub"
+                        title="取消订阅"
+                        onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setConfirmUnsub(f.id) }}>
+                        <Icon name="trash" size={12} />
+                      </button>
+                    )}
                   </div>
                 )
               })}

@@ -271,15 +271,25 @@ transition: background .12s var(--ease-out), color .12s var(--ease-out);
 .feed-refresh:hover { background: var(--color-background-primary); color: var(--color-text-info); }
 .feed-refresh.spinning svg { animation: rf-spin 0.9s linear infinite; }
 
-/* 取消订阅按钮（hover 显示，二次确认高亮） */
+/* 取消订阅按钮（hover 显示） */
 .feed-unsub {
 flex: none; border: none; background: transparent; padding: 3px; border-radius: 5px;
 color: var(--color-text-tertiary); cursor: pointer; display: flex; align-items: center; justify-content: center;
 opacity: 0; transition: opacity .12s var(--ease-out), background .12s var(--ease-out), color .12s var(--ease-out);
 }
-.feed-item:hover .feed-unsub, .feed-unsub:focus-visible, .feed-unsub.confirm { opacity: 1; }
+.feed-item:hover .feed-unsub, .feed-unsub:focus-visible { opacity: 1; }
 .feed-unsub:hover { background: var(--color-background-primary); color: var(--color-text-warning); }
-.feed-unsub.confirm { background: var(--color-background-warning); color: var(--color-text-warning); animation: popIn .15s var(--ease-out) both; }
+
+/* 取消订阅确认态：显示「取消 | 确定」两个小按钮 */
+.feed-unsub-confirm { flex: none; display: flex; gap: 2px; align-items: center; animation: popIn .12s var(--ease-out) both; }
+.feed-unsub-cancel, .feed-unsub-ok {
+flex: none; font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+border: 0.5px solid var(--color-border-tertiary); background: transparent; color: var(--color-text-secondary);
+transition: all .12s var(--ease-out);
+}
+.feed-unsub-cancel:hover { background: var(--color-background-tertiary); }
+.feed-unsub-ok { border-color: var(--color-border-danger); color: var(--color-text-danger, var(--color-text-warning)); }
+.feed-unsub-ok:hover { background: var(--color-background-danger, var(--color-background-warning)); }
 
 .feeds-empty { font-size: 12px; color: var(--color-text-tertiary); padding: 6px 8px; }
 
