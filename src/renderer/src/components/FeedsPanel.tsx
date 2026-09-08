@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useRef } from 'react'
 import { useStore } from '../store'
 import { feedColor } from '../lib/feedColor'
 import { Icon } from './icons'
@@ -39,13 +39,17 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
 
   // 取消订阅二次确认
   const [confirmUnsub, setConfirmUnsub] = useState<number | null>(null)
+  const unsubTimerRef = useRef<number>(0)
   const handleUnsubscribe = (f: { id: number; name: string; url: string }) => {
     if (confirmUnsub === f.id) {
+      window.clearTimeout(unsubTimerRef.current)
       void deleteFeed(f.id)
       setConfirmUnsub(null)
       showToast(`已取消订阅「${f.name || f.url}」`)
     } else {
       setConfirmUnsub(f.id)
+      // 3 秒后自动取消确认状态，避免用户忘记
+      unsubTimerRef.current = window.setTimeout(() => setConfirmUnsub(null), 3000)
     }
   }
 
@@ -94,9 +98,7 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
                     <button
                       className={`feed-unsub ${confirmUnsub === f.id ? 'confirm' : ''}`}
                       title={confirmUnsub === f.id ? '再次点击确认取消订阅' : '取消订阅'}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleUnsubscribe(f) }}
-                      onMouseLeave={() => { if (confirmUnsub === f.id) setConfirmUnsub(null) }}>
+                      onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); handleUnsubscribe(f) }}>
                       <Icon name="trash" size={12} />
                     </button>
                   </div>
