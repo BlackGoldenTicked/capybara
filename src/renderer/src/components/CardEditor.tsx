@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Card, CardPayload, ItemRow } from '../env'
 import { Icon } from './icons'
+import { useStore } from '../store'
 
 function fmtSize(n?: number): string {
   if (!n) return ''
@@ -26,7 +27,8 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
   const [note, setNote] = useState(p.note ?? card.body ?? '')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const assetSrc = p.file ? `board-asset://${p.file}` : (p.url || '')
+  // 视频用 local-path:// 引用原始路径（不拷贝）；图片/文件用 board-asset://
+  const assetSrc = p.localPath ? `local-path://${p.localPath}` : (p.file ? `board-asset://${p.file}` : (p.url || ''))
 
   // ESC 关闭编辑器（全局键盘监听，不干扰 input/textarea 内的 ESC）
   useEffect(() => {
@@ -37,8 +39,23 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const [linkFetching, setLinkFetching] = useState(false)
+
   const saveText = () => onSave({ title, body })
-  const saveLink = () => onSave({ title, body: note, payload: JSON.stringify({ url, note }) })
+  const saveLink = async () => {
+    // 自动抓取链接 OG 元数据，实现富卡片预览
+    let preview: { previewTitle?: string; previewDesc?: string; previewImage?: string; previewSite?: string } = {}
+    if (url && /^https?:\/\//.test(url)) {
+      setLinkFetching(true)
+      try {
+        const r = await window.capybara.invoke('boards:fetchLinkPreview', url) as { title: string; desc: string; image: string; site: string } | null
+        if (r) preview = { previewTitle: r.title, previewDesc: r.desc, previewImage: r.image, previewSite: r.site }
+      } catch { /* 网络失败时静默回退普通链接 */ }
+      setLinkFetching(false)
+    }
+    onSave({ title, body: note, payload: JSON.stringify({ url, note, ...preview }) })
+    useStore.getState().showToast(preview.previewTitle ? '链接预览已抓取' : '链接已保存')
+  }
   const saveAsset = (sourcePath?: string) => {
     // 用当前 note 构建 payload，保留原有的 file/name/size 等字段
     const newPayload = JSON.stringify({ ...p, note })
@@ -118,12 +135,12 @@ export function CardEditor({ card, itemMap, onClose, onSave, onDelete, onOpenIte
 
         <div className="modal-foot">
           <button className="danger" onClick={() => { onDelete(); onClose() }}><Icon name="trash" size={14} /> 删除卡片</button>
-          <button className="primary" onClick={() => {
+          <button className="primary" disabled={linkFetching} onClick={async () => {
             if (card.kind === 'text') saveText()
-            else if (card.kind === 'link') saveLink()
+            else if (card.kind === 'link') await saveLink()
             else saveAsset()
             onClose()
-          }}><Icon name="check" size={14} /> 保存</button>
+          }}>{linkFetching ? '抓取中…' : <><Icon name="check" size={14} /> 保存</>}</button>
         </div>
       </div>
     </div>

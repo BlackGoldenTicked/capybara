@@ -28,6 +28,7 @@ feeds/rss_cleaning_report.json
 
 # Electron 开发环境 userData（运行时缓存、数据库等，全自动生成）
 .capybara-userData/
+.readflow-userData/
 
 # 文档仅本地留存，不纳入版本控制
 docs/

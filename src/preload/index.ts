@@ -18,7 +18,7 @@ const validChannels = [
   'items:quickAdd', 'settings:get', 'settings:set', 'settings:purge',
   'boards:list', 'boards:create', 'boards:delete',
   'boards:cards', 'boards:addCard', 'boards:updateCard', 'boards:moveCard', 'boards:deleteCard', 'boards:rename', 'boards:openFile',
-  'boards:links', 'boards:addLink', 'boards:deleteLink', 'boards:updateLink',
+  'boards:links', 'boards:addLink', 'boards:deleteLink', 'boards:updateLink', 'boards:fetchLinkPreview',
   'github:fetchStars', 'github:fetchReadme', 'github:deviceLogin', 'github:pollLogin', 'github:abortLogin', 'github:tokenStatus', 'github:setToken', 'twitter:importBookmarks', 'items:sourceCounts',
   'feeds:importOpml',
   'feeds:listPage', 'feeds:count', 'feeds:validate',

@@ -270,6 +270,17 @@ transition: background .12s var(--ease-out), color .12s var(--ease-out);
 .feed-item:hover .feed-refresh, .feed-refresh:focus-visible, .feed-refresh.spinning { opacity: 1; }
 .feed-refresh:hover { background: var(--color-background-primary); color: var(--color-text-info); }
 .feed-refresh.spinning svg { animation: rf-spin 0.9s linear infinite; }
+
+/* 取消订阅按钮（hover 显示，二次确认高亮） */
+.feed-unsub {
+flex: none; border: none; background: transparent; padding: 3px; border-radius: 5px;
+color: var(--color-text-tertiary); cursor: pointer; display: flex; align-items: center; justify-content: center;
+opacity: 0; transition: opacity .12s var(--ease-out), background .12s var(--ease-out), color .12s var(--ease-out);
+}
+.feed-item:hover .feed-unsub, .feed-unsub:focus-visible, .feed-unsub.confirm { opacity: 1; }
+.feed-unsub:hover { background: var(--color-background-primary); color: var(--color-text-warning); }
+.feed-unsub.confirm { background: var(--color-background-warning); color: var(--color-text-warning); animation: popIn .15s var(--ease-out) both; }
+
 .feeds-empty { font-size: 12px; color: var(--color-text-tertiary); padding: 6px 8px; }
 
 @keyframes rf-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -348,6 +359,7 @@ transition: background .12s var(--ease-out), color .12s var(--ease-out);
 
 /* GitHub ★ / Twitter 书签 来源徽标沿用上方中性 badge，靠 src-dot 区分来源色 */
 .card-time { font-size: 11px; color: var(--color-text-tertiary); }
+.card-time.time-fallback { color: var(--color-text-tertiary); opacity: 0.7; font-style: italic; }
 .card-title { font-size: 15px; font-weight: 600; line-height: 1.45; margin-bottom: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card-summary {
   font-size: 13px; color: var(--color-text-secondary); line-height: 1.55;
@@ -422,6 +434,7 @@ transition: background .12s var(--ease-out), color .12s var(--ease-out);
 .list-row.unread .list-title { font-weight: 600; }
 .list-row.selected .list-title { color: var(--color-text-primary); }
 .list-time { flex: none; font-size: 12px; color: var(--color-text-tertiary); white-space: nowrap; transition: opacity .12s var(--ease-out); }
+.list-time.time-fallback { opacity: 0.7; font-style: italic; }
 /* 操作按钮绝对定位悬浮（不占布局宽度，避免挤压标题）；hover 时时间淡出、按钮淡入，覆盖在行右上角 */
 .list-actions {
   position: absolute; right: 8px; top: 8px;
@@ -1004,6 +1017,20 @@ html.dark .toc-rail-tooltip {
 .feed-row .fr-open:hover { background: var(--color-background-tertiary); color: var(--color-text-primary); }
 .feed-row .fr-state { font-size: 11px; color: var(--color-text-tertiary); }
 
+/* 取消订阅按钮（二次确认） */
+.unsub-btn {
+  flex-shrink: 0; font-size: 12px; padding: 4px 10px; border-radius: var(--border-radius-sm);
+  border: 0.5px solid var(--color-border-tertiary); background: transparent; color: var(--color-text-tertiary);
+  cursor: pointer; transition: all .15s var(--ease-out); white-space: nowrap;
+}
+.unsub-btn:hover { color: var(--color-text-warning); border-color: var(--color-border-warning); }
+.unsub-confirm {
+  flex-shrink: 0; font-size: 12px; padding: 4px 10px; border-radius: var(--border-radius-sm);
+  border: 0.5px solid var(--color-border-warning); background: var(--color-background-warning);
+  color: var(--color-text-warning); cursor: pointer; font-weight: 600; white-space: nowrap;
+  animation: popIn .15s var(--ease-out) both;
+}
+
 /* 已订阅：两列网格 + 固定高度滚动 */
 .subs-row { display: flex; gap: 16px; align-items: stretch; }
 .subs-row > .set-card { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -1101,6 +1128,31 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
 .bc-title { font-size: 13px; font-weight: 500; line-height: 1.4; margin-bottom: 4px; word-break: break-word; }
 .bc-summary { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
 .bc-link { font-size: 11px; color: var(--color-text-info); word-break: break-all; display: block; margin-bottom: 4px; }
+
+/* ===== 链接卡片富预览（钉钉风格） ===== */
+.link-card {
+  display: flex; flex-direction: column; border-radius: 8px; overflow: hidden;
+  background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary);
+  text-decoration: none; color: inherit; cursor: pointer; margin-top: 2px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.link-card:hover { border-color: var(--color-border-info); box-shadow: 0 2px 12px color-mix(in srgb, var(--color-text-primary) 8%, transparent); }
+.link-card-cover {
+  width: 100%; height: 120px; background-size: cover; background-position: center;
+  background-color: var(--color-background-tertiary); flex-shrink: 0;
+}
+.link-card-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.link-card-title {
+  font-size: 13px; font-weight: 600; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  word-break: break-word;
+}
+.link-card-desc {
+  font-size: 11px; color: var(--color-text-tertiary); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  word-break: break-word;
+}
+.link-card-site { font-size: 10px; color: var(--color-text-tertiary); margin-top: 2px; }
 .bc-media { width: 100%; max-height: 150px; object-fit: cover; border-radius: 6px; margin-top: 2px; background: var(--color-background-secondary); }
 .bc-fname { font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; word-break: break-all; }
 .board-card.kind-image, .board-card.kind-video { padding-bottom: 8px; }
@@ -1238,57 +1290,6 @@ button.danger { color: var(--color-text-warning); border-color: var(--color-bord
   gap: 8px; padding: 30px 10px; color: var(--color-text-tertiary); font-size: 13px;
   background: var(--color-background-tertiary); border-radius: var(--border-radius-md); width: 100%;
 }
-
-/* ===== 列表视图 ===== */
-.board-listview {
-  flex: 1; overflow: auto; padding: 10px 0; background: var(--color-background-primary);
-  max-width: 520px;
-}
-.listview-header {
-  display: flex; align-items: center; gap: 8px; padding: 0 14px 8px;
-  font-size: 12px; color: var(--color-text-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 4px;
-}
-.listview-body { padding: 0 6px; }
-.listview-empty { text-align: center; color: var(--color-text-tertiary); padding: 40px; font-size: 13px; }
-.list-row {
-  display: flex; align-items: center; gap: 5px; padding: 4px 6px; border-radius: 5px;
-  cursor: pointer; font-size: 12px; position: relative; line-height: 1.35;
-  border-left: 2px solid transparent; transition: background .1s;
-}
-.list-row:hover { background: var(--color-background-secondary); }
-.list-row.row-even { background: color-mix(in srgb, var(--color-background-secondary) 30%, transparent); }
-.list-row.row-even:hover { background: var(--color-background-secondary); }
-.list-row.row-ref { opacity: 0.55; }
-.list-row.row-cycle { color: var(--color-text-warning); font-style: italic; }
-.list-indent-line {
-  position: absolute; top: 0; bottom: 0; width: 1px;
-  background: var(--color-border-tertiary); pointer-events: none;
-}
-.list-toggle {
-  display: flex; align-items: center; justify-content: center; width: 14px; height: 14px;
-  flex-shrink: 0; color: var(--color-text-tertiary);
-}
-.list-toggle-placeholder { width: 14px; flex-shrink: 0; }
-.list-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; color: var(--color-text-secondary);
-  background: var(--color-background-secondary);
-}
-.list-content {
-  flex: 1; display: flex; flex-direction: column; gap: 1px;
-  min-width: 0;
-}
-.list-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.list-subtitle {
-  font-size: 11px; color: var(--color-text-tertiary);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.list-badge {
-  font-size: 10px; padding: 1px 5px; border-radius: 999px; flex-shrink: 0;
-}
-.ref-badge { background: var(--color-background-tertiary); color: var(--color-text-tertiary); }
-.cycle-badge { background: color-mix(in srgb, var(--color-text-warning) 15%, transparent); color: var(--color-text-warning); }
-.list-children-count { font-size: 11px; color: var(--color-text-tertiary); flex-shrink: 0; }
 
 /* ===== 白板：顶部添加卡片面板 ===== */
 .board-center-palette {

@@ -780,8 +780,8 @@ export function markFeedFetched(id: number, error: boolean, errMsg?: string, eta
 export function upsertItem(input: Partial<Item>): { id: number; changed: boolean } {
   const url = input.url ?? ''
   const st = input.source_type ?? 'manual'
-  const existing = db.prepare('SELECT id, title, summary, content_text, content_html, cover_url, kind, media_url, media_type, duration FROM items WHERE url = ? AND source_type = ?').get(url, st) as
-    { id: number; title: string; summary: string; content_text: string; content_html: string; cover_url: string; kind: string; media_url: string; media_type: string; duration: number } | undefined
+  const existing = db.prepare('SELECT id, title, summary, content_text, content_html, cover_url, kind, media_url, media_type, duration, published_at, fetched_at FROM items WHERE url = ? AND source_type = ?').get(url, st) as
+    { id: number; title: string; summary: string; content_text: string; content_html: string; cover_url: string; kind: string; media_url: string; media_type: string; duration: number; published_at: string; fetched_at: string } | undefined
   if (existing) {
     // 内容完全相同则跳过（避免每次抓取都触发表上的 FTS5 触发器重建索引，写放大修复 #10）
     const same =
@@ -796,6 +796,21 @@ export function upsertItem(input: Partial<Item>): { id: number; changed: boolean
       existing.duration === (input.duration ?? 0)
     if (same) return { id: existing.id, changed: false }
   }
+  // 增量更新策略：已有条目不覆盖 published_at（除非原来就没有）
+  // 防止 RSS 源重新生成 pubDate 导致历史时间被冲掉
+  let finalPubDate = input.published_at ?? new Date().toISOString()
+  if (existing && existing.published_at) {
+    // 已有条目：检测原 published_at 是否是回退值（与 fetched_at 几乎同时）
+    try {
+      const pd = new Date(existing.published_at.includes('T') ? existing.published_at : existing.published_at.replace(' ', 'T') + 'Z')
+      const fd = new Date(existing.fetched_at.includes('T') ? existing.fetched_at : existing.fetched_at.replace(' ', 'T') + 'Z')
+      const wasFallback = Math.abs(pd.getTime() - fd.getTime()) < 60_000
+      // 原来是回退值且新值有真实日期 → 更新；否则保留原值
+      if (!wasFallback) {
+        finalPubDate = existing.published_at
+      }
+    } catch { finalPubDate = existing.published_at }
+  }
   const r = db.prepare(`INSERT INTO items (source_type, source_name, url, title, author, summary, content_text, content_html, cover_url, status, published_at, feed_id, kind, media_url, media_type, duration)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'inbox', ?, ?, ?, ?, ?, ?)
     ON CONFLICT(url, source_type) DO UPDATE SET
@@ -806,7 +821,7 @@ export function upsertItem(input: Partial<Item>): { id: number; changed: boolean
       media_url = excluded.media_url, media_type = excluded.media_type, duration = excluded.duration`)
     .run(st, input.source_name ?? '', url,
       input.title ?? '', input.author ?? '', input.summary ?? '', input.content_text ?? '',
-      input.content_html ?? '', input.cover_url ?? '', input.published_at ?? new Date().toISOString(),
+      input.content_html ?? '', input.cover_url ?? '', finalPubDate,
       input.feed_id ?? 0, input.kind ?? 'article', input.media_url ?? '', input.media_type ?? '', input.duration ?? 0)
   const id = Number(r.lastInsertRowid) || existing?.id || 0
   // 手动同步 items_fts：先删该 rowid 再重插（覆盖 ON CONFLICT UPDATE 路径触发器可能失效的情况，确保 FTS 索引与 items 一致）
@@ -996,9 +1011,18 @@ export function addCard(c: NewCard): StoredCard {
     .run(c.board_id, c.kind, c.item_id ?? null, c.x, c.y, c.w, c.h, c.title, c.body, c.payload || '{}')
   const id = Number(r.lastInsertRowid)
   if (c._sourcePath && (c.kind === 'image' || c.kind === 'file' || c.kind === 'video')) {
-    const meta = stageAsset(c._sourcePath, id)
     const p = JSON.parse(c.payload || '{}')
-    p.file = meta.file; p.name = meta.name; p.size = meta.size; p.mime = meta.mime
+    if (c.kind === 'video') {
+      // 视频只引用原始路径，不拷贝（文件通常很大，拷贝浪费空间）
+      p.localPath = c._sourcePath
+      p.name = path.basename(c._sourcePath)
+      try { p.size = fs.statSync(c._sourcePath).size } catch { p.size = 0 }
+      p.mime = ''
+    } else {
+      // 图片/文件仍拷贝到 board-assets
+      const meta = stageAsset(c._sourcePath, id)
+      p.file = meta.file; p.name = meta.name; p.size = meta.size; p.mime = meta.mime
+    }
     db.prepare('UPDATE board_cards SET payload = ? WHERE id = ?').run(JSON.stringify(p), id)
   }
   return getCard(id)
@@ -1013,10 +1037,19 @@ export function updateCard(
   let payload = patch.payload ?? cur.payload
   const isAsset = cur.kind === 'image' || cur.kind === 'file' || cur.kind === 'video'
   if (_sourcePath && isAsset) {
-    removeAsset(cur.payload)
-    const meta = stageAsset(_sourcePath, id)
     const p = JSON.parse(payload || '{}')
-    p.file = meta.file; p.name = meta.name; p.size = meta.size; p.mime = meta.mime
+    if (cur.kind === 'video') {
+      // 视频只引用路径，不拷贝
+      p.localPath = _sourcePath
+      p.name = path.basename(_sourcePath)
+      try { p.size = fs.statSync(_sourcePath).size } catch { p.size = 0 }
+      p.mime = ''
+    } else {
+      // 图片/文件替换时删除旧拷贝
+      removeAsset(cur.payload)
+      const meta = stageAsset(_sourcePath, id)
+      p.file = meta.file; p.name = meta.name; p.size = meta.size; p.mime = meta.mime
+    }
     payload = JSON.stringify(p)
   }
   const sets: string[] = []

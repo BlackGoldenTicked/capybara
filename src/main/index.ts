@@ -255,8 +255,9 @@ function str(v: unknown): string { return typeof v === 'string' ? v : (v == null
 
 // 自定义协议：渲染进程通过 board-asset://<file> 安全访问白板本地附件（图片/视频/文件）
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'board-asset', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
-  { scheme: 'cover', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
+{ scheme: 'board-asset', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+{ scheme: 'cover', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+{ scheme: 'local-path', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }
 ])
 
 let mainWindow: BrowserWindow | null = null
@@ -568,6 +569,46 @@ function registerIpc() {
     'boards:deleteLink': ((id: number) => deleteLink(id)) as never,
     'boards:updateLink': ((id: number, label: string) => updateLink(id, label)) as never,
 
+    // 链接卡片富预览：轻量抓取 og:title / og:description / og:image
+    'boards:fetchLinkPreview': (async (targetUrl: string) => {
+      try {
+        const u = new URL(targetUrl)
+        if (!/^https?:$/.test(u.protocol)) return null
+        // 用 net.fetch 抓取 HTML 前 50KB（够解析 meta 标签）
+        const resp = await net.fetch(targetUrl, {
+          redirect: 'follow',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' }
+        })
+        if (!resp.ok) return null
+        const reader = resp.body?.getReader()
+        if (!reader) return null
+        let html = ''
+        const decoder = new TextDecoder()
+        for (let i = 0; i < 10; i++) {
+          const { done, value } = await reader.read()
+          if (done) break
+          html += decoder.decode(value, { stream: true })
+          if (html.length > 50_000) break
+        }
+        reader.cancel()
+        // 提取 og / twitter meta
+        const pick = (re: RegExp) => html.match(re)?.[1]?.trim() ?? ''
+        const title = pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i)
+          || pick(/<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)/i)
+          || pick(/<title[^>]*>([^<]+)<\/title>/i)
+        const desc = pick(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)/i)
+          || pick(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)/i)
+          || pick(/<meta[^>]+name=["']twitter:description["'][^>]+content=["']([^"']+)/i)
+        let image = pick(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)/i)
+          || pick(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)/i)
+        if (image && !/^https?:\/\//i.test(image)) {
+          try { image = new URL(image, targetUrl).href } catch { image = '' }
+        }
+        if (!title && !desc && !image) return null
+        return { title, desc: desc.slice(0, 300), image, site: u.hostname }
+      } catch { return null }
+    }) as never,
+
     'feeds:importOpml': (async (kind?: MediaKind) => {
       const res = await dialog.showOpenDialog(mainWindow!, {
         title: '导入 OPML 订阅源',
@@ -697,14 +738,51 @@ app.whenReady().then(() => {
     const u = new URL(request.url)
     // standard scheme 下 file 名在 host 或 pathname 中，取 host + pathname 拼合
     const rel = decodeURIComponent(u.host + u.pathname).replace(/^\/+/, '').replace(/\/+$/, '')
-    const filePath = path.join(getAssetsDir(), rel)
+    const assetsDir = getAssetsDir()
+    const filePath = path.join(assetsDir, rel)
+    // 安全检查：防止目录穿越攻击（../../../etc/passwd）
+    if (!filePath.startsWith(assetsDir)) {
+      console.error('[board-asset] 路径穿越拦截:', rel)
+      return new Response('Forbidden', { status: 403 })
+    }
+    if (!fs.existsSync(filePath)) {
+      console.error('[board-asset] 文件不存在:', filePath)
+      return new Response('Not Found', { status: 404 })
+    }
     return net.fetch(url.pathToFileURL(filePath).toString())
   })
   // 注册 cover:// 协议，把本地化的封面图目录映射出去（离线可用，修复 #8/#13）
   protocol.handle('cover', (request) => {
     const u = new URL(request.url)
     const rel = decodeURIComponent(u.host + u.pathname).replace(/^\/+/, '').replace(/\/+$/, '')
-    const filePath = path.join(getImagesDir(), rel)
+    const imagesDir = getImagesDir()
+    const filePath = path.join(imagesDir, rel)
+    if (!filePath.startsWith(imagesDir)) {
+      console.error('[cover] 路径穿越拦截:', rel)
+      return new Response('Forbidden', { status: 403 })
+    }
+    if (!fs.existsSync(filePath)) {
+      console.error('[cover] 文件不存在:', filePath)
+      return new Response('Not Found', { status: 404 })
+    }
+    return net.fetch(url.pathToFileURL(filePath).toString())
+  })
+  // 注册 local-path:// 协议：视频/大文件只引用原始路径，不拷贝
+  // URL 格式：local-path:///Users/zhangyu/Videos/demo.mp4
+  protocol.handle('local-path', (request) => {
+    const u = new URL(request.url)
+    // standard scheme 下绝对路径在 pathname 中（host 为空）
+    const filePath = decodeURIComponent(u.pathname).replace(/^\/+/, '/') // 保留绝对路径开头的 /
+    // macOS / Linux 安全检查：不允许访问系统敏感目录
+    const blocked = ['/etc/passwd', '/etc/shadow']
+    if (blocked.some((b) => filePath === b)) {
+      console.error('[local-path] 敏感路径拦截:', filePath)
+      return new Response('Forbidden', { status: 403 })
+    }
+    if (!fs.existsSync(filePath)) {
+      console.error('[local-path] 文件不存在:', filePath)
+      return new Response('Not Found', { status: 404 })
+    }
     return net.fetch(url.pathToFileURL(filePath).toString())
   })
   // 2) 窗口先行：保证 UI 永远能打开；次级服务（ingest / scheduler）即便抛错也不再拖垮窗口

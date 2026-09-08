@@ -84,6 +84,12 @@ export interface CardPayload {
   mime?: string
   url?: string    // 链接 / 远程图片视频地址
   note?: string
+  localPath?: string  // 视频/大文件的本地绝对路径（local-path:// 引用，不拷贝）
+  // 链接卡片富预览（OG meta 抓取）
+  previewTitle?: string
+  previewDesc?: string
+  previewImage?: string
+  previewSite?: string
 }
 
 /** 白板卡片之间的连线关系 */

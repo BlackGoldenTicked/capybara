@@ -14,7 +14,7 @@ const KIND_LABEL: Record<MediaKind, string> = { article: '图文', podcast: '播
  * 失败时显示该源真实的 last_error（hover 看完整）。
  */
 export function FeedsPanel({ width = 188 }: { width?: number }) {
-  const { feeds, view, activeFeed, setActiveFeed, refreshFeed, refreshAll } = useStore()
+  const { feeds, view, activeFeed, setActiveFeed, refreshFeed, refreshAll, deleteFeed, showToast } = useStore()
   // 仅列出 RSS 订阅源（其采集器会把 feed.name 写入 item.source_name，筛选才可靠）；
   // 并根据当前视图过滤内容形态：RSS/播客/视频 菜单只显示对应 kind 的源，其余视图显示全部
   const rssFeeds = feeds.filter((f) => {
@@ -35,6 +35,18 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
   const refreshAllFeeds = async () => {
     setRefreshingId('all')
     try { await refreshAll() } finally { setRefreshingId(null) }
+  }
+
+  // 取消订阅二次确认
+  const [confirmUnsub, setConfirmUnsub] = useState<number | null>(null)
+  const handleUnsubscribe = (f: { id: number; name: string; url: string }) => {
+    if (confirmUnsub === f.id) {
+      void deleteFeed(f.id)
+      setConfirmUnsub(null)
+      showToast(`已取消订阅「${f.name || f.url}」`)
+    } else {
+      setConfirmUnsub(f.id)
+    }
   }
 
   return (
@@ -78,6 +90,14 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
                       onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void refreshOne(f.id) }}
                       onClick={(e) => e.stopPropagation()}>
                       <Icon name="refresh" size={12} />
+                    </button>
+                    <button
+                      className={`feed-unsub ${confirmUnsub === f.id ? 'confirm' : ''}`}
+                      title={confirmUnsub === f.id ? '再次点击确认取消订阅' : '取消订阅'}
+                      onPointerDown={(e) => { e.stopPropagation(); e.preventDefault() }}
+                      onClick={(e) => { e.stopPropagation(); handleUnsubscribe(f) }}
+                      onMouseLeave={() => { if (confirmUnsub === f.id) setConfirmUnsub(null) }}>
+                      <Icon name="trash" size={12} />
                     </button>
                   </div>
                 )

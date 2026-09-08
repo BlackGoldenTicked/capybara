@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { ItemRow, Card, CardKind, CardPayload, BoardLink } from '../env'
 import { CardEditor } from './CardEditor'
-import { BoardListview } from './BoardListview'
 import { Icon, type IconName } from './icons'
 
 const CARD_TYPES: Array<{ kind: CardKind; label: string; icon: IconName; desc: string }> = [
@@ -59,8 +58,6 @@ export function BoardView() {
   }
   const undoStack = useRef<UndoAction[]>([])
   const redoStack = useRef<UndoAction[]>([])
-  // 视图模式：board 白板 / list 列表
-  const [viewMode, setViewMode] = useState<'board' | 'list'>('board')
 
   // 拖拽期间的本地覆盖位置（rAF 节流，松手才提交一次，避免每帧全画布重渲染 #3）
   const [localPos, setLocalPos] = useState<Record<number, { x: number; y: number }>>({})
@@ -256,7 +253,6 @@ export function BoardView() {
   }
 
   useEffect(() => {
-    if (viewMode !== 'board') return
     const onKey = (e: KeyboardEvent) => {
       // 编辑卡片时不拦截键盘
       if (editingId != null || editingName || pickerOpen) return
@@ -328,7 +324,7 @@ export function BoardView() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [viewMode, editingId, editingName, pickerOpen])
+  }, [editingId, editingName, pickerOpen])
 
   const startNodeDrag = (e: React.PointerEvent, card: Card) => {
     const t = e.target as HTMLElement
@@ -488,16 +484,6 @@ export function BoardView() {
 
   return (
     <section className="board">
-      {viewMode === 'list' ? (
-        <BoardListview cards={cards} links={links} onJumpToCard={(id) => {
-          setViewMode('board')
-          // 选中并居中到目标卡片
-          setSelectedIds(new Set([id]))
-          const c = cards.find((x) => x.id === id)
-          if (c) setPan({ x: -c.x + 200, y: -c.y + 200 })
-        }} />
-      ) : (
-      <>
       <input ref={fileRef} type="file" hidden onChange={onFileChosen} />
       <div className="board-canvas" ref={canvasRef}
         onWheel={onWheel} onPointerDown={startPan} onPointerMove={onMove} onPointerUp={endDrag} onPointerLeave={endDrag}
@@ -553,7 +539,8 @@ export function BoardView() {
           {cardsView.map(({ card, p }) => {
             const pos = posOf(card)
             const it = card.item_id != null ? itemMap[card.item_id] : undefined
-            const assetSrc = p.file ? `board-asset://${p.file}` : (p.url || '')
+            // 视频用 local-path:// 引用原始路径（不拷贝）；图片/文件用 board-asset://
+            const assetSrc = p.localPath ? `local-path://${p.localPath}` : (p.file ? `board-asset://${p.file}` : (p.url || ''))
             const isSelected = selectedIds.has(card.id)
             return (
               <div key={card.id} data-card-id={card.id} className={`board-card kind-${card.kind} ${isSelected ? 'card-selected' : ''}`}
@@ -604,7 +591,21 @@ export function BoardView() {
                     <p className="bc-summary">{card.body || '（空）'}</p>
                   </>
                 )}
-                {card.kind === 'link' && (
+                {card.kind === 'link' && p.url && (p.previewTitle || p.previewImage) && (
+                  <>
+                    <p className="bc-kind"><Icon name="link" size={12} /> 链接</p>
+                    <a className="link-card" href={p.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                      {p.previewImage && <div className="link-card-cover" style={{ backgroundImage: `url(${p.previewImage})` }} />}
+                      <div className="link-card-body">
+                        <p className="link-card-title">{p.previewTitle || card.title || p.url}</p>
+                        {p.previewDesc && <p className="link-card-desc">{p.previewDesc}</p>}
+                        <span className="link-card-site">{p.previewSite || (() => { try { return new URL(p.url).hostname } catch { return '' } })()}</span>
+                      </div>
+                    </a>
+                    {card.body && <p className="bc-summary">{card.body}</p>}
+                  </>
+                )}
+                {card.kind === 'link' && p.url && !p.previewTitle && !p.previewImage && (
                   <>
                     <p className="bc-kind"><Icon name="link" size={12} /> 链接</p>
                     {card.title && <p className="bc-title">{card.title}</p>}
@@ -672,48 +673,36 @@ export function BoardView() {
 
       {/* 右侧悬浮 Dock 工具栏 */}
       <div className="board-dock" onPointerDown={(e) => e.stopPropagation()}>
-        {viewMode === 'board' && (
-          <>
-            {/* 卡片创建 */}
-            <div className="dock-group">
-              {CARD_TYPES.map((t) => (
-                <button key={t.kind} className="dock-item" title={t.desc} onClick={() => onPickType(t.kind)}>
-                  <Icon name={t.icon} size={18} />
-                </button>
-              ))}
-            </div>
-
-            {/* 对齐工具（仅多选时显示） */}
-            {selectedIds.size >= 2 && (
-              <div className="dock-group">
-                <button className="dock-item" title="左对齐" onClick={() => alignSelected('left')}><Icon name="alignLeft" size={18} /></button>
-                <button className="dock-item" title="右对齐" onClick={() => alignSelected('right')}><Icon name="alignRight" size={18} /></button>
-                <button className="dock-item" title="上对齐" onClick={() => alignSelected('top')}><Icon name="alignTop" size={18} /></button>
-                <button className="dock-item" title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={18} /></button>
-                <button className="dock-item" title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={18} /></button>
-                <button className="dock-item" title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={18} /></button>
-              </div>
-            )}
-
-            {/* 视图控制 */}
-            <div className="dock-group">
-              <button className="dock-item" title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={18} /></button>
-              <button className="dock-item" title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={18} /></button>
-              <button className="dock-item" title="还原视图" onClick={fit}><Icon name="maximize" size={18} /></button>
-              <button className="dock-item" title="自适应全部卡片" onClick={fitAll}><Icon name="frame" size={18} /></button>
-            </div>
-          </>
-        )}
-
-        {/* 列表/白板切换（始终显示） */}
+        {/* 卡片创建 */}
         <div className="dock-group">
-          <button className="dock-item" title={viewMode === 'board' ? '切换列表视图' : '返回白板'}
-            onClick={() => setViewMode((v) => v === 'board' ? 'list' : 'board')}>
-            <Icon name={viewMode === 'board' ? 'list' : 'board'} size={18} />
-          </button>
+          {CARD_TYPES.map((t) => (
+            <button key={t.kind} className="dock-item" title={t.desc} onClick={() => onPickType(t.kind)}>
+              <Icon name={t.icon} size={18} />
+            </button>
+          ))}
         </div>
 
-        {/* 删除白板（始终显示） */}
+        {/* 对齐工具（仅多选时显示） */}
+        {selectedIds.size >= 2 && (
+          <div className="dock-group">
+            <button className="dock-item" title="左对齐" onClick={() => alignSelected('left')}><Icon name="alignLeft" size={18} /></button>
+            <button className="dock-item" title="右对齐" onClick={() => alignSelected('right')}><Icon name="alignRight" size={18} /></button>
+            <button className="dock-item" title="上对齐" onClick={() => alignSelected('top')}><Icon name="alignTop" size={18} /></button>
+            <button className="dock-item" title="下对齐" onClick={() => alignSelected('bottom')}><Icon name="alignBottom" size={18} /></button>
+            <button className="dock-item" title="水平等距" onClick={() => distributeSelected('h')}><Icon name="distributeH" size={18} /></button>
+            <button className="dock-item" title="垂直等距" onClick={() => distributeSelected('v')}><Icon name="distributeV" size={18} /></button>
+          </div>
+        )}
+
+        {/* 视图控制 */}
+        <div className="dock-group">
+          <button className="dock-item" title="缩小" onClick={() => setZoom((z) => Math.max(0.3, z - 0.15))}><Icon name="minus" size={18} /></button>
+          <button className="dock-item" title="放大" onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}><Icon name="plus" size={18} /></button>
+          <button className="dock-item" title="还原视图" onClick={fit}><Icon name="maximize" size={18} /></button>
+          <button className="dock-item" title="自适应全部卡片" onClick={fitAll}><Icon name="frame" size={18} /></button>
+        </div>
+
+        {/* 删除白板 */}
         <div className="dock-group">
           <button className="dock-item danger" title="删除白板" onClick={() => {
             if (activeBoardId == null) return
@@ -722,8 +711,6 @@ export function BoardView() {
           }}><Icon name="trash" size={18} /></button>
         </div>
       </div>
-      </>
-      )}
 
       {editingId != null && (() => {
         const cv = cardsView.find((c) => c.card.id === editingId)

@@ -41,6 +41,20 @@ export function RssManager() {
   }
 
   const [errId, setErrId] = useState<number | null>(null)
+  // 取消订阅二次确认：记录待确认取消的 feed id
+  const [confirmUnsub, setConfirmUnsub] = useState<number | null>(null)
+
+  const handleUnsubscribe = (f: Feed) => {
+    if (confirmUnsub === f.id) {
+      // 二次确认：执行取消订阅
+      void deleteFeed(f.id)
+      setConfirmUnsub(null)
+      showToast(`已取消订阅「${f.name || f.url}」`)
+    } else {
+      // 首次点击：进入确认状态
+      setConfirmUnsub(f.id)
+    }
+  }
 
   return (
     <div className="set-scroll">
@@ -142,7 +156,14 @@ export function RssManager() {
                     </span>
                   )}
                   <button onClick={() => void refreshFeed(f.id)}>刷新</button>
-                  <button onClick={() => void deleteFeed(f.id)}>删除</button>
+                  <button
+                    className={confirmUnsub === f.id ? 'unsub-confirm' : 'unsub-btn'}
+                    title={confirmUnsub === f.id ? '再次点击确认取消订阅' : '取消订阅'}
+                    onClick={() => handleUnsubscribe(f)}
+                    onMouseLeave={() => { if (confirmUnsub === f.id) setConfirmUnsub(null) }}
+                  >
+                    {confirmUnsub === f.id ? '确认取消？' : '取消订阅'}
+                  </button>
                 </div>
               ))}
           </div>

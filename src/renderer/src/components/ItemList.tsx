@@ -21,6 +21,17 @@ function relTime(iso: string) {
   return `${Math.floor(h / 24)} 天前`
 }
 
+/** 判断 published_at 是否是回退值（与 fetched_at 几乎同时 → 说明 RSS 没有提供真实发布时间） */
+function isFallbackPubDate(pub: string, fetch: string): boolean {
+  if (!pub || !fetch) return false
+  try {
+    const pd = new Date(pub.includes('T') ? pub : pub.replace(' ', 'T') + 'Z')
+    const fd = new Date(fetch.includes('T') ? fetch : fetch.replace(' ', 'T') + 'Z')
+    // 差值小于 60 秒说明 published_at 是用 datetime('now') 回退的
+    return Math.abs(pd.getTime() - fd.getTime()) < 60_000
+  } catch { return false }
+}
+
 // 信息流卡片高度（紧凑密度，标题 + 摘要 + 留白 ≈ 156px 可视区域）
 const ITEM_SIZE = 164
 // 列表视图行高（卡片式：标签/时间一行 + 标题两行 + 内边距 + 底部间距）
@@ -69,7 +80,9 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
           {...press(() => data.onSelect(item.id))}>
           <div className="list-top">
             <span className={`list-badge ${item.source_type}`}>{SOURCE_LABEL[item.source_type]}</span>
-            <span className="list-time">{relTime(item.published_at || item.fetched_at)}</span>
+            <span className={`list-time${isFallbackPubDate(item.published_at, item.fetched_at) ? ' time-fallback' : ''}`} title={isFallbackPubDate(item.published_at, item.fetched_at) ? '采集时间（无发布日期）' : ''}>
+              {isFallbackPubDate(item.published_at, item.fetched_at) ? `采集 ${relTime(item.fetched_at)}` : relTime(item.published_at || item.fetched_at)}
+            </span>
           </div>
           <div className="list-title">{item.title}</div>
           <div className="list-actions" onClick={stop} onDragStart={stop}>
@@ -94,7 +107,9 @@ function Row({ index, style, data }: ListChildComponentProps<RowData>) {
             <span className={`badge ${item.source_type}`}>
               {SOURCE_LABEL[item.source_type]} · {item.source_name}
             </span>
-            <span className="card-time">{relTime(item.published_at || item.fetched_at)}</span>
+            <span className={`card-time${isFallbackPubDate(item.published_at, item.fetched_at) ? ' time-fallback' : ''}`} title={isFallbackPubDate(item.published_at, item.fetched_at) ? '采集时间（无发布日期）' : ''}>
+              {isFallbackPubDate(item.published_at, item.fetched_at) ? `采集 ${relTime(item.fetched_at)}` : relTime(item.published_at || item.fetched_at)}
+            </span>
           </div>
           <p className="card-title">{item.title}</p>
           {item.summary && <p className="card-summary">{plainTextFromHtml(item.summary)}</p>}
