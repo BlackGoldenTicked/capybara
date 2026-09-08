@@ -94,8 +94,8 @@ export function FeedsPanel({ width = 188 }: { width?: number }) {
                     <button
                       className={`feed-unsub ${confirmUnsub === f.id ? 'confirm' : ''}`}
                       title={confirmUnsub === f.id ? '再次点击确认取消订阅' : '取消订阅'}
-                      onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); handleUnsubscribe(f) }}
-                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleUnsubscribe(f) }}
                       onMouseLeave={() => { if (confirmUnsub === f.id) setConfirmUnsub(null) }}>
                       <Icon name="trash" size={12} />
                     </button>
