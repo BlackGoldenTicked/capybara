@@ -791,27 +791,32 @@ function registerIpc() {
       const ROOT_ID = 1
       const linksToInsert: Array<{ folderId: number; title: string; url: string; icon?: string; addDate?: number }> = []
 
+      // 缓存文件夹查找结果，避免重复查询整棵树
+      const folderCache = new Map<string, number>()
+
       for (const [folderPath, items] of groups) {
         // 为每个文件夹路径创建嵌套文件夹结构
         let currentFolderId = ROOT_ID
         if (folderPath !== '未分类' && items[0].folderPath.length > 0) {
           for (const segment of items[0].folderPath) {
-            // 查找是否已存在同名子文件夹
-            const tree = getBookmarkTree()
-            const findFolder = (nodes: ReturnType<typeof getBookmarkTree>, parentId: number, name: string): number => {
-              for (const node of nodes) {
-                if (node.folder.parent_id === parentId && node.folder.title === name) return node.folder.id
-                const found = findFolder(node.children, parentId, name)
-                if (found) return found
-              }
-              return 0
+            const cacheKey = `${currentFolderId}/${segment}`
+            const cached = folderCache.get(cacheKey)
+            if (cached) {
+              currentFolderId = cached
+              continue
             }
-            const existing = findFolder(tree, currentFolderId, segment)
+            // 查找是否已存在同名子文件夹（直接用 SQL，避免全树递归）
+            const existingRow = db.prepare(
+              'SELECT id FROM bookmark_folders WHERE parent_id = ? AND title = ? LIMIT 1'
+            ).get(currentFolderId, segment) as { id: number } | undefined
+            const existing = existingRow?.id ?? 0
             if (existing) {
               currentFolderId = existing
+              folderCache.set(cacheKey, existing)
             } else {
               const created = createBookmarkFolder(currentFolderId, segment)
               currentFolderId = created.id
+              folderCache.set(cacheKey, created.id)
             }
           }
         }

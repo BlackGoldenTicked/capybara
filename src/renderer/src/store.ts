@@ -563,10 +563,21 @@ export const useStore = create<State>((set, get) => ({
     set({ activeBookmarkLink: link, bookmarkRandomLink: null })
   },
   importBookmarks: async () => {
-    const r = await window.capybara.invoke('bookmarks:import') as { added: number; total: number; folders: number }
-    await get().loadBookmarkTree()
-    get().showToast(`已导入 ${r.added} 个书签（共 ${r.total} 个，${r.folders} 个文件夹）`)
-    return r
+    try {
+      const r = await window.capybara.invoke('bookmarks:import') as { added: number; total: number; folders: number }
+      await get().loadBookmarkTree()
+      if (r.total === 0) {
+        get().showToast('未解析到任何书签，请检查文件格式是否为浏览器导出的 HTML')
+      } else {
+        // 导入成功后自动选中根文件夹，让右栏立即显示数据
+        set({ activeBookmarkFolderId: 1, activeBookmarkLink: null, bookmarkRandomLink: null })
+        get().showToast(`已导入 ${r.added} 个书签（共 ${r.total} 个，${r.folders} 个文件夹）`)
+      }
+      return r
+    } catch (e) {
+      get().showToast('导入失败：' + (e as Error).message)
+      throw e
+    }
   },
   createBookmarkFolder: async (parentId, title) => {
     await window.capybara.invoke('bookmarks:createFolder', parentId, title)

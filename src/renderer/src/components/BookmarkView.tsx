@@ -171,7 +171,7 @@ function LinkList({ links }: { links: BookmarkLink[] }) {
             </div>
           )}
           <div className="bm-card-actions">
-            <button className="bm-card-open" title="在浏览器中打开" {...pressBtn(() => openInBrowser(link.url))}>
+            <button className="bm-card-open" title="在浏览器中打开" onClick={() => openInBrowser(link.url)}>
               <Icon name="external" size={12} /> 打开
             </button>
             {confirmDel === link.id ? (
@@ -191,14 +191,20 @@ function LinkList({ links }: { links: BookmarkLink[] }) {
   )
 }
 
-/** 从树中提取某个文件夹的链接 */
-function collectLinksFromFolder(nodes: BookmarkTreeNode[], folderId: number): BookmarkLink[] {
+/** 从树中查找某个文件夹节点 */
+function findFolderNode(nodes: BookmarkTreeNode[], folderId: number): BookmarkTreeNode | null {
   for (const node of nodes) {
-    if (node.folder.id === folderId) return node.links
-    const found = collectLinksFromFolder(node.children, folderId)
-    if (found.length > 0) return found
+    if (node.folder.id === folderId) return node
+    const found = findFolderNode(node.children, folderId)
+    if (found) return found
   }
-  return []
+  return null
+}
+
+/** 从树中提取某个文件夹的直接链接 */
+function collectLinksFromFolder(nodes: BookmarkTreeNode[], folderId: number): BookmarkLink[] {
+  const node = findFolderNode(nodes, folderId)
+  return node ? node.links : []
 }
 
 /** 随机漫步展示区 */
@@ -219,10 +225,10 @@ function RandomWalkCard({ link }: { link: BookmarkLink }) {
         <div className="bm-card-ai"><Icon name="sparkles" size={11} /> {link.ai_category}</div>
       )}
       <div className="bm-card-actions">
-        <button className="bm-card-open" {...pressBtn(() => openInBrowser(link.url))}>
+        <button className="bm-card-open" onClick={() => openInBrowser(link.url)}>
           <Icon name="external" size={12} /> 打开链接
         </button>
-        <button className="bm-card-open" {...pressBtn(() => selectBookmarkLink(link))}>
+        <button className="bm-card-open" onClick={() => selectBookmarkLink(link)}>
           <Icon name="info" size={12} /> 详情
         </button>
       </div>
@@ -339,7 +345,7 @@ export function BookmarkView() {
                 <div className="bm-card-ai"><Icon name="sparkles" size={12} /> {activeBookmarkLink.ai_category}</div>
               )}
               <div className="bm-card-actions">
-                <button className="bm-card-open" {...pressBtn(() => openInBrowser(activeBookmarkLink.url))}>
+                <button className="bm-card-open" onClick={() => openInBrowser(activeBookmarkLink.url)}>
                   <Icon name="external" size={14} /> 在浏览器中打开
                 </button>
               </div>

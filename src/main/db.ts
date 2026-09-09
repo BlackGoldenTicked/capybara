@@ -1296,36 +1296,60 @@ export interface BookmarkTreeNode {
 }
 
 function migrateBookmarks() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS bookmark_folders (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      parent_id   INTEGER NOT NULL DEFAULT 0,
-      title       TEXT    NOT NULL DEFAULT '',
-      sort_order  INTEGER NOT NULL DEFAULT 0,
-      add_date    INTEGER NOT NULL DEFAULT 0,
-      created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (parent_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_bm_folders_parent ON bookmark_folders(parent_id);
+  // 建表分步执行（避免 node:sqlite 对多语句 exec + 自引用外键的兼容问题）
+  db.exec(`CREATE TABLE IF NOT EXISTS bookmark_folders (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    parent_id   INTEGER NOT NULL DEFAULT 0,
+    title       TEXT    NOT NULL DEFAULT '',
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    add_date    INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+  )`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_bm_folders_parent ON bookmark_folders(parent_id)`)
 
-    CREATE TABLE IF NOT EXISTS bookmark_links (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      folder_id      INTEGER NOT NULL DEFAULT 0,
-      title          TEXT    NOT NULL DEFAULT '',
-      url            TEXT    NOT NULL DEFAULT '',
-      icon           TEXT    NOT NULL DEFAULT '',
-      add_date       INTEGER NOT NULL DEFAULT 0,
-      ai_category    TEXT    NOT NULL DEFAULT '',
-      ai_categorized INTEGER NOT NULL DEFAULT 0,
-      created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_bm_links_folder ON bookmark_links(folder_id);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_bm_links_url ON bookmark_links(url);
-  `)
+  db.exec(`CREATE TABLE IF NOT EXISTS bookmark_links (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    folder_id      INTEGER NOT NULL DEFAULT 0,
+    title          TEXT    NOT NULL DEFAULT '',
+    url            TEXT    NOT NULL DEFAULT '',
+    icon           TEXT    NOT NULL DEFAULT '',
+    add_date       INTEGER NOT NULL DEFAULT 0,
+    ai_category    TEXT    NOT NULL DEFAULT '',
+    ai_categorized INTEGER NOT NULL DEFAULT 0,
+    created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+  )`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_bm_links_folder ON bookmark_links(folder_id)`)
+  try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_bm_links_url ON bookmark_links(url)`) } catch { /* 索引已存在 */ }
+
+  // 去重合并：同一 parent_id + title 只保留 id 最小的，将其余重复文件夹的链接移到保留的文件夹里后删除空壳
+  const dupGroups = db.prepare(
+    'SELECT parent_id, title, MIN(id) AS keep_id FROM bookmark_folders GROUP BY parent_id, title HAVING COUNT(*) > 1'
+  ).all() as Array<{ parent_id: number; title: string; keep_id: number }>
+  for (const dup of dupGroups) {
+    const dupIds = db.prepare(
+      'SELECT id FROM bookmark_folders WHERE parent_id = ? AND title = ? AND id != ?'
+    ).all(dup.parent_id, dup.title, dup.keep_id) as Array<{ id: number }>
+    for (const { id } of dupIds) {
+      // 把重复文件夹下的链接移到保留文件夹
+      db.prepare('UPDATE bookmark_links SET folder_id = ? WHERE folder_id = ?').run(dup.keep_id, id)
+      // 把重复文件夹下的子文件夹移到保留文件夹（避免孤儿）
+      db.prepare('UPDATE bookmark_folders SET parent_id = ? WHERE parent_id = ?').run(dup.keep_id, id)
+      // 删除重复文件夹
+      db.prepare('DELETE FROM bookmark_folders WHERE id = ?').run(id)
+    }
+  }
+  // 添加唯一约束，防止同一父目录下再出现同名文件夹
+  try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_bm_folders_unique ON bookmark_folders(parent_id, title)`) } catch { /* 索引已存在或数据仍有重复（已处理） */ }
+
   // 确保根目录存在（id=1, parent_id=0, title="收藏夹"）
-  const root = db.prepare('SELECT id FROM bookmark_folders WHERE parent_id = 0 AND title = ?').get('收藏夹') as { id: number } | undefined
-  if (!root) {
+  // 兼容旧库：若 id=1 已是 "收藏夹" 则不动；若 id=1 是其它旧根（如 "Bookmarks Bar"）则先改名再确保正确
+  const row1 = db.prepare('SELECT id, title FROM bookmark_folders WHERE id = 1').get() as { id: number; title: string } | undefined
+  if (row1) {
+    if (row1.title !== '收藏夹') {
+      db.prepare('UPDATE bookmark_folders SET title = ? WHERE id = 1').run('收藏夹')
+    }
+  } else {
+    // id=1 不存在（极旧的空库），直接插入
     db.prepare('INSERT INTO bookmark_folders (id, parent_id, title, sort_order) VALUES (1, 0, ?, 0)').run('收藏夹')
   }
 }
@@ -1364,7 +1388,24 @@ export function renameBookmarkFolder(id: number, title: string): void {
 export function deleteBookmarkFolder(id: number): void {
   // 不允许删除根目录
   if (id <= 1) return
-  db.prepare('DELETE FROM bookmark_folders WHERE id = ?').run(id)
+  // 递归收集所有子文件夹 ID（含自身）
+  const ids: number[] = [id]
+  const collect = (parentId: number) => {
+    const children = db.prepare('SELECT id FROM bookmark_folders WHERE parent_id = ?').all(parentId) as { id: number }[]
+    for (const c of children) { ids.push(c.id); collect(c.id) }
+  }
+  collect(id)
+  // 批量删除所有子文件夹的链接 + 文件夹本身
+  db.exec('BEGIN')
+  try {
+    const placeholders = ids.map(() => '?').join(',')
+    db.prepare(`DELETE FROM bookmark_links WHERE folder_id IN (${placeholders})`).run(...ids)
+    db.prepare(`DELETE FROM bookmark_folders WHERE id IN (${placeholders})`).run(...ids)
+    db.exec('COMMIT')
+  } catch (e) {
+    db.exec('ROLLBACK')
+    throw e
+  }
 }
 
 /** 移动文件夹到新父 */
