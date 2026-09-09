@@ -1342,11 +1342,11 @@ function migrateBookmarks() {
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_bm_folders_unique ON bookmark_folders(parent_id, title)`) } catch { /* 索引已存在或数据仍有重复（已处理） */ }
 
   // 确保根目录存在（id=1, parent_id=0, title="收藏夹"）
-  // 兼容旧库：若 id=1 已是 "收藏夹" 则不动；若 id=1 是其它旧根（如 "Bookmarks Bar"）则先改名再确保正确
-  const row1 = db.prepare('SELECT id, title FROM bookmark_folders WHERE id = 1').get() as { id: number; title: string } | undefined
+  // 兼容旧库：若 id=1 已存在则确保其 parent_id=0 且 title="收藏夹"
+  const row1 = db.prepare('SELECT id, parent_id, title FROM bookmark_folders WHERE id = 1').get() as { id: number; parent_id: number; title: string } | undefined
   if (row1) {
-    if (row1.title !== '收藏夹') {
-      db.prepare('UPDATE bookmark_folders SET title = ? WHERE id = 1').run('收藏夹')
+    if (row1.title !== '收藏夹' || row1.parent_id !== 0) {
+      db.prepare('UPDATE bookmark_folders SET parent_id = 0, title = ? WHERE id = 1').run('收藏夹')
     }
   } else {
     // id=1 不存在（极旧的空库），直接插入
