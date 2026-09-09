@@ -1984,7 +1984,7 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 
 /* 右栏 */
 .bm-content { flex: 1; overflow-y: auto; padding: 16px; }
-.bm-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; }
+.bm-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; gap: 8px; text-align: center; }
 .bm-placeholder-icon { color: var(--color-text-tertiary); opacity: 0.3; }
 .bm-placeholder p { font-size: 14px; color: var(--color-text-secondary); }
 .bm-placeholder-hint { font-size: 12px !important; color: var(--color-text-tertiary); }

@@ -806,7 +806,7 @@ function registerIpc() {
               continue
             }
             // 查找是否已存在同名子文件夹（直接用 SQL，避免全树递归）
-            const existingRow = db.prepare(
+            const existingRow = getDb().prepare(
               'SELECT id FROM bookmark_folders WHERE parent_id = ? AND title = ? LIMIT 1'
             ).get(currentFolderId, segment) as { id: number } | undefined
             const existing = existingRow?.id ?? 0
