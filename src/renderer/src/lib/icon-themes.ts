@@ -28,6 +28,7 @@ export type IconName =
   | 'list' | 'rows' | 'panelLeftClose' | 'panelLeftOpen' | 'heart' | 'sparkles'
   | 'alignLeft' | 'alignRight' | 'alignTop' | 'alignBottom' | 'distributeH' | 'distributeV'
   | 'star' | 'maximize' | 'frame'
+  | 'folder' | 'shuffle' | 'arrowLeft'
 
 /** 图标主题 ID。'default' 为内置 Lucide 线性集。 */
 export type IconThemeId = string

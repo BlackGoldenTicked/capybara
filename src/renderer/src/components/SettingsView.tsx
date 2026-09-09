@@ -50,6 +50,7 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'github', label: 'GitHub Star', icon: 'github' },
   { key: 'twitter', label: 'X 书签', icon: 'twitter' },
   { key: 'actions', label: '数据管理', icon: 'archived' },
+  { key: 'ai', label: 'AI 模型', icon: 'sparkles' },
   { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
   { key: 'data', label: '数据查看', icon: 'book' },
   { key: 'diag', label: '刷新诊断', icon: 'activity' },
@@ -77,6 +78,7 @@ export function SettingsView() {
             {settingsTab === 'github' && <GithubStarManager />}
             {settingsTab === 'twitter' && <TwitterBookmarkManager />}
             {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
+            {settingsTab === 'ai' && <AiModelTab />}
             {settingsTab === 'shortcuts' && <ShortcutsTab />}
             {settingsTab === 'data' && <DbView />}
             {settingsTab === 'diag' && <DiagPanel />}
@@ -406,6 +408,130 @@ function ShortcutsTab() {
             })}
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+/* ===================== AI 模型配置 ===================== */
+function AiModelTab() {
+  const { showToast } = useStore()
+  const [providers, setProviders] = useState<Array<{ id: string; label: string; baseUrl: string; defaultModel: string; keyHint: string; website: string }>>([])
+  const [providerId, setProviderId] = useState('deepseek')
+  const [baseUrl, setBaseUrl] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [model, setModel] = useState('')
+  const [configured, setConfigured] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<{ ok: boolean; content: string; error: string } | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      const ps = await window.capybara.invoke('llm:providers') as typeof providers
+      setProviders(ps)
+      const cfg = await window.capybara.invoke('llm:config') as { providerId: string; baseUrl: string; apiKey: string; model: string; configured: boolean }
+      setProviderId(cfg.providerId || 'deepseek')
+      setBaseUrl(cfg.baseUrl)
+      setApiKey('')
+      setModel(cfg.model)
+      setConfigured(cfg.configured)
+    })()
+  }, [])
+
+  const onProviderChange = (id: string) => {
+    setProviderId(id)
+    const p = providers.find((x) => x.id === id)
+    if (p) {
+      setBaseUrl(p.baseUrl)
+      setModel(p.defaultModel)
+    }
+  }
+
+  const save = async () => {
+    await window.capybara.invoke('llm:saveConfig', providerId, baseUrl, apiKey, model)
+    const cfg = await window.capybara.invoke('llm:config') as { configured: boolean }
+    setConfigured(cfg.configured)
+    setApiKey('')
+    showToast('AI 模型配置已保存')
+  }
+
+  const test = async () => {
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const r = await window.capybara.invoke('llm:test') as { ok: boolean; content: string; error: string }
+      setTestResult(r)
+      showToast(r.ok ? '测试成功' : '测试失败')
+    } catch (e) {
+      setTestResult({ ok: false, content: '', error: (e as Error).message })
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  return (
+    <div className="set-scroll">
+      <div className="set-card">
+        <p className="src-label">AI 模型</p>
+        <p className="src-hint">配置在线大语言模型，用于收藏夹自动归类等 AI 功能。支持国内主流模型厂商，统一走 OpenAI 兼容接口。</p>
+
+        <div className="src-grid-2" style={{ marginTop: 12 }}>
+          <label className="src-row">模型厂商
+            <select className="src-select" value={providerId} onChange={(e) => onProviderChange(e.target.value)}>
+              {providers.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+          </label>
+          <label className="src-row">模型名
+            <input type="text" className="src-input" value={model} placeholder="如 deepseek-chat" onChange={(e) => setModel(e.target.value)} />
+          </label>
+        </div>
+
+        <label className="src-row" style={{ marginTop: 12 }}>API Base URL
+          <input type="text" className="src-input" value={baseUrl} placeholder="https://api.deepseek.com/v1" onChange={(e) => setBaseUrl(e.target.value)} />
+        </label>
+
+        <label className="src-row" style={{ marginTop: 12 }}>API Key
+          <input type="password" className="src-input" value={apiKey} placeholder={configured ? '已配置（输入新值覆盖）' : 'sk-...'} onChange={(e) => setApiKey(e.target.value)} />
+        </label>
+
+        {(() => {
+          const p = providers.find((x) => x.id === providerId)
+          return p && p.website ? (
+            <p className="src-hint" style={{ marginTop: 8 }}>
+              获取 API Key： <a href="#" onClick={(e) => { e.preventDefault(); void window.capybara.invoke('shell:openExternal', p.website) }}>{p.keyHint}</a>
+            </p>
+          ) : null
+        })()}
+
+        <div className="src-actions" style={{ marginTop: 16 }}>
+          <button onClick={() => void save()} disabled={!baseUrl || !model || !apiKey}><Icon name="check" size={14} /> 保存配置</button>
+          <button onClick={() => void test()} disabled={testing || (!configured && !apiKey)}>
+            {testing ? <Icon name="refresh" size={14} className="spin" /> : <Icon name="sparkles" size={14} />}
+            {testing ? '测试中…' : '测试连接'}
+          </button>
+          {configured && !apiKey && <span className="src-hint">✓ 已配置</span>}
+        </div>
+
+        {testResult && (
+          <div className={`src-card ${testResult.ok ? 'ok-box' : 'warn-box'}`} style={{ marginTop: 12, padding: 12, borderRadius: 8 }}>
+            {testResult.ok ? (
+              <p>✅ 连接成功！模型返回：{testResult.content.slice(0, 100)}</p>
+            ) : (
+              <p>❌ 连接失败：{testResult.error}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="set-card">
+        <p className="src-label">使用说明</p>
+        <ul style={{ paddingLeft: 16, fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.8 }}>
+          <li>AI 模型配置后，可在收藏夹页面点击「AI 归类」按钮自动分类书签</li>
+          <li>所有请求通过 Electron net.fetch 发出，尊重系统代理设置</li>
+          <li>API Key 存储在本地 SQLite 数据库，不会上传到任何服务器</li>
+          <li>支持 DeepSeek、通义千问、智谱 GLM、Moonshot 等国内主流厂商</li>
+          <li>选择「自定义」可对接任何 OpenAI 兼容接口</li>
+        </ul>
       </div>
     </div>
   )

@@ -1,12 +1,12 @@
 import { create } from 'zustand'
-import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, NetLogEntry, MediaKind } from './env'
+import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, NetLogEntry, MediaKind, BookmarkTreeNode, BookmarkLink } from './env'
 import { applyAppearance, persistAppearance, watchSystemTheme, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
 import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/shortcuts'
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
 import { applyThemeBundle, type ThemeBundle } from './lib/theme-bundles'
 
 /** 设置页标签（含新增的「快捷键」）。 */
-export type SettingsTab = 'appearance' | 'rss' | 'github' | 'twitter' | 'actions' | 'shortcuts' | 'data' | 'diag' | 'thanks'
+export type SettingsTab = 'appearance' | 'rss' | 'github' | 'twitter' | 'actions' | 'shortcuts' | 'data' | 'diag' | 'thanks' | 'ai'
 
 interface State {
   screen: Screen
@@ -110,6 +110,24 @@ interface State {
   setSoundVolume: (volume: number) => void
   setLogo: (id: string) => void
   purge: (keepArchivedDays: number, maxItems: number) => Promise<void>
+
+  // ===== 浏览器收藏夹 =====
+  bookmarkTree: BookmarkTreeNode[]
+  bookmarkLoading: boolean
+  activeBookmarkFolderId: number | null
+  activeBookmarkLink: BookmarkLink | null
+  bookmarkRandomLink: BookmarkLink | null
+  aiClassifying: boolean
+  loadBookmarkTree: () => Promise<void>
+  setBookmarkFolder: (folderId: number | null) => void
+  selectBookmarkLink: (link: BookmarkLink | null) => void
+  importBookmarks: () => Promise<{ added: number; total: number; folders: number }>
+  createBookmarkFolder: (parentId: number, title: string) => Promise<void>
+  renameBookmarkFolder: (id: number, title: string) => Promise<void>
+  deleteBookmarkFolder: (id: number) => Promise<void>
+  deleteBookmarkLink: (id: number) => Promise<void>
+  bookmarkRandomWalk: () => Promise<void>
+  aiClassifyBookmarks: () => Promise<{ ok: boolean; error: string; classified: number }>
 }
 
 /** 信息流每次分页加载条目数（滚动到底部翻页浏览历史） */
@@ -125,6 +143,8 @@ export const useStore = create<State>((set, get) => ({
   cmdkOpen: false,
   activeBoardId: null, activeSourceType: null, activeFeed: null, cards: [], links: [], toast: '', zenMode: false,
   ghSyncing: false, ghSyncError: '',
+
+  bookmarkTree: [], bookmarkLoading: false, activeBookmarkFolderId: null, activeBookmarkLink: null, bookmarkRandomLink: null, aiClassifying: false,
 
   appearance: DEFAULT_APPEARANCE,
   soundEnabled: false,
@@ -144,6 +164,7 @@ export const useStore = create<State>((set, get) => ({
   setScreen: (screen) => {
     set({ screen })
     if (screen === 'board') void get().loadBoards()
+    if (screen === 'bookmarks') void get().loadBookmarkTree()
   },
   setView: (view) => { set({ view, selectedId: null, activeSourceType: null, activeFeed: null, screen: 'library' }); void get().load() },
   setSourceType: (t) => {
@@ -523,5 +544,78 @@ export const useStore = create<State>((set, get) => ({
     playSound('complete')
     get().showToast(`已清理 ${r.purged} 条归档内容`)
     await get().load()
+  },
+
+  // ===== 浏览器收藏夹 =====
+  loadBookmarkTree: async () => {
+    set({ bookmarkLoading: true })
+    try {
+      const tree = await window.capybara.invoke('bookmarks:tree') as BookmarkTreeNode[]
+      set({ bookmarkTree: tree })
+    } finally {
+      set({ bookmarkLoading: false })
+    }
+  },
+  setBookmarkFolder: (folderId) => {
+    set({ activeBookmarkFolderId: folderId, activeBookmarkLink: null, bookmarkRandomLink: null })
+  },
+  selectBookmarkLink: (link) => {
+    set({ activeBookmarkLink: link, bookmarkRandomLink: null })
+  },
+  importBookmarks: async () => {
+    const r = await window.capybara.invoke('bookmarks:import') as { added: number; total: number; folders: number }
+    await get().loadBookmarkTree()
+    get().showToast(`已导入 ${r.added} 个书签（共 ${r.total} 个，${r.folders} 个文件夹）`)
+    return r
+  },
+  createBookmarkFolder: async (parentId, title) => {
+    await window.capybara.invoke('bookmarks:createFolder', parentId, title)
+    await get().loadBookmarkTree()
+  },
+  renameBookmarkFolder: async (id, title) => {
+    await window.capybara.invoke('bookmarks:renameFolder', id, title)
+    await get().loadBookmarkTree()
+  },
+  deleteBookmarkFolder: async (id) => {
+    await window.capybara.invoke('bookmarks:deleteFolder', id)
+    await get().loadBookmarkTree()
+    get().showToast('已删除文件夹')
+  },
+  deleteBookmarkLink: async (id) => {
+    await window.capybara.invoke('bookmarks:deleteLink', id)
+    await get().loadBookmarkTree()
+    if (get().activeBookmarkLink?.id === id) set({ activeBookmarkLink: null })
+    get().showToast('已删除书签')
+  },
+  bookmarkRandomWalk: async () => {
+    const tree = get().bookmarkTree
+    if (!tree.length) return
+    const allLinks: BookmarkLink[] = []
+    const collect = (nodes: BookmarkTreeNode[]) => {
+      for (const node of nodes) {
+        allLinks.push(...node.links)
+        collect(node.children)
+      }
+    }
+    collect(tree)
+    if (allLinks.length === 0) { get().showToast('暂无书签'); return }
+    const random = allLinks[Math.floor(Math.random() * allLinks.length)]
+    set({ bookmarkRandomLink: random, activeBookmarkLink: random })
+    get().showToast(`🎲 ${random.title.slice(0, 20)}`)
+  },
+  aiClassifyBookmarks: async () => {
+    set({ aiClassifying: true })
+    try {
+      const r = await window.capybara.invoke('bookmarks:aiClassify') as { ok: boolean; error: string; classified: number }
+      if (r.ok) {
+        get().showToast(`AI 已归类 ${r.classified} 个书签`)
+        await get().loadBookmarkTree()
+      } else {
+        get().showToast(`归类失败：${r.error}`)
+      }
+      return r
+    } finally {
+      set({ aiClassifying: false })
+    }
   }
 }))

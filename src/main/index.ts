@@ -14,8 +14,13 @@ import {
   getSetting, setSetting, sourceCounts, getDbFile, getDb,
   setCustomDbPath, getCustomDbPath,
   storeCover, enforceRetention, markAllRead, clearInbox, purgeOldItems, checkpoint, stopWalCheckpoint,
-  dbTables, dbRows, discoverRoles, discoverTags, discoverFeeds
+  dbTables, dbRows, discoverRoles, discoverTags, discoverFeeds,
+  getBookmarkTree, createBookmarkFolder, renameBookmarkFolder, deleteBookmarkFolder, moveBookmarkFolder,
+  importBookmarkLinks, listBookmarkLinks, deleteBookmarkLink, bookmarkStats,
+  getUncategorizedBookmarks, batchUpdateBookmarkAiCategory
 } from './db'
+import { LLM_PROVIDERS, getLlmConfig, isLlmConfigured, askLlm, askLlmJson } from './lib/llm'
+import { parseBookmarkHtml, groupByFolderPath } from './lib/bookmark-parser'
 import { startIngestServer } from './ingest'
 import { startScheduler, refreshFeed, runDue, refreshAllFeeds } from './sources/scheduler'
 import { fetchStarsByUsername, githubHeaders } from './sources/github'
@@ -86,6 +91,45 @@ function parseOpml(xml: string): Array<{ title: string; url: string }> {
     out.push({ title: decode(title), url: decode(xmlUrl) })
   }
   return out
+}
+
+/** 收集文件夹树中所有路径（如 "技术 > 前端"），用于 AI 归类的 prompt */
+function collectFolderPaths(nodes: ReturnType<typeof getBookmarkTree>, basePath: string[]): string[] {
+  const paths: string[] = []
+  for (const node of nodes) {
+    const currentPath = node.folder.id <= 1 ? basePath : [...basePath, node.folder.title]
+    if (currentPath.length > 0) {
+      paths.push(currentPath.join(' > '))
+    }
+    paths.push(...collectFolderPaths(node.children, currentPath))
+  }
+  return paths
+}
+
+/** 按 " > " 分隔的路径查找或创建文件夹，返回最终 folder ID */
+function findOrCreateFolderByPath(path: string): number {
+  const segments = path.split(' > ').map((s) => s.trim()).filter(Boolean)
+  if (segments.length === 0) return 1 // 根目录
+  let currentId = 1 // 根目录 ID
+  for (const segment of segments) {
+    const tree = getBookmarkTree()
+    const findIn = (nodes: ReturnType<typeof getBookmarkTree>, parentId: number, name: string): number => {
+      for (const node of nodes) {
+        if (node.folder.parent_id === parentId && node.folder.title === name) return node.folder.id
+        const found = findIn(node.children, parentId, name)
+        if (found) return found
+      }
+      return 0
+    }
+    const existing = findIn(tree, currentId, segment)
+    if (existing) {
+      currentId = existing
+    } else {
+      const created = createBookmarkFolder(currentId, segment)
+      currentId = created.id
+    }
+  }
+  return currentId
 }
 
 /** Twitter / X 书签导入产出的规整记录 */
@@ -719,6 +763,152 @@ function registerIpc() {
       }
       notifyRefresh()
       return { added, total: tweets.length }
+    }) as never,
+
+    // ===== 浏览器收藏夹 =====
+    'bookmarks:tree': (() => getBookmarkTree()) as never,
+    'bookmarks:stats': (() => bookmarkStats()) as never,
+    'bookmarks:createFolder': ((parentId: number, title: string) => createBookmarkFolder(parentId, title)) as never,
+    'bookmarks:renameFolder': ((id: number, title: string) => renameBookmarkFolder(id, title)) as never,
+    'bookmarks:deleteFolder': ((id: number) => deleteBookmarkFolder(id)) as never,
+    'bookmarks:moveFolder': ((id: number, newParentId: number) => moveBookmarkFolder(id, newParentId)) as never,
+    'bookmarks:listLinks': ((folderId: number) => listBookmarkLinks(folderId)) as never,
+    'bookmarks:deleteLink': ((id: number) => deleteBookmarkLink(id)) as never,
+    'bookmarks:import': (async () => {
+      const res = await dialog.showOpenDialog(mainWindow!, {
+        title: '导入浏览器收藏夹',
+        properties: ['openFile'],
+        filters: [{ name: 'HTML 书签文件', extensions: ['html', 'htm'] }]
+      })
+      if (res.canceled || !res.filePaths.length) return { added: 0, total: 0, folders: 0 }
+      const raw = fs.readFileSync(res.filePaths[0], 'utf-8')
+      const parsed = parseBookmarkHtml(raw)
+      if (parsed.length === 0) return { added: 0, total: 0, folders: 0 }
+
+      // 按文件夹路径分组，为每个路径创建文件夹结构
+      const groups = groupByFolderPath(parsed)
+      // 根目录 ID
+      const ROOT_ID = 1
+      const linksToInsert: Array<{ folderId: number; title: string; url: string; icon?: string; addDate?: number }> = []
+
+      for (const [folderPath, items] of groups) {
+        // 为每个文件夹路径创建嵌套文件夹结构
+        let currentFolderId = ROOT_ID
+        if (folderPath !== '未分类' && items[0].folderPath.length > 0) {
+          for (const segment of items[0].folderPath) {
+            // 查找是否已存在同名子文件夹
+            const tree = getBookmarkTree()
+            const findFolder = (nodes: ReturnType<typeof getBookmarkTree>, parentId: number, name: string): number => {
+              for (const node of nodes) {
+                if (node.folder.parent_id === parentId && node.folder.title === name) return node.folder.id
+                const found = findFolder(node.children, parentId, name)
+                if (found) return found
+              }
+              return 0
+            }
+            const existing = findFolder(tree, currentFolderId, segment)
+            if (existing) {
+              currentFolderId = existing
+            } else {
+              const created = createBookmarkFolder(currentFolderId, segment)
+              currentFolderId = created.id
+            }
+          }
+        }
+        for (const item of items) {
+          linksToInsert.push({ folderId: currentFolderId, title: item.title, url: item.url, icon: item.icon, addDate: item.addDate })
+        }
+      }
+
+      const added = importBookmarkLinks(linksToInsert)
+      const stats = bookmarkStats()
+      return { added, total: parsed.length, folders: stats.folderCount }
+    }) as never,
+
+    // ===== LLM 通用客户端 =====
+    'llm:providers': (() => LLM_PROVIDERS) as never,
+    'llm:config': (() => {
+      const cfg = getLlmConfig()
+      const provider = LLM_PROVIDERS.find((p) => p.id === cfg.providerId)
+      return {
+        providerId: cfg.providerId,
+        baseUrl: cfg.baseUrl,
+        apiKey: cfg.apiKey ? '********' + cfg.apiKey.slice(-4) : '', // 脱敏返回
+        model: cfg.model,
+        providerLabel: provider?.label ?? '',
+        configured: isLlmConfigured(),
+      }
+    }) as never,
+    'llm:saveConfig': ((providerId: string, baseUrl: string, apiKey: string, model: string) => {
+      setSetting('llm_provider', providerId)
+      const provider = LLM_PROVIDERS.find((p) => p.id === providerId)
+      setSetting('llm_base_url', baseUrl || provider?.baseUrl || '')
+      setSetting('llm_api_key', apiKey)
+      setSetting('llm_model', model || provider?.defaultModel || '')
+      return true
+    }) as never,
+    'llm:test': (async () => {
+      try {
+        const res = await askLlm('你是一个测试助手', '请回复"OK"')
+        return { ok: true, content: res, error: '' }
+      } catch (e) {
+        return { ok: false, content: '', error: (e as Error).message }
+      }
+    }) as never,
+
+    // ===== 收藏夹 AI 归类 =====
+    'bookmarks:aiClassify': (async () => {
+      if (!isLlmConfigured()) return { ok: false, error: 'LLM 未配置，请先在设置中配置 AI 模型', classified: 0 }
+      const uncategorized = getUncategorizedBookmarks()
+      if (uncategorized.length === 0) return { ok: true, error: '', classified: 0 }
+
+      // 获取现有文件夹树，让 AI 知道已有的分类结构
+      const tree = getBookmarkTree()
+      const existingCategories = collectFolderPaths(tree, [])
+
+      // 分批处理，每批最多 50 条
+      const BATCH = 50
+      let totalClassified = 0
+      const allUpdates: Array<{ id: number; category: string; folderId: number }> = []
+
+      for (let i = 0; i < uncategorized.length; i += BATCH) {
+        const batch = uncategorized.slice(i, i + BATCH)
+        const bookmarkList = batch.map((b, idx) => `${idx + 1}. ${b.title} | ${b.url}`).join('\n')
+
+        const systemPrompt = `你是一个书签归类助手。根据书签的标题和 URL，为每个书签分配一个分类目录路径。
+规则：
+1. 分类路径用 " > " 连接，如 "技术 > 前端" 或 "工具 > 效率"
+2. 优先使用已有分类结构（如果适合）
+3. 可以创建新分类，但路径不超过 3 层
+4. 返回 JSON 数组，每个元素 { "id": 书签ID, "path": "分类路径" }
+
+已有分类结构：
+${existingCategories.length > 0 ? existingCategories.join('\n') : '（暂无分类）'}`
+
+        const userPrompt = `请为以下 ${batch.length} 个书签分配分类，返回 JSON 数组：
+
+${bookmarkList}`
+
+        try {
+          const result = await askLlmJson<Array<{ id: number; path: string }>>(systemPrompt, userPrompt, { temperature: 0, maxTokens: 4000 })
+          for (const item of result) {
+            if (!item.id || !item.path) continue
+            // 在树中查找或创建该路径对应的文件夹
+            const folderId = findOrCreateFolderByPath(item.path)
+            allUpdates.push({ id: item.id, category: item.path, folderId })
+          }
+        } catch (e) {
+          console.error('[aiClassify] 批次失败：', (e as Error).message)
+          // 继续下一批
+        }
+      }
+
+      if (allUpdates.length > 0) {
+        batchUpdateBookmarkAiCategory(allUpdates)
+        totalClassified = allUpdates.length
+      }
+
+      return { ok: true, error: '', classified: totalClassified }
     }) as never,
 
     'sync:backup': (async () => backupWebDAV()) as never

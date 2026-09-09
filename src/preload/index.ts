@@ -26,7 +26,9 @@ const validChannels = [
   'settings:export', 'settings:import', 'settings:getDbPath', 'settings:setDbPath', 'settings:pickDbPath',
   'sync:backup', 'devtools:toggle',
   'db:tables', 'db:rows',
-  'diag:snapshot', 'diag:testPurge', 'diag:testRefreshOne', 'diag:testRefreshAll', 'diag:testForceOne', 'diag:testForceAll'
+  'diag:snapshot', 'diag:testPurge', 'diag:testRefreshOne', 'diag:testRefreshAll', 'diag:testForceOne', 'diag:testForceAll',
+  'bookmarks:tree', 'bookmarks:stats', 'bookmarks:createFolder', 'bookmarks:renameFolder', 'bookmarks:deleteFolder', 'bookmarks:moveFolder', 'bookmarks:listLinks', 'bookmarks:deleteLink', 'bookmarks:import', 'bookmarks:aiClassify',
+  'llm:providers', 'llm:config', 'llm:saveConfig', 'llm:test'
 ] as const
 
 type Channel = (typeof validChannels)[number]

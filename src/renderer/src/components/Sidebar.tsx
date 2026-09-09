@@ -99,6 +99,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
           </span>
         </button>
         <button className={`rail-btn ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} title={`Twitter 书签（${sourceCounts['x_bookmark'] || 0}）`} {...pressBtn(() => setSourceType('x_bookmark'))}><span className="rail-icon"><Icon name="twitter" size={19} /></span></button>
+        <button className={`rail-btn ${screen === 'bookmarks' ? 'active' : ''}`} title="浏览器收藏夹" {...pressBtn(() => setScreen('bookmarks'))}><span className="rail-icon"><Icon name="bookmark" size={19} /></span></button>
         <div className="rail-sep" />
         <button className={`rail-btn ${screen === 'board' ? 'active' : ''}`} title="白板" {...pressBtn(() => setScreen('board'))}><span className="rail-icon"><Icon name="board" size={19} /></span></button>
         <button className="rail-btn" title="新建白板" {...pressBtn(() => void createBoard())}><span className="rail-icon"><Icon name="plus" size={19} /></span></button>
@@ -163,6 +164,16 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
         <span className="side-ico"><Icon name="twitter" size={16} /></span>
         <span>书签</span>
         <span className="count">{sourceCounts['x_bookmark'] || ''}</span>
+      </div>
+
+      <div className="nav-sep" />
+
+      {/* 浏览器收藏夹（常驻，不折叠） */}
+      <div className={`side-item ${screen === 'bookmarks' ? 'active' : ''}`} role="button" tabIndex={0}
+        {...press(() => setScreen('bookmarks'))}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setScreen('bookmarks') } }}>
+        <span className="side-ico"><Icon name="bookmark" size={16} /></span>
+        <span>收藏夹</span>
       </div>
 
       <div className="nav-sep" />

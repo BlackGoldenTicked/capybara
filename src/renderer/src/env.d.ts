@@ -44,7 +44,7 @@ export interface ItemRow {
 }
 
 export type View = 'rss' | 'podcast' | 'video' | 'later' | 'favorite' | 'archived' | 'all'
-export type Screen = 'library' | 'board'
+export type Screen = 'library' | 'board' | 'bookmarks'
 
 export interface Feed { id: number; type: string; name: string; url: string; schedule_min: number; last_fetched_at: string; error_count: number; last_error: string; enabled: number; etag: string; last_modified: string; kind: MediaKind }
 export interface Board { id: number; name: string; updated_at: string }
@@ -64,6 +64,47 @@ export interface DiscoverFeed {
   language: string
   description: string
   subscribed: number
+}
+
+/** 浏览器收藏夹：文件夹 */
+export interface BookmarkFolder {
+  id: number
+  parent_id: number
+  title: string
+  sort_order: number
+  add_date: number
+  created_at: string
+}
+
+/** 浏览器收藏夹：链接 */
+export interface BookmarkLink {
+  id: number
+  folder_id: number
+  title: string
+  url: string
+  icon: string
+  add_date: number
+  ai_category: string
+  ai_categorized: number
+  created_at: string
+}
+
+/** 浏览器收藏夹：树形节点 */
+export interface BookmarkTreeNode {
+  folder: BookmarkFolder
+  children: BookmarkTreeNode[]
+  links: BookmarkLink[]
+  linkCount: number
+}
+
+/** LLM 厂商预设 */
+export interface LlmProvider {
+  id: string
+  label: string
+  baseUrl: string
+  defaultModel: string
+  keyHint: string
+  website: string
 }
 
 /** 白板卡片：独立持久化，按 board_id 归属。kind 决定内容与可承载的附件类型。 */

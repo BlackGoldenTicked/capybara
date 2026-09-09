@@ -8,6 +8,7 @@ import { CommandSearch } from './components/CommandSearch'
 import { BoardView } from './components/BoardView'
 import { SettingsView } from './components/SettingsView'
 import { FeedsPanel } from './components/FeedsPanel'
+import { BookmarkView } from './components/BookmarkView'
 import { Icon } from './components/icons'
 import { pressBtn } from './lib/press'
 import { playSound, primeAudio } from './lib/sound'
@@ -230,6 +231,7 @@ export default function App() {
               </>
             )}
             {screen === 'board' && <BoardView />}
+            {screen === 'bookmarks' && <BookmarkView />}
           </ErrorBoundary>
         </div>
       </div>

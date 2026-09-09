@@ -463,6 +463,8 @@ function migrate() {
 
   // 信源发现库（feeds 工作空间迁移）：roles / rss_sources / role_source_map 三表 + 种子数据
   try { migrateDiscover() } catch (e) { console.error('[initDb] 信源发现库迁移失败：', (e as Error).message) }
+  // 浏览器收藏夹：bookmark_folders / bookmark_links 两表 + 根目录
+  try { migrateBookmarks() } catch (e) { console.error('[initDb] 收藏夹表迁移失败：', (e as Error).message) }
 }
 
 // ===================== 信源发现库（feeds 工作空间迁移） =====================
@@ -1253,3 +1255,183 @@ export function discoverFeeds(opts: DiscoverFilter): { rows: DiscoverFeed[]; tot
     rows: rows.map((r) => ({ ...r, tags: parseTags(r.tags), subscribed: r.subscribed ? 1 : 0 }))
   }
 }
+
+// ===================== 浏览器收藏夹 =====================
+
+/** 收藏夹文件夹 */
+export interface BookmarkFolder {
+  id: number
+  parent_id: number       // 父文件夹 ID，根目录为 0
+  title: string
+  /** 排序序号 */
+  sort_order: number
+  /** 源浏览器导入时添加时间戳 */
+  add_date: number
+  created_at: string
+}
+
+/** 收藏夹链接 */
+export interface BookmarkLink {
+  id: number
+  folder_id: number       // 所属文件夹 ID
+  title: string
+  url: string
+  icon: string            // favicon URL 或空
+  /** 源浏览器导入时添加时间戳 */
+  add_date: number
+  /** AI 归类建议的目录路径（如 "技术/前端"），未归类为空 */
+  ai_category: string
+  /** 是否已确认归类（用户已接受/拒绝 AI 建议） */
+  ai_categorized: number
+  created_at: string
+}
+
+/** 树形节点（前端展示用） */
+export interface BookmarkTreeNode {
+  folder: BookmarkFolder
+  children: BookmarkTreeNode[]  // 子文件夹
+  links: BookmarkLink[]          // 该文件夹下的直接链接
+  /** 子树链接总数（含子文件夹） */
+  linkCount: number
+}
+
+function migrateBookmarks() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bookmark_folders (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      parent_id   INTEGER NOT NULL DEFAULT 0,
+      title       TEXT    NOT NULL DEFAULT '',
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      add_date    INTEGER NOT NULL DEFAULT 0,
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (parent_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_bm_folders_parent ON bookmark_folders(parent_id);
+
+    CREATE TABLE IF NOT EXISTS bookmark_links (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      folder_id      INTEGER NOT NULL DEFAULT 0,
+      title          TEXT    NOT NULL DEFAULT '',
+      url            TEXT    NOT NULL DEFAULT '',
+      icon           TEXT    NOT NULL DEFAULT '',
+      add_date       INTEGER NOT NULL DEFAULT 0,
+      ai_category    TEXT    NOT NULL DEFAULT '',
+      ai_categorized INTEGER NOT NULL DEFAULT 0,
+      created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (folder_id) REFERENCES bookmark_folders(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_bm_links_folder ON bookmark_links(folder_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_bm_links_url ON bookmark_links(url);
+  `)
+  // 确保根目录存在（id=1, parent_id=0, title="收藏夹"）
+  const root = db.prepare('SELECT id FROM bookmark_folders WHERE parent_id = 0 AND title = ?').get('收藏夹') as { id: number } | undefined
+  if (!root) {
+    db.prepare('INSERT INTO bookmark_folders (id, parent_id, title, sort_order) VALUES (1, 0, ?, 0)').run('收藏夹')
+  }
+}
+
+// ---- 收藏夹文件夹 CRUD ----
+
+/** 递归构建树形结构 */
+export function buildBookmarkTree(parentId: number = 0): BookmarkTreeNode[] {
+  const folders = db.prepare('SELECT * FROM bookmark_folders WHERE parent_id = ? ORDER BY sort_order ASC, id ASC').all(parentId) as unknown as BookmarkFolder[]
+  return folders.map((folder) => {
+    const children = buildBookmarkTree(folder.id)
+    const links = db.prepare('SELECT * FROM bookmark_links WHERE folder_id = ? ORDER BY add_date DESC').all(folder.id) as unknown as BookmarkLink[]
+    const linkCount = links.length + children.reduce((sum, c) => sum + c.linkCount, 0)
+    return { folder, children, links, linkCount }
+  })
+}
+
+/** 获取整棵树（从根目录开始） */
+export function getBookmarkTree(): BookmarkTreeNode[] {
+  return buildBookmarkTree(0)
+}
+
+/** 创建文件夹 */
+export function createBookmarkFolder(parentId: number, title: string): BookmarkFolder {
+  const maxOrder = (db.prepare('SELECT MAX(sort_order) m FROM bookmark_folders WHERE parent_id = ?').get(parentId) as { m: number | null })?.m ?? 0
+  const r = db.prepare('INSERT INTO bookmark_folders (parent_id, title, sort_order) VALUES (?, ?, ?)').run(parentId, title, maxOrder + 1)
+  return db.prepare('SELECT * FROM bookmark_folders WHERE id = ?').get(r.lastInsertRowid) as unknown as BookmarkFolder
+}
+
+/** 重命名文件夹 */
+export function renameBookmarkFolder(id: number, title: string): void {
+  db.prepare('UPDATE bookmark_folders SET title = ? WHERE id = ?').run(title, id)
+}
+
+/** 删除文件夹（级联删除子文件夹和链接） */
+export function deleteBookmarkFolder(id: number): void {
+  // 不允许删除根目录
+  if (id <= 1) return
+  db.prepare('DELETE FROM bookmark_folders WHERE id = ?').run(id)
+}
+
+/** 移动文件夹到新父 */
+export function moveBookmarkFolder(id: number, newParentId: number): void {
+  if (id <= 1) return
+  db.prepare('UPDATE bookmark_folders SET parent_id = ? WHERE id = ?').run(newParentId, id)
+}
+
+// ---- 收藏夹链接 CRUD ----
+
+/** 批量导入收藏夹链接（来自 Netscape HTML 解析） */
+export function importBookmarkLinks(links: Array<{ folderId: number; title: string; url: string; icon?: string; addDate?: number }>): number {
+  let inserted = 0
+  db.exec('BEGIN')
+  try {
+    for (const link of links) {
+      const r = db.prepare('INSERT OR IGNORE INTO bookmark_links (folder_id, title, url, icon, add_date) VALUES (?, ?, ?, ?, ?)').run(
+        link.folderId, link.title, link.url, link.icon ?? '', link.addDate ?? 0
+      )
+      if (r.changes > 0) inserted++
+    }
+    db.exec('COMMIT')
+  } catch (e) {
+    db.exec('ROLLBACK')
+    throw e
+  }
+  return inserted
+}
+
+/** 获取某个文件夹下的链接 */
+export function listBookmarkLinks(folderId: number): BookmarkLink[] {
+  return db.prepare('SELECT * FROM bookmark_links WHERE folder_id = ? ORDER BY add_date DESC').all(folderId) as unknown as BookmarkLink[]
+}
+
+/** 获取所有未归类（ai_categorized=0）的链接 */
+export function getUncategorizedBookmarks(): BookmarkLink[] {
+  return db.prepare('SELECT * FROM bookmark_links WHERE ai_categorized = 0 ORDER BY id ASC').all() as unknown as BookmarkLink[]
+}
+
+/** 更新链接的 AI 归类结果 */
+export function updateBookmarkAiCategory(id: number, category: string): void {
+  db.prepare('UPDATE bookmark_links SET ai_category = ?, ai_categorized = 1 WHERE id = ?').run(category, id)
+}
+
+/** 批量更新 AI 归类结果 */
+export function batchUpdateBookmarkAiCategory(updates: Array<{ id: number; category: string; folderId: number }>): void {
+  db.exec('BEGIN')
+  try {
+    for (const u of updates) {
+      db.prepare('UPDATE bookmark_links SET ai_category = ?, ai_categorized = 1, folder_id = ? WHERE id = ?').run(u.category, u.folderId, u.id)
+    }
+    db.exec('COMMIT')
+  } catch (e) {
+    db.exec('ROLLBACK')
+    throw e
+  }
+}
+
+/** 删除链接 */
+export function deleteBookmarkLink(id: number): void {
+  db.prepare('DELETE FROM bookmark_links WHERE id = ?').run(id)
+}
+
+/** 统计收藏夹总数 */
+export function bookmarkStats(): { folderCount: number; linkCount: number } {
+  const folders = (db.prepare('SELECT COUNT(*) c FROM bookmark_folders').get() as { c: number }).c
+  const links = (db.prepare('SELECT COUNT(*) c FROM bookmark_links').get() as { c: number }).c
+  return { folderCount: folders, linkCount: links }
+}
+
