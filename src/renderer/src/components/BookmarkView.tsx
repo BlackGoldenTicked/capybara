@@ -13,7 +13,7 @@
  * - AI 自动归类按钮
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useStore } from '../store'
 import { Icon } from './icons'
 import { press, pressBtn } from '../lib/press'
@@ -21,15 +21,17 @@ import type { BookmarkTreeNode, BookmarkLink } from '../env'
 import type { CSSProperties } from 'react'
 
 /** 递归渲染文件夹树 */
-function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete }: {
+function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete, expandedIds, onToggle }: {
   node: BookmarkTreeNode
   depth: number
   activeFolderId: number | null
   onSelect: (folderId: number) => void
   onRename: (id: number, title: string) => void
   onDelete: (id: number) => void
+  expandedIds: Set<number>
+  onToggle: (id: number) => void
 }) {
-  const [expanded, setExpanded] = useState(depth < 2)
+  const expanded = expandedIds.has(node.folder.id)
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(node.folder.title)
   const [confirmDel, setConfirmDel] = useState(false)
@@ -52,7 +54,7 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete 
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(node.folder.id) } }}
       >
         {node.children.length > 0 ? (
-          <button className="bm-toggle" {...pressBtn((e) => { e.stopPropagation(); setExpanded((v) => !v) })}>
+          <button className="bm-toggle" {...pressBtn((e) => { e.stopPropagation(); onToggle(node.folder.id) })}>
             <Icon name={expanded ? 'chevronDown' : 'chevronRight'} size={12} />
           </button>
         ) : (
@@ -98,6 +100,8 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete 
               onSelect={onSelect}
               onRename={onRename}
               onDelete={onDelete}
+              expandedIds={expandedIds}
+              onToggle={onToggle}
             />
           ))}
         </div>
@@ -245,6 +249,60 @@ export function BookmarkView() {
     bookmarkRandomWalk, aiClassifyBookmarks, openInBrowser,
   } = useStore()
 
+  // 树状展开/收起状态管理
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(() => {
+    // 默认展开一层 (根节点的直接子节点)
+    const init = new Set<number>()
+    bookmarkTree.forEach((n) => { if (n.folder.id > 1) init.add(n.folder.id) })
+    return init
+  })
+
+  const onToggle = useCallback((id: number) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  // 全部展开/收起
+  const [allExpanded, setAllExpanded] = useState(false)
+  const toggleAll = useCallback(() => {
+    if (allExpanded) {
+      setExpandedIds(new Set())
+      setAllExpanded(false)
+    } else {
+      const all = new Set<number>()
+      const walk = (nodes: BookmarkTreeNode[]) => {
+        for (const n of nodes) {
+          if (n.children.length > 0) {
+            all.add(n.folder.id)
+            walk(n.children)
+          }
+        }
+      }
+      walk(bookmarkTree)
+      setExpandedIds(all)
+      setAllExpanded(true)
+    }
+  }, [allExpanded, bookmarkTree])
+
+  // 树数据变化时重新同步展开状态
+  useEffect(() => {
+    setExpandedIds((prev) => {
+      const next = new Set<number>()
+      const syncDefault = (nodes: BookmarkTreeNode[]) => {
+        for (const n of nodes) {
+          if (prev.has(n.folder.id) || n.folder.id > 1) next.add(n.folder.id)
+          syncDefault(n.children)
+        }
+      }
+      syncDefault(bookmarkTree)
+      return next
+    })
+  }, [bookmarkTree])
+
   useEffect(() => {
     void (async () => {
       // 首次进入时加载树
@@ -294,6 +352,10 @@ export function BookmarkView() {
             {aiClassifying ? <Icon name="refresh" size={13} className="spin" /> : <Icon name="sparkles" size={13} />}
             {aiClassifying ? '归类中' : 'AI 归类'}
           </button>
+          <button className="bm-action-btn" title={allExpanded ? '全部收起' : '全部展开'} {...pressBtn(() => toggleAll())}>
+            <Icon name={allExpanded ? 'list' : 'rows'} size={13} />
+            {allExpanded ? '收起' : '展开'}
+          </button>
         </div>
         <div className="bm-tree-body">
           {bookmarkLoading && bookmarkTree.length === 0 ? (
@@ -313,6 +375,8 @@ export function BookmarkView() {
                 onSelect={setBookmarkFolder}
                 onRename={renameBookmarkFolder}
                 onDelete={deleteBookmarkFolder}
+                expandedIds={expandedIds}
+                onToggle={onToggle}
               />
             ))
           )}
