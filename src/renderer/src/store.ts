@@ -161,8 +161,8 @@ export const useStore = create<State>((set, get) => ({
   settingsOpen: false,
   shortcuts: { ...DEFAULT_SHORTCUTS },
 
-  setScreen: (screen) => {
-    set({ screen })
+setScreen: (screen) => {
+    set({ screen, activeSourceType: null })
     if (screen === 'board') void get().loadBoards()
     if (screen === 'bookmarks') void get().loadBookmarkTree()
   },

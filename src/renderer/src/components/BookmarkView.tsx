@@ -1,16 +1,13 @@
 /**
  * 浏览器收藏夹视图
- * 当 screen === 'bookmarks' 时展示，替代常规的 FeedsPanel + ItemList + ReaderPane
  *
- * 布局：
- * - 左栏（窄）：树形文件夹结构（可折叠）
- * - 右栏（宽）：选中文件夹内的链接列表 + 详情
- *
- * 功能：
- * - 树形文件夹展示与折叠（展开/收起全部在标题栏）
- * - 点击文件夹查看内部链接
- * - 文件夹行悬浮时出现随机按钮，点击直接在浏览器打开该文件夹内的随机链接
- * - 导入 / AI 归类 已移至「设置 → 浏览器收藏夹」
+ * 布局：左栏树形结构 + 右栏详情
+ * 逻辑：
+ *   - 左栏：树形展示文件夹，可展开/收起
+ *   - 右栏：展示当前选中文件夹的子文件夹和链接
+ *   - 默认选中根节点，展示数据
+ *   - hover 文件夹显示随机按钮
+ *   - 管理功能（导入/AI分类）已移至「设置 → 浏览器收藏夹」
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -19,6 +16,24 @@ import { Icon } from './icons'
 import { press, pressBtn } from '../lib/press'
 import type { BookmarkTreeNode, BookmarkLink } from '../env'
 import type { CSSProperties } from 'react'
+
+const STORAGE_KEY = 'readflow:bookmark-expanded'
+
+/** 从 localStorage 读取展开状态 */
+function loadExpandedIds(): Set<number> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return new Set(JSON.parse(raw))
+  } catch { /* ignore */ }
+  return new Set()
+}
+
+/** 保存展开状态到 localStorage */
+function saveExpandedIds(ids: Set<number>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+  } catch { /* ignore */ }
+}
 
 /** 递归渲染文件夹树 */
 function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete, expandedIds, onToggle, onRandom }: {
@@ -50,21 +65,23 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
     <div className="bm-node">
       <div
         className={`bm-folder-row ${isActive ? 'active' : ''}`}
-        style={{ paddingLeft: 8 + depth * 12 }}
+        style={{ paddingLeft: 8 + depth * 16 }}
         role="button" tabIndex={0}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         {...press(() => onSelect(node.folder.id))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(node.folder.id) } }}
       >
-        {node.children.length > 0 ? (
+        {node.children.length > 0 || node.links.length > 0 ? (
           <button className="bm-toggle" {...pressBtn((e) => { e.stopPropagation(); onToggle(node.folder.id) })}>
             <Icon name={expanded ? 'chevronDown' : 'chevronRight'} size={12} />
           </button>
         ) : (
           <span className="bm-toggle-placeholder" />
         )}
-        <span className="bm-folder-icon"><Icon name={isRoot ? 'bookmark' : 'folder'} size={14} /></span>
+        <span className={`bm-folder-icon ${expanded ? 'open' : ''}`}>
+          <Icon name="folder" size={14} />
+        </span>
         {editing ? (
           <input
             className="bm-rename-input"
@@ -81,11 +98,13 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
           </span>
         )}
         <span className="bm-count">{node.linkCount || ''}</span>
-        {hovered && (node.linkCount ?? node.links.length) > 0 && (
-          <button className="bm-folder-random" title="随机打开一个链接" {...pressBtn((e) => { e.stopPropagation(); onRandom(node.folder.id) })}>
-            <Icon name="shuffle" size={11} />
-          </button>
-        )}
+        <span className="bm-actions">
+          {hovered && (node.linkCount ?? node.links.length) > 0 && (
+            <button className="bm-folder-random" title="随机打开一个链接" {...pressBtn((e) => { e.stopPropagation(); onRandom(node.folder.id) })}>
+              <Icon name="shuffle" size={12} />
+            </button>
+          )}
+        </span>
         {!isRoot && !editing && (
           <button className="bm-folder-del" title="删除文件夹" {...pressBtn((e) => { e.stopPropagation(); setConfirmDel(true) })}>
             <Icon name="trash" size={11} />
@@ -98,7 +117,7 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
           </span>
         )}
       </div>
-      {expanded && node.children.length > 0 && (
+      {expanded && (
         <div className="bm-children">
           {node.children.map((child) => (
             <FolderNode
@@ -114,10 +133,6 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
               onRandom={onRandom}
             />
           ))}
-        </div>
-      )}
-      {expanded && node.links.length > 0 && (
-        <div className="bm-links-inline">
           {node.links.map((link) => (
             <LinkRow key={link.id} link={link} depth={depth + 1} />
           ))}
@@ -129,14 +144,14 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
 
 /** 文件夹内的链接行（内联在树形中） */
 function LinkRow({ link, depth }: { link: BookmarkLink; depth: number }) {
-  const { selectBookmarkLink, activeBookmarkLink, openInBrowser, deleteBookmarkLink } = useStore()
+  const { selectBookmarkLink, activeBookmarkLink, deleteBookmarkLink } = useStore()
   const isActive = activeBookmarkLink?.id === link.id
   const [confirmDel, setConfirmDel] = useState(false)
 
   return (
     <div
       className={`bm-link-row ${isActive ? 'active' : ''}`}
-      style={{ paddingLeft: 8 + depth * 12 + 16 }}
+      style={{ paddingLeft: 8 + depth * 16 + 16 }}
       {...press(() => selectBookmarkLink(link))}
     >
       <span className="bm-link-icon"><Icon name="link" size={12} /></span>
@@ -155,17 +170,45 @@ function LinkRow({ link, depth }: { link: BookmarkLink; depth: number }) {
   )
 }
 
-/** 选中文件夹的链接列表（右栏） */
+/** 从树中查找某个文件夹节点 */
+function findFolderNode(nodes: BookmarkTreeNode[], folderId: number): BookmarkTreeNode | null {
+  for (const node of nodes) {
+    if (node.folder.id === folderId) return node
+    const found = findFolderNode(node.children, folderId)
+    if (found) return found
+  }
+  return null
+}
+
+/** 右栏：子文件夹网格 */
+function SubFolderGrid({ nodes, onSelect }: { nodes: BookmarkTreeNode[]; onSelect: (id: number) => void }) {
+  if (nodes.length === 0) return null
+  return (
+    <div className="bm-subfolders">
+      <div className="bm-subfolders-title">子文件夹</div>
+      <div className="bm-subfolder-grid">
+        {nodes.map((n) => (
+          <div key={n.folder.id} className="bm-subfolder-card" {...press(() => onSelect(n.folder.id))}>
+            <Icon name="folder" size={20} />
+            <span className="bm-subfolder-name">{n.folder.title}</span>
+            <span className="bm-subfolder-count">{n.linkCount ?? n.links.length}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** 右栏：链接列表 */
 function LinkList({ links }: { links: BookmarkLink[] }) {
   const { selectBookmarkLink, activeBookmarkLink, openInBrowser, deleteBookmarkLink } = useStore()
   const [confirmDel, setConfirmDel] = useState<number | null>(null)
 
-  if (links.length === 0) {
-    return <div className="bm-empty">此文件夹暂无链接</div>
-  }
+  if (links.length === 0) return null
 
   return (
     <div className="bm-link-list">
+      <div className="bm-link-list-title">链接 ({links.length})</div>
       {links.map((link) => (
         <div
           key={link.id}
@@ -205,22 +248,6 @@ function LinkList({ links }: { links: BookmarkLink[] }) {
   )
 }
 
-/** 从树中查找某个文件夹节点 */
-function findFolderNode(nodes: BookmarkTreeNode[], folderId: number): BookmarkTreeNode | null {
-  for (const node of nodes) {
-    if (node.folder.id === folderId) return node
-    const found = findFolderNode(node.children, folderId)
-    if (found) return found
-  }
-  return null
-}
-
-/** 从树中提取某个文件夹的直接链接 */
-function collectLinksFromFolder(nodes: BookmarkTreeNode[], folderId: number): BookmarkLink[] {
-  const node = findFolderNode(nodes, folderId)
-  return node ? node.links : []
-}
-
 export function BookmarkView() {
   const {
     bookmarkTree, bookmarkLoading, activeBookmarkFolderId, activeBookmarkLink,
@@ -229,9 +256,11 @@ export function BookmarkView() {
     openInBrowser, showToast,
   } = useStore()
 
-  // 树状展开/收起状态管理
+  // 树状展开/收起状态管理（持久化）
   const [expandedIds, setExpandedIds] = useState<Set<number>>(() => {
-    // 默认展开一层 (根节点的直接子节点)
+    const saved = loadExpandedIds()
+    if (saved.size > 0) return saved
+    // 默认展开第一层
     const init = new Set<number>()
     bookmarkTree.forEach((n) => { if (n.folder.id > 1) init.add(n.folder.id) })
     return init
@@ -242,6 +271,7 @@ export function BookmarkView() {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      saveExpandedIds(next)
       return next
     })
   }, [])
@@ -256,7 +286,7 @@ export function BookmarkView() {
       const all = new Set<number>()
       const walk = (nodes: BookmarkTreeNode[]) => {
         for (const n of nodes) {
-          if (n.children.length > 0) {
+          if (n.children.length > 0 || n.links.length > 0) {
             all.add(n.folder.id)
             walk(n.children)
           }
@@ -283,19 +313,24 @@ export function BookmarkView() {
     })
   }, [bookmarkTree])
 
+  // 首次进入时加载树
   useEffect(() => {
-    void (async () => {
-      // 首次进入时加载树
-      if (bookmarkTree.length === 0) {
-        await useStore.getState().loadBookmarkTree()
-      }
-    })()
+    if (bookmarkTree.length === 0) {
+      void useStore.getState().loadBookmarkTree()
+    }
   }, [bookmarkTree.length])
 
-  // 当前选中文件夹的链接列表
-  const currentLinks = useMemo(() => {
-    if (activeBookmarkFolderId == null) return []
-    return collectLinksFromFolder(bookmarkTree, activeBookmarkFolderId)
+  // 默认选中根节点（第一个节点）
+  useEffect(() => {
+    if (bookmarkTree.length > 0 && activeBookmarkFolderId == null) {
+      setBookmarkFolder(bookmarkTree[0].folder.id)
+    }
+  }, [bookmarkTree, activeBookmarkFolderId, setBookmarkFolder])
+
+  // 当前选中的文件夹节点
+  const currentNode = useMemo(() => {
+    if (activeBookmarkFolderId == null) return null
+    return findFolderNode(bookmarkTree, activeBookmarkFolderId)
   }, [bookmarkTree, activeBookmarkFolderId])
 
   // 统计总数
@@ -305,7 +340,7 @@ export function BookmarkView() {
     return count(bookmarkTree)
   }, [bookmarkTree])
 
-  const treeW = 260
+  const treeW = 280
   const treeStyle: CSSProperties = { width: treeW, flexShrink: 0 }
 
   // 从指定文件夹（含子文件夹）中随机选一个链接并直接浏览器打开
@@ -361,7 +396,7 @@ export function BookmarkView() {
         </div>
       </aside>
 
-      {/* 右栏：链接列表 / 详情 */}
+      {/* 右栏：子文件夹 + 链接列表 / 链接详情 */}
       <div className="bm-content">
         {activeBookmarkLink ? (
           <div className="bm-detail-section">
@@ -383,18 +418,28 @@ export function BookmarkView() {
               </div>
             </div>
           </div>
-        ) : activeBookmarkFolderId != null ? (
+        ) : currentNode ? (
           <div className="bm-folder-section">
             <div className="bm-folder-header">
-              <h3>链接列表（{currentLinks.length}）</h3>
+              <h3>{currentNode.folder.title}</h3>
+              <span className="bm-folder-meta">
+                {currentNode.children.length > 0 && `${currentNode.children.length} 个子文件夹`}
+                {currentNode.children.length > 0 && currentNode.links.length > 0 && ' · '}
+                {currentNode.links.length > 0 && `${currentNode.links.length} 个链接`}
+              </span>
             </div>
-            <LinkList links={currentLinks} />
+            <div className="bm-folder-content">
+              <SubFolderGrid nodes={currentNode.children} onSelect={setBookmarkFolder} />
+              <LinkList links={currentNode.links} />
+              {currentNode.children.length === 0 && currentNode.links.length === 0 && (
+                <div className="bm-empty-folder">此文件夹为空</div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="bm-placeholder">
             <div className="bm-placeholder-icon"><Icon name="bookmark" size={48} /></div>
             <p>选择一个文件夹查看书签</p>
-            <p className="bm-placeholder-hint">或点击「随机」按钮，发现遗忘的宝藏</p>
           </div>
         )}
       </div>

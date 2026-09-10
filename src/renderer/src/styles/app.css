@@ -2000,7 +2000,7 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 .bm-placeholder p { font-size: 14px; color: var(--color-text-secondary); }
 .bm-placeholder-hint { font-size: 12px !important; color: var(--color-text-tertiary); }
 
-.bm-folder-header h3, .bm-random-header h3 { font-size: 14px; font-weight: 600; color: var(--color-text); margin-bottom: 12px; }
+.bm-random-header h3 { font-size: 14px; font-weight: 600; color: var(--color-text); margin-bottom: 12px; }
 .bm-random-header { display: flex; align-items: center; justify-content: space-between; }
 
 .bm-link-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
@@ -2048,6 +2048,31 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 .bm-detail-url { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 12px; word-break: break-all; }
 
 .bm-empty { padding: 20px; text-align: center; color: var(--color-text-tertiary); font-size: 12px; }
+.bm-empty-folder { grid-column: 1 / -1; padding: 30px; text-align: center; color: var(--color-text-tertiary); font-size: 13px; }
+
+/* 右栏：子文件夹网格 */
+.bm-folder-section { display: flex; flex-direction: column; height: 100%; }
+.bm-folder-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; flex-shrink: 0; }
+.bm-folder-header h3 { font-size: 16px; font-weight: 600; color: var(--color-text); }
+.bm-folder-meta { font-size: 12px; color: var(--color-text-tertiary); }
+.bm-folder-content { flex: 1; overflow-y: auto; }
+
+.bm-subfolders { margin-bottom: 20px; }
+.bm-subfolders-title, .bm-link-list-title { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.bm-subfolder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.bm-subfolder-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 8px; border-radius: 8px;
+  background: var(--color-background-secondary);
+  border: 0.5px solid var(--color-border);
+  cursor: pointer; transition: all 0.15s;
+  color: var(--color-text-secondary);
+}
+.bm-subfolder-card:hover { border-color: var(--color-border-hover); color: var(--color-text); }
+.bm-subfolder-name { font-size: 11px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.bm-subfolder-count { font-size: 10px; color: var(--color-text-tertiary); }
+
+.bm-link-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
