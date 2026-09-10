@@ -1321,6 +1321,8 @@ function migrateBookmarks() {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_bm_links_folder ON bookmark_links(folder_id)`)
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_bm_links_url ON bookmark_links(url)`) } catch { /* 索引已存在 */ }
 
+  // 外键约束会阻止更新 parent_id，先关闭
+  db.exec('PRAGMA foreign_keys = OFF')
   // 去重合并：同一 parent_id + title 只保留 id 最小的，将其余重复文件夹的链接移到保留的文件夹里后删除空壳
   const dupGroups = db.prepare(
     'SELECT parent_id, title, MIN(id) AS keep_id FROM bookmark_folders GROUP BY parent_id, title HAVING COUNT(*) > 1'
@@ -1338,11 +1340,13 @@ function migrateBookmarks() {
       db.prepare('DELETE FROM bookmark_folders WHERE id = ?').run(id)
     }
   }
+  db.exec('PRAGMA foreign_keys = ON')
   // 添加唯一约束，防止同一父目录下再出现同名文件夹
   try { db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_bm_folders_unique ON bookmark_folders(parent_id, title)`) } catch { /* 索引已存在或数据仍有重复（已处理） */ }
 
   // 确保根目录存在（id=1, parent_id=0, title="收藏夹"）
-  // 兼容旧库：若 id=1 已存在则确保其 parent_id=0 且 title="收藏夹"
+  // 兼容旧库：若 id=1 已存在则确保其 parent_id=0 且 title="收藏夹"（临时禁用外键约束防 FK 报错）
+  db.exec('PRAGMA foreign_keys = OFF')
   const row1 = db.prepare('SELECT id, parent_id, title FROM bookmark_folders WHERE id = 1').get() as { id: number; parent_id: number; title: string } | undefined
   if (row1) {
     if (row1.title !== '收藏夹' || row1.parent_id !== 0) {
@@ -1352,6 +1356,7 @@ function migrateBookmarks() {
     // id=1 不存在（极旧的空库），直接插入
     db.prepare('INSERT INTO bookmark_folders (id, parent_id, title, sort_order) VALUES (1, 0, ?, 0)').run('收藏夹')
   }
+  db.exec('PRAGMA foreign_keys = ON')
 }
 
 // ---- 收藏夹文件夹 CRUD ----
