@@ -4,13 +4,13 @@
  *
  * 布局：
  * - 左栏（窄）：树形文件夹结构（可折叠）
- * - 右栏（宽）：选中文件夹内的链接列表 / 随机漫步的链接
+ * - 右栏（宽）：选中文件夹内的链接列表 + 详情
  *
  * 功能：
- * - 树形文件夹展示与折叠
+ * - 树形文件夹展示与折叠（展开/收起全部在标题栏）
  * - 点击文件夹查看内部链接
- * - 随机漫步：从全部书签中随机选一个
- * - AI 自动归类按钮
+ * - 文件夹行悬浮时出现随机按钮，点击直接在浏览器打开该文件夹内的随机链接
+ * - 导入 / AI 归类 已移至「设置 → 浏览器收藏夹」
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -21,7 +21,7 @@ import type { BookmarkTreeNode, BookmarkLink } from '../env'
 import type { CSSProperties } from 'react'
 
 /** 递归渲染文件夹树 */
-function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete, expandedIds, onToggle }: {
+function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete, expandedIds, onToggle, onRandom }: {
   node: BookmarkTreeNode
   depth: number
   activeFolderId: number | null
@@ -30,11 +30,13 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
   onDelete: (id: number) => void
   expandedIds: Set<number>
   onToggle: (id: number) => void
+  onRandom: (folderId: number) => void
 }) {
   const expanded = expandedIds.has(node.folder.id)
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(node.folder.title)
   const [confirmDel, setConfirmDel] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const isActive = activeFolderId === node.folder.id
   const isRoot = node.folder.id <= 1
 
@@ -50,6 +52,8 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
         className={`bm-folder-row ${isActive ? 'active' : ''}`}
         style={{ paddingLeft: 8 + depth * 12 }}
         role="button" tabIndex={0}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         {...press(() => onSelect(node.folder.id))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(node.folder.id) } }}
       >
@@ -77,6 +81,11 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
           </span>
         )}
         <span className="bm-count">{node.linkCount || ''}</span>
+        {hovered && (node.linkCount ?? node.links.length) > 0 && (
+          <button className="bm-folder-random" title="随机打开一个链接" {...pressBtn((e) => { e.stopPropagation(); onRandom(node.folder.id) })}>
+            <Icon name="shuffle" size={11} />
+          </button>
+        )}
         {!isRoot && !editing && (
           <button className="bm-folder-del" title="删除文件夹" {...pressBtn((e) => { e.stopPropagation(); setConfirmDel(true) })}>
             <Icon name="trash" size={11} />
@@ -102,6 +111,7 @@ function FolderNode({ node, depth, activeFolderId, onSelect, onRename, onDelete,
               onDelete={onDelete}
               expandedIds={expandedIds}
               onToggle={onToggle}
+              onRandom={onRandom}
             />
           ))}
         </div>
@@ -211,42 +221,12 @@ function collectLinksFromFolder(nodes: BookmarkTreeNode[], folderId: number): Bo
   return node ? node.links : []
 }
 
-/** 随机漫步展示区 */
-function RandomWalkCard({ link }: { link: BookmarkLink }) {
-  const { openInBrowser, selectBookmarkLink } = useStore()
-  if (!link) return null
-  return (
-    <div className="bm-random-card">
-      <div className="bm-random-badge">🎲 随机漫步</div>
-      <div className="bm-card-header">
-        <span className="bm-card-favicon">
-          {link.icon ? <img src={link.icon} alt="" className="bm-favicon-img" /> : <Icon name="link" size={16} />}
-        </span>
-        <span className="bm-card-title">{link.title}</span>
-      </div>
-      <div className="bm-card-url">{link.url}</div>
-      {link.ai_category && (
-        <div className="bm-card-ai"><Icon name="sparkles" size={11} /> {link.ai_category}</div>
-      )}
-      <div className="bm-card-actions">
-        <button className="bm-card-open" onClick={() => openInBrowser(link.url)}>
-          <Icon name="external" size={12} /> 打开链接
-        </button>
-        <button className="bm-card-open" onClick={() => selectBookmarkLink(link)}>
-          <Icon name="info" size={12} /> 详情
-        </button>
-      </div>
-    </div>
-  )
-}
-
 export function BookmarkView() {
   const {
     bookmarkTree, bookmarkLoading, activeBookmarkFolderId, activeBookmarkLink,
-    bookmarkRandomLink, aiClassifying,
-    setBookmarkFolder, selectBookmarkLink, importBookmarks,
+    setBookmarkFolder, selectBookmarkLink,
     renameBookmarkFolder, deleteBookmarkFolder,
-    bookmarkRandomWalk, aiClassifyBookmarks, openInBrowser,
+    openInBrowser, showToast,
   } = useStore()
 
   // 树状展开/收起状态管理
@@ -328,6 +308,21 @@ export function BookmarkView() {
   const treeW = 260
   const treeStyle: CSSProperties = { width: treeW, flexShrink: 0 }
 
+  // 从指定文件夹（含子文件夹）中随机选一个链接并直接浏览器打开
+  const onRandomFolder = useCallback((folderId: number) => {
+    const node = findFolderNode(bookmarkTree, folderId)
+    if (!node) return
+    const allLinks: BookmarkLink[] = []
+    const collect = (n: BookmarkTreeNode) => {
+      allLinks.push(...n.links)
+      n.children.forEach(collect)
+    }
+    collect(node)
+    if (allLinks.length === 0) { showToast('此文件夹下暂无链接'); return }
+    const pick = allLinks[Math.floor(Math.random() * allLinks.length)]
+    openInBrowser(pick.url)
+  }, [bookmarkTree, openInBrowser, showToast])
+
   return (
     <div className="bm-view">
       {/* 左栏：文件夹树 */}
@@ -335,26 +330,8 @@ export function BookmarkView() {
         <div className="bm-tree-head">
           <span>收藏夹</span>
           <span className="bm-total-count">{totalCount || ''}</span>
-        </div>
-        <div className="bm-tree-actions">
-          <button className="bm-action-btn" title="导入浏览器收藏夹" {...pressBtn(() => void importBookmarks())}>
-            <Icon name="upload" size={13} /> 导入
-          </button>
-          <button className="bm-action-btn" title="随机漫步" {...pressBtn(() => void bookmarkRandomWalk())}>
-            <Icon name="shuffle" size={13} /> 随机
-          </button>
-          <button
-            className="bm-action-btn"
-            title="AI 自动归类"
-            disabled={aiClassifying}
-            {...pressBtn(() => void aiClassifyBookmarks())}
-          >
-            {aiClassifying ? <Icon name="refresh" size={13} className="spin" /> : <Icon name="sparkles" size={13} />}
-            {aiClassifying ? '归类中' : 'AI 归类'}
-          </button>
-          <button className="bm-action-btn" title={allExpanded ? '全部收起' : '全部展开'} {...pressBtn(() => toggleAll())}>
-            <Icon name={allExpanded ? 'list' : 'rows'} size={13} />
-            {allExpanded ? '收起' : '展开'}
+          <button className="bm-toggle-all" title={allExpanded ? '全部收起' : '全部展开'} {...pressBtn(() => toggleAll())}>
+            <Icon name={allExpanded ? 'list' : 'rows'} size={12} />
           </button>
         </div>
         <div className="bm-tree-body">
@@ -363,7 +340,7 @@ export function BookmarkView() {
           ) : bookmarkTree.length === 0 ? (
             <div className="bm-empty-tree">
               <p>暂无收藏夹</p>
-              <p className="bm-empty-hint">点击上方「导入」按钮，选择浏览器导出的 bookmarks.html 文件</p>
+              <p className="bm-empty-hint">请在「设置 → 浏览器收藏夹」导入 bookmarks.html</p>
             </div>
           ) : (
             bookmarkTree.map((node) => (
@@ -377,25 +354,16 @@ export function BookmarkView() {
                 onDelete={deleteBookmarkFolder}
                 expandedIds={expandedIds}
                 onToggle={onToggle}
+                onRandom={onRandomFolder}
               />
             ))
           )}
         </div>
       </aside>
 
-      {/* 右栏：链接列表 / 随机漫步 */}
+      {/* 右栏：链接列表 / 详情 */}
       <div className="bm-content">
-        {bookmarkRandomLink ? (
-          <div className="bm-random-section">
-            <div className="bm-random-header">
-              <h3>🎲 随机漫步</h3>
-              <button className="bm-action-btn" {...pressBtn(() => void bookmarkRandomWalk())}>
-                <Icon name="refresh" size={13} /> 换一个
-              </button>
-            </div>
-            <RandomWalkCard link={bookmarkRandomLink} />
-          </div>
-        ) : activeBookmarkLink ? (
+        {activeBookmarkLink ? (
           <div className="bm-detail-section">
             <div className="bm-detail-header">
               <button className="bm-back" {...pressBtn(() => selectBookmarkLink(null))}>

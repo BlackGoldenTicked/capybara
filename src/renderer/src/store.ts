@@ -6,7 +6,7 @@ import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, p
 import { applyThemeBundle, type ThemeBundle } from './lib/theme-bundles'
 
 /** 设置页标签（含新增的「快捷键」）。 */
-export type SettingsTab = 'appearance' | 'rss' | 'github' | 'twitter' | 'actions' | 'shortcuts' | 'data' | 'diag' | 'thanks' | 'ai'
+export type SettingsTab = 'appearance' | 'rss' | 'github' | 'twitter' | 'bookmarks' | 'actions' | 'shortcuts' | 'data' | 'diag' | 'thanks' | 'ai'
 
 interface State {
   screen: Screen

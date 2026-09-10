@@ -4,6 +4,7 @@ import { Icon, type IconName } from './icons'
 import { RssManager } from './RssManager'
 import { GithubStarManager } from './GithubStarManager'
 import { TwitterBookmarkManager } from './TwitterBookmarkManager'
+import { BookmarkManager } from './BookmarkManager'
 import { DbView } from './DbView'
 import { DiagPanel } from './DiagPanel'
 import { press, pressBtn } from '../lib/press'
@@ -49,6 +50,7 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
   { key: 'rss', label: 'RSS 订阅', icon: 'rss' },
   { key: 'github', label: 'GitHub Star', icon: 'github' },
   { key: 'twitter', label: 'X 书签', icon: 'twitter' },
+  { key: 'bookmarks', label: '浏览器收藏夹', icon: 'bookmark' },
   { key: 'actions', label: '数据管理', icon: 'archived' },
   { key: 'ai', label: 'AI 模型', icon: 'sparkles' },
   { key: 'shortcuts', label: '快捷键', icon: 'keyboard' },
@@ -77,6 +79,7 @@ export function SettingsView() {
             {settingsTab === 'rss' && <RssManager />}
             {settingsTab === 'github' && <GithubStarManager />}
             {settingsTab === 'twitter' && <TwitterBookmarkManager />}
+            {settingsTab === 'bookmarks' && <BookmarkManager />}
             {settingsTab === 'actions' && <ActionsTab onRefresh={refreshAll} />}
             {settingsTab === 'ai' && <AiModelTab />}
             {settingsTab === 'shortcuts' && <ShortcutsTab />}

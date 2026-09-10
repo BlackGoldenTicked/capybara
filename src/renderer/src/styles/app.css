@@ -1947,10 +1947,21 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 .bm-folder-icon { display: flex; align-items: center; color: var(--color-text-secondary); flex-shrink: 0; }
 .bm-folder-name { flex: 1; font-size: 12px; color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bm-count { font-size: 10px; color: var(--color-text-tertiary); flex-shrink: 0; min-width: 16px; text-align: right; }
+.bm-folder-random { opacity: 0; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 2px; flex-shrink: 0; border-radius: 4px; transition: opacity 0.1s; }
+.bm-folder-row:hover .bm-folder-random { opacity: 1; }
+.bm-folder-random:hover { color: var(--color-accent); background: var(--color-accent-subtle); }
 .bm-folder-del { opacity: 0; display: flex; align-items: center; background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 2px; flex-shrink: 0; }
 .bm-folder-row:hover .bm-folder-del { opacity: 1; }
 .bm-folder-del:hover { color: var(--color-error); }
+.bm-toggle-all { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; border-radius: 4px; flex-shrink: 0; }
+.bm-toggle-all:hover { background: var(--color-background-tertiary); color: var(--color-text); }
 .bm-rename-input { flex: 1; font-size: 12px; background: var(--color-background-primary); border: 0.5px solid var(--color-accent); border-radius: 4px; padding: 2px 4px; color: var(--color-text); outline: none; }
+
+/* Bookmark Manager (设置页) */
+.bm-stats { display: flex; gap: 24px; }
+.bm-stat { display: flex; flex-direction: column; align-items: center; }
+.bm-stat-num { font-size: 24px; font-weight: 600; color: var(--color-text); }
+.bm-stat-label { font-size: 11px; color: var(--color-text-tertiary); }
 
 .bm-children { }
 .bm-links-inline { }
