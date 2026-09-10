@@ -2052,12 +2052,24 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 }
 .bm-cover-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.1s; }
 .bm-cover-card:hover .bm-cover-actions, .bm-cover-card.selected .bm-cover-actions { opacity: 1; }
+/* 浅色磨砂高对比：深/浅封面上都清晰可见（旧深色半透明在暗封面上隐形） */
 .bm-cover-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border-radius: 6px; border: none; cursor: pointer;
-  background: rgba(0, 0, 0, 0.55); color: #fff; backdrop-filter: blur(4px);
+  width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+  border: 0.5px solid rgba(0, 0, 0, 0.22);
+  background: rgba(255, 255, 255, 0.92); color: #262626;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
-.bm-cover-btn:hover { background: rgba(0, 0, 0, 0.78); }
+.bm-cover-btn:hover { background: #fff; color: #000; }
+.bm-cover-btn.danger:hover { color: var(--ds-danger); }
+/* 预览缓存标记：绿点=已有网页截图缓存，灰点=未缓存 */
+.bm-cover-cache {
+  position: absolute; right: 6px; bottom: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.45);
+}
+.bm-cover-cache.ok { background: #3ddc74; }
 .bm-cover-name { font-size: 12px; color: var(--color-text); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bm-cover-card.selected .bm-cover-name { color: var(--color-accent); }
 .bm-cover-domain { font-size: 10px; color: var(--color-text-tertiary); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

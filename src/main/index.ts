@@ -59,7 +59,7 @@ import { validateRssUrl } from './sources/rss'
 import { backupWebDAV } from './sync'
 import { netLog, setNetLogWindow } from './netlog'
 import { diagSnapshot, diagTestPurge, diagRefreshFeed, diagRefreshAll, forceRefreshFeed, forceRefreshAll } from './diag'
-import { requestThumbs } from './lib/thumbs'
+import { requestThumbs, refreshThumb } from './lib/thumbs'
 
 if (!app.isPackaged) {
   try {
@@ -771,6 +771,9 @@ function registerIpc() {
     // 链接卡片封面：批量查缩略图缓存，未缓存的入队后台捕获，完成后经 bookmarks:thumbReady 推送
     'bookmarks:thumbs': ((urls: string[]) =>
       requestThumbs(urls, (p) => mainWindow?.webContents.send('bookmarks:thumbReady', p))) as never,
+    // 强制重新捕获单个链接的网页预览（删缓存后重入队）
+    'bookmarks:thumbRefresh': ((url: string) =>
+      refreshThumb(url, (p) => mainWindow?.webContents.send('bookmarks:thumbReady', p))) as never,
     'bookmarks:stats': (() => bookmarkStats()) as never,
     'bookmarks:createFolder': ((parentId: number, title: string) => createBookmarkFolder(parentId, title)) as never,
     'bookmarks:renameFolder': ((id: number, title: string) => renameBookmarkFolder(id, title)) as never,

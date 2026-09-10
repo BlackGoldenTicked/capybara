@@ -101,6 +101,15 @@ export function requestThumbs(urls: string[], send: ThumbSender): Record<string,
   return out
 }
 
+/** 强制重新捕获：删除缓存与失败标记后重新入队（卡片上的刷新按钮） */
+export function refreshThumb(url: string, send: ThumbSender): void {
+  sender = send
+  try { fs.unlinkSync(path.join(getImagesDir(), `thumbs/${hashOf(url)}.jpg`)) } catch { /* 本就无缓存 */ }
+  try { fs.unlinkSync(path.join(thumbsDir(), `${hashOf(url)}.fail`)) } catch { /* ignore */ }
+  if (!inflight.has(url) && !queue.includes(url)) queue.push(url)
+  void pump()
+}
+
 async function pump(): Promise<void> {
   if (pumping) return
   pumping = true

@@ -29,6 +29,7 @@ const validChannels = [
   'diag:snapshot', 'diag:testPurge', 'diag:testRefreshOne', 'diag:testRefreshAll', 'diag:testForceOne', 'diag:testForceAll',
   'bookmarks:tree', 'bookmarks:stats', 'bookmarks:createFolder', 'bookmarks:renameFolder', 'bookmarks:deleteFolder', 'bookmarks:moveFolder', 'bookmarks:listLinks', 'bookmarks:deleteLink', 'bookmarks:import', 'bookmarks:aiClassify',
   'bookmarks:thumbs',
+  'bookmarks:thumbRefresh',
   'llm:providers', 'llm:config', 'llm:saveConfig', 'llm:test'
 ] as const
 

@@ -232,10 +232,18 @@ function LinkCards({ links, thumbs }: { links: BookmarkLink[]; thumbs: Record<st
                   </span>
                 )}
                 <span className="bm-cover-type">URL</span>
+                {/* 预览缓存标记：绿点=已生成网页截图缓存；灰点=未缓存（后台捕获中或失败） */}
+                <span
+                  className={`bm-cover-cache ${shot ? 'ok' : ''}`}
+                  title={shot ? '网页预览已缓存' : '预览未缓存（后台捕获中或失败，可点刷新重试）'}
+                />
                 {link.ai_category && <span className="bm-cover-ai">{link.ai_category.split(' > ')[0]}</span>}
                 <span className="bm-cover-actions">
                   <button className="bm-cover-btn" title="在浏览器中打开" {...pressBtn((e) => { e.stopPropagation(); openInBrowser(link.url) })}>
                     <Icon name="external" size={12} />
+                  </button>
+                  <button className="bm-cover-btn" title="重新获取网页预览" {...pressBtn((e) => { e.stopPropagation(); void window.capybara.invoke('bookmarks:thumbRefresh', link.url) })}>
+                    <Icon name="refresh" size={12} />
                   </button>
                   {confirmDel === link.id ? (
                     <span className="bm-del-confirm" onPointerDown={(e) => e.stopPropagation()}>
@@ -243,7 +251,7 @@ function LinkCards({ links, thumbs }: { links: BookmarkLink[]; thumbs: Record<st
                       <button className="bm-del-ok" onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void deleteBookmarkLink(link.id); setConfirmDel(null) }}>删除</button>
                     </span>
                   ) : (
-                    <button className="bm-cover-btn" title="删除" {...pressBtn((e) => { e.stopPropagation(); setConfirmDel(link.id) })}>
+                    <button className="bm-cover-btn danger" title="删除" {...pressBtn((e) => { e.stopPropagation(); setConfirmDel(link.id) })}>
                       <Icon name="trash" size={12} />
                     </button>
                   )}
@@ -346,7 +354,8 @@ export function BookmarkView() {
   // 网页缩略图缓存（url → cover 相对路径）：切换文件夹时批量查缓存，并订阅主进程捕获完成推送
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
   useEffect(() => window.capybara.onBookmarkThumb(({ url, rel }) => {
-    if (rel) setThumbs((prev) => (prev[url] === rel ? prev : { ...prev, [url]: rel }))
+    // 带时间戳 query：强制重捕后同名文件也让 <img> 重新拉取新字节
+    if (rel) setThumbs((prev) => ({ ...prev, [url]: `${rel}?ts=${Date.now()}` }))
   }), [])
   useEffect(() => {
     const urls = currentNode?.links.map((l) => l.url) ?? []
