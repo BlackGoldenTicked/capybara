@@ -154,6 +154,8 @@ interface CapybaraBridge {
   onSourcesUpdated(cb: () => void): void
   onGithubProgress(cb: (progress: { fetched: number; page: number }) => void): void
   onNetLog(cb: (entry: NetLogEntry) => void): void
+  /** 订阅书签网页缩略图捕获完成事件；返回取消订阅函数 */
+  onBookmarkThumb(cb: (payload: { url: string; rel: string | null }) => void): () => void
   getPathForFile(file: File): string
 }
 

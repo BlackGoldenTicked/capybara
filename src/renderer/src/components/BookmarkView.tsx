@@ -194,49 +194,19 @@ function findFolderPath(nodes: BookmarkTreeNode[], folderId: number, trail: Book
   return null
 }
 
-/** 右栏：子文件夹列表（全宽行，铺满主窗口） */
-function SubFolderList({ nodes, onSelect }: { nodes: BookmarkTreeNode[]; onSelect: (id: number) => void }) {
-  if (nodes.length === 0) return null
-  return (
-    <div className="bm-subfolders">
-      <div className="bm-subfolders-title">子文件夹</div>
-      <div className="bm-subfolder-list">
-        {nodes.map((n) => (
-          <div
-            key={n.folder.id}
-            className="bm-subrow"
-            role="button" tabIndex={0}
-            {...press(() => onSelect(n.folder.id))}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(n.folder.id) } }}
-          >
-            <span className="bm-subrow-icon"><Icon name="folder" size={15} /></span>
-            <span className="bm-subrow-name">{n.folder.title}</span>
-            <span className="bm-subrow-meta">
-              {n.children.length > 0 && `${n.children.length} 个子文件夹 · `}
-              {n.linkCount ?? n.links.length} 个链接
-            </span>
-            <span className="bm-subrow-arrow"><Icon name="chevronRight" size={14} /></span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/** 右栏：链接卡片网格（Eagle 式：封面 + 名称 + 域名；单击选中、双击打开） */
-function LinkGrid({ links }: { links: BookmarkLink[] }) {
+/** 链接卡片（Eagle 式：网页截图封面 + 名称 + 域名；单击选中、双击打开） */
+function LinkCards({ links, thumbs }: { links: BookmarkLink[]; thumbs: Record<string, string> }) {
   const { selectBookmarkLink, activeBookmarkLink, openInBrowser, deleteBookmarkLink } = useStore()
   const [confirmDel, setConfirmDel] = useState<number | null>(null)
 
   if (links.length === 0) return null
 
   return (
-    <div className="bm-link-list">
-      <div className="bm-link-list-title">链接 ({links.length})</div>
-      <div className="bm-cover-grid">
-        {links.map((link) => {
+    <>
+      {links.map((link) => {
           const host = hostOf(link.url)
           const color = feedColor(host)
+          const shot = thumbs[link.url]
           const selected = activeBookmarkLink?.id === link.id
           return (
             <div
@@ -250,15 +220,18 @@ function LinkGrid({ links }: { links: BookmarkLink[] }) {
             >
               <div
                 className="bm-cover-thumb"
-                style={{ background: `linear-gradient(160deg, ${color}40, ${color}12 55%, ${color}2b)` }}
+                style={shot ? undefined : { background: `linear-gradient(160deg, ${color}40, ${color}12 55%, ${color}2b)` }}
               >
-                {link.icon ? (
+                {shot ? (
+                  <img className="bm-cover-shot" src={`cover://${shot}`} alt="" draggable={false} />
+                ) : link.icon ? (
                   <img src={link.icon} alt="" className="bm-cover-icon" />
                 ) : (
                   <span className="bm-cover-letter" style={{ background: color }}>
                     {(link.title || host).trim().charAt(0).toUpperCase()}
                   </span>
                 )}
+                <span className="bm-cover-type">URL</span>
                 {link.ai_category && <span className="bm-cover-ai">{link.ai_category.split(' > ')[0]}</span>}
                 <span className="bm-cover-actions">
                   <button className="bm-cover-btn" title="在浏览器中打开" {...pressBtn((e) => { e.stopPropagation(); openInBrowser(link.url) })}>
@@ -280,9 +253,8 @@ function LinkGrid({ links }: { links: BookmarkLink[] }) {
               <span className="bm-cover-domain">{host}</span>
             </div>
           )
-        })}
-      </div>
-    </div>
+      })}
+    </>
   )
 }
 
@@ -371,6 +343,30 @@ export function BookmarkView() {
   }, [bookmarkTree, activeBookmarkFolderId])
   const currentNode = currentPath ? currentPath[currentPath.length - 1] : null
 
+  // 网页缩略图缓存（url → cover 相对路径）：切换文件夹时批量查缓存，并订阅主进程捕获完成推送
+  const [thumbs, setThumbs] = useState<Record<string, string>>({})
+  useEffect(() => window.capybara.onBookmarkThumb(({ url, rel }) => {
+    if (rel) setThumbs((prev) => (prev[url] === rel ? prev : { ...prev, [url]: rel }))
+  }), [])
+  useEffect(() => {
+    const urls = currentNode?.links.map((l) => l.url) ?? []
+    if (urls.length === 0) return
+    let alive = true
+    void window.capybara.invoke('bookmarks:thumbs', urls).then((m) => {
+      if (!alive) return
+      const map = m as Record<string, string | null>
+      setThumbs((prev) => {
+        let changed = false
+        const next = { ...prev }
+        for (const [u, rel] of Object.entries(map)) {
+          if (rel && next[u] !== rel) { next[u] = rel; changed = true }
+        }
+        return changed ? next : prev
+      })
+    })
+    return () => { alive = false }
+  }, [currentNode])
+
   // 统计总数
   const totalCount = useMemo(() => {
     const count = (nodes: BookmarkTreeNode[]): number =>
@@ -457,11 +453,35 @@ export function BookmarkView() {
               </span>
             </div>
             <div className="bm-folder-content">
-              <SubFolderList nodes={currentNode.children} onSelect={setBookmarkFolder} />
-              <LinkGrid links={currentNode.links} />
-              {currentNode.children.length === 0 && currentNode.links.length === 0 && (
-                <div className="bm-empty-folder">此文件夹为空</div>
-              )}
+              <div className="bm-cover-grid">
+                {currentNode.children.map((n) => {
+                  const c = feedColor(n.folder.title)
+                  return (
+                    <div
+                      key={n.folder.id}
+                      className="bm-cover-card"
+                      role="button" tabIndex={0}
+                      title={n.folder.title}
+                      {...press(() => setBookmarkFolder(n.folder.id))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setBookmarkFolder(n.folder.id) } }}
+                    >
+                      <div className="bm-cover-thumb" style={{ background: `linear-gradient(160deg, ${c}38, ${c}10 55%, ${c}26)` }}>
+                        <span className="bm-cover-folder"><Icon name="folder" size={42} /></span>
+                        <span className="bm-cover-count">{n.linkCount ?? n.links.length}</span>
+                      </div>
+                      <span className="bm-cover-name">{n.folder.title}</span>
+                      <span className="bm-cover-domain">
+                        {n.children.length > 0 && `${n.children.length} 个子文件夹 · `}
+                        {n.linkCount ?? n.links.length} 个链接
+                      </span>
+                    </div>
+                  )
+                })}
+                <LinkCards links={currentNode.links} thumbs={thumbs} />
+                {currentNode.children.length === 0 && currentNode.links.length === 0 && (
+                  <div className="bm-empty-folder">此文件夹为空</div>
+                )}
+              </div>
             </div>
           </div>
         ) : (

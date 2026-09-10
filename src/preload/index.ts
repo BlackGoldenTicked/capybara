@@ -28,6 +28,7 @@ const validChannels = [
   'db:tables', 'db:rows',
   'diag:snapshot', 'diag:testPurge', 'diag:testRefreshOne', 'diag:testRefreshAll', 'diag:testForceOne', 'diag:testForceAll',
   'bookmarks:tree', 'bookmarks:stats', 'bookmarks:createFolder', 'bookmarks:renameFolder', 'bookmarks:deleteFolder', 'bookmarks:moveFolder', 'bookmarks:listLinks', 'bookmarks:deleteLink', 'bookmarks:import', 'bookmarks:aiClassify',
+  'bookmarks:thumbs',
   'llm:providers', 'llm:config', 'llm:saveConfig', 'llm:test'
 ] as const
 
@@ -48,6 +49,12 @@ contextBridge.exposeInMainWorld('capybara', {
   /** 订阅主进程网络诊断日志（开发者模式开启时，应用内面板会显示） */
   onNetLog: (cb: (entry: unknown) => void) => {
     ipcRenderer.on('net:log', (_e, payload) => cb(payload))
+  },
+  /** 订阅书签网页缩略图捕获完成事件；返回取消订阅函数 */
+  onBookmarkThumb: (cb: (payload: { url: string; rel: string | null }) => void) => {
+    const handler = (_e: unknown, payload: { url: string; rel: string | null }) => cb(payload)
+    ipcRenderer.on('bookmarks:thumbReady', handler)
+    return () => ipcRenderer.removeListener('bookmarks:thumbReady', handler)
   },
   /** 在隔离渲染进程中拿到 <input type=file> 选择的真实磁盘路径，供主进程拷贝附件 */
   getPathForFile: (file: File): string => webUtils.getPathForFile(file)
