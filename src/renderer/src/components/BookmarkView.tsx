@@ -3,8 +3,9 @@
  *
  * 布局：左栏树形结构 + 右栏详情
  * 逻辑：
- *   - 左栏：VS Code 资源管理器式树（文件夹 + 内联链接），单击文件夹 = 选中 + 展开/收起
- *   - 右栏：当前选中文件夹的子文件夹/链接全宽列表，带面包屑路径
+ *   - 左栏：VS Code 资源管理器式树（文件夹 + 内联链接），单击文件夹 = 选中 + 展开/收起，单击链接 = 直接打开
+ *   - 右栏：子文件夹全宽行列表 + 链接 Eagle 式卡片网格（封面 + 名称 + 域名），
+ *     单击卡片选中、双击/回车打开浏览器，无二次详情页
  *   - 首次加载后默认选中并展开根节点
  *   - hover 文件夹显示随机按钮
  *   - 管理功能（导入/AI分类）已移至「设置 → 浏览器收藏夹」
@@ -14,6 +15,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useStore } from '../store'
 import { Icon } from './icons'
 import { press, pressBtn } from '../lib/press'
+import { feedColor } from '../lib/feedColor'
 import type { BookmarkTreeNode, BookmarkLink } from '../env'
 import type { CSSProperties } from 'react'
 
@@ -140,16 +142,15 @@ function FolderNode({ node, activeFolderId, onSelect, onRename, onDelete, expand
   )
 }
 
-/** 文件夹内的链接行（内联在树形中） */
+/** 文件夹内的链接行（内联在树形中，单击直接打开浏览器） */
 function LinkRow({ link }: { link: BookmarkLink }) {
-  const { selectBookmarkLink, activeBookmarkLink, deleteBookmarkLink } = useStore()
-  const isActive = activeBookmarkLink?.id === link.id
+  const { openInBrowser, deleteBookmarkLink } = useStore()
   const [confirmDel, setConfirmDel] = useState(false)
 
   return (
     <div
-      className={`bm-link-row ${isActive ? 'active' : ''}`}
-      {...press(() => selectBookmarkLink(link))}
+      className="bm-link-row"
+      {...press(() => openInBrowser(link.url))}
     >
       <span className="bm-link-icon"><Icon name="link" size={12} /></span>
       <span className="bm-link-title" title={link.url}>{link.title}</span>
@@ -175,6 +176,11 @@ function findFolderNode(nodes: BookmarkTreeNode[], folderId: number): BookmarkTr
     if (found) return found
   }
   return null
+}
+
+/** 提取 URL 的域名（用于卡片取色与展示） */
+function hostOf(url: string): string {
+  try { return new URL(url).hostname.replace(/^www\./, '') } catch { return url }
 }
 
 /** 从树中查找到某文件夹的路径（含自身，用于面包屑） */
@@ -217,8 +223,8 @@ function SubFolderList({ nodes, onSelect }: { nodes: BookmarkTreeNode[]; onSelec
   )
 }
 
-/** 右栏：链接列表（全宽行） */
-function LinkList({ links }: { links: BookmarkLink[] }) {
+/** 右栏：链接卡片网格（Eagle 式：封面 + 名称 + 域名；单击选中、双击打开） */
+function LinkGrid({ links }: { links: BookmarkLink[] }) {
   const { selectBookmarkLink, activeBookmarkLink, openInBrowser, deleteBookmarkLink } = useStore()
   const [confirmDel, setConfirmDel] = useState<number | null>(null)
 
@@ -227,36 +233,54 @@ function LinkList({ links }: { links: BookmarkLink[] }) {
   return (
     <div className="bm-link-list">
       <div className="bm-link-list-title">链接 ({links.length})</div>
-      <div className="bm-link-rows">
-        {links.map((link) => (
-          <div
-            key={link.id}
-            className={`bm-linkrow ${activeBookmarkLink?.id === link.id ? 'active' : ''}`}
-            {...press(() => selectBookmarkLink(link))}
-          >
-            <span className="bm-linkrow-favicon">
-              {link.icon ? <img src={link.icon} alt="" className="bm-favicon-img" /> : <Icon name="link" size={13} />}
-            </span>
-            <span className="bm-linkrow-title" title={link.title}>{link.title}</span>
-            <span className="bm-linkrow-url" title={link.url}>{link.url}</span>
-            {link.ai_category && <span className="bm-ai-tag" title={link.ai_category}>{link.ai_category.split(' > ')[0]}</span>}
-            <span className="bm-linkrow-actions">
-              <button className="bm-card-open" title="在浏览器中打开" {...pressBtn((e) => { e.stopPropagation(); openInBrowser(link.url) })}>
-                <Icon name="external" size={12} /> 打开
-              </button>
-              {confirmDel === link.id ? (
-                <span className="bm-del-confirm" onPointerDown={(e) => e.stopPropagation()}>
-                  <button className="bm-del-cancel" onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setConfirmDel(null) }}>取消</button>
-                  <button className="bm-del-ok" onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void deleteBookmarkLink(link.id); setConfirmDel(null) }}>删除</button>
+      <div className="bm-cover-grid">
+        {links.map((link) => {
+          const host = hostOf(link.url)
+          const color = feedColor(host)
+          const selected = activeBookmarkLink?.id === link.id
+          return (
+            <div
+              key={link.id}
+              className={`bm-cover-card ${selected ? 'selected' : ''}`}
+              role="button" tabIndex={0}
+              title={`${link.title}\n${link.url}`}
+              {...press(() => selectBookmarkLink(link))}
+              onDoubleClick={() => openInBrowser(link.url)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openInBrowser(link.url) } }}
+            >
+              <div
+                className="bm-cover-thumb"
+                style={{ background: `linear-gradient(160deg, ${color}40, ${color}12 55%, ${color}2b)` }}
+              >
+                {link.icon ? (
+                  <img src={link.icon} alt="" className="bm-cover-icon" />
+                ) : (
+                  <span className="bm-cover-letter" style={{ background: color }}>
+                    {(link.title || host).trim().charAt(0).toUpperCase()}
+                  </span>
+                )}
+                {link.ai_category && <span className="bm-cover-ai">{link.ai_category.split(' > ')[0]}</span>}
+                <span className="bm-cover-actions">
+                  <button className="bm-cover-btn" title="在浏览器中打开" {...pressBtn((e) => { e.stopPropagation(); openInBrowser(link.url) })}>
+                    <Icon name="external" size={12} />
+                  </button>
+                  {confirmDel === link.id ? (
+                    <span className="bm-del-confirm" onPointerDown={(e) => e.stopPropagation()}>
+                      <button className="bm-del-cancel" onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); setConfirmDel(null) }}>取消</button>
+                      <button className="bm-del-ok" onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); void deleteBookmarkLink(link.id); setConfirmDel(null) }}>删除</button>
+                    </span>
+                  ) : (
+                    <button className="bm-cover-btn" title="删除" {...pressBtn((e) => { e.stopPropagation(); setConfirmDel(link.id) })}>
+                      <Icon name="trash" size={12} />
+                    </button>
+                  )}
                 </span>
-              ) : (
-                <button className="bm-card-del" title="删除" {...pressBtn((e) => { e.stopPropagation(); setConfirmDel(link.id) })}>
-                  <Icon name="trash" size={12} />
-                </button>
-              )}
-            </span>
-          </div>
-        ))}
+              </div>
+              <span className="bm-cover-name">{link.title}</span>
+              <span className="bm-cover-domain">{host}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -264,8 +288,8 @@ function LinkList({ links }: { links: BookmarkLink[] }) {
 
 export function BookmarkView() {
   const {
-    bookmarkTree, bookmarkLoading, activeBookmarkFolderId, activeBookmarkLink,
-    setBookmarkFolder, selectBookmarkLink,
+    bookmarkTree, bookmarkLoading, activeBookmarkFolderId,
+    setBookmarkFolder,
     renameBookmarkFolder, deleteBookmarkFolder,
     openInBrowser, showToast,
   } = useStore()
@@ -409,29 +433,9 @@ export function BookmarkView() {
         </div>
       </aside>
 
-      {/* 右栏：子文件夹 + 链接列表 / 链接详情 */}
+      {/* 右栏：子文件夹 + 链接卡片网格 */}
       <div className="bm-content">
-        {activeBookmarkLink ? (
-          <div className="bm-detail-section">
-            <div className="bm-detail-header">
-              <button className="bm-back" {...pressBtn(() => selectBookmarkLink(null))}>
-                <Icon name="arrowLeft" size={14} /> 返回
-              </button>
-            </div>
-            <div className="bm-detail-card">
-              <h2 className="bm-detail-title">{activeBookmarkLink.title}</h2>
-              <div className="bm-detail-url">{activeBookmarkLink.url}</div>
-              {activeBookmarkLink.ai_category && (
-                <div className="bm-card-ai"><Icon name="sparkles" size={12} /> {activeBookmarkLink.ai_category}</div>
-              )}
-              <div className="bm-card-actions">
-                <button className="bm-card-open" onClick={() => openInBrowser(activeBookmarkLink.url)}>
-                  <Icon name="external" size={14} /> 在浏览器中打开
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : currentNode ? (
+        {currentNode ? (
           <div className="bm-folder-section">
             <div className="bm-folder-header">
               <div className="bm-crumb">
@@ -454,7 +458,7 @@ export function BookmarkView() {
             </div>
             <div className="bm-folder-content">
               <SubFolderList nodes={currentNode.children} onSelect={setBookmarkFolder} />
-              <LinkList links={currentNode.links} />
+              <LinkGrid links={currentNode.links} />
               {currentNode.children.length === 0 && currentNode.links.length === 0 && (
                 <div className="bm-empty-folder">此文件夹为空</div>
               )}

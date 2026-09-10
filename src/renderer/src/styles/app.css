@@ -2003,20 +2003,47 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 .bm-random-header h3 { font-size: 14px; font-weight: 600; color: var(--color-text); margin-bottom: 12px; }
 .bm-random-header { display: flex; align-items: center; justify-content: space-between; }
 
-.bm-favicon-img { width: 16px; height: 16px; border-radius: 2px; }
-.bm-card-ai { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--color-accent); margin-bottom: 8px; }
-.bm-card-actions { display: flex; gap: 8px; align-items: center; }
-.bm-card-open {
-  display: flex; align-items: center; gap: 4px;
-  padding: 4px 8px; font-size: 11px;
-  background: var(--color-background-tertiary);
-  border: 0.5px solid var(--color-border-tertiary);
-  border-radius: 6px; color: var(--color-text-secondary);
-  cursor: pointer; transition: all 0.15s;
+/* Eagle 式链接卡片：封面 + 名称 + 域名 */
+.bm-cover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 18px 14px; }
+.bm-cover-card { display: flex; flex-direction: column; gap: 5px; cursor: pointer; outline: none; min-width: 0; }
+.bm-cover-thumb {
+  position: relative; aspect-ratio: 4 / 3;
+  border-radius: 10px; overflow: hidden;
+  border: 2px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.12s, filter 0.12s;
 }
-.bm-card-open:hover { color: var(--color-text); border-color: var(--color-border); }
-.bm-card-del { display: flex; align-items: center; background: none; border: none; color: var(--color-text-tertiary); cursor: pointer; padding: 4px; border-radius: 4px; }
-.bm-card-del:hover { color: var(--color-error); }
+.bm-cover-card:hover .bm-cover-thumb { filter: brightness(1.12); }
+.bm-cover-card.selected .bm-cover-thumb { border-color: var(--color-accent); }
+.bm-cover-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  object-fit: contain; padding: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.bm-cover-letter {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 600; color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.bm-cover-ai {
+  position: absolute; left: 6px; bottom: 6px;
+  max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 9px; color: #fff; background: rgba(0, 0, 0, 0.45);
+  padding: 1px 6px; border-radius: 4px; backdrop-filter: blur(4px);
+}
+.bm-cover-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.1s; }
+.bm-cover-card:hover .bm-cover-actions, .bm-cover-card.selected .bm-cover-actions { opacity: 1; }
+.bm-cover-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 6px; border: none; cursor: pointer;
+  background: rgba(0, 0, 0, 0.55); color: #fff; backdrop-filter: blur(4px);
+}
+.bm-cover-btn:hover { background: rgba(0, 0, 0, 0.78); }
+.bm-cover-name { font-size: 12px; color: var(--color-text); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bm-cover-card.selected .bm-cover-name { color: var(--color-accent); }
+.bm-cover-domain { font-size: 10px; color: var(--color-text-tertiary); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .bm-random-card {
   padding: 20px; border-radius: 12px;
@@ -2025,14 +2052,6 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
   max-width: 600px;
 }
 .bm-random-badge { font-size: 12px; color: var(--color-accent); margin-bottom: 12px; }
-
-.bm-detail-section { max-width: 600px; }
-.bm-detail-header { margin-bottom: 12px; }
-.bm-back { display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 12px; background: none; border: none; color: var(--color-text-secondary); cursor: pointer; border-radius: 6px; }
-.bm-back:hover { background: var(--color-background-tertiary); color: var(--color-text); }
-.bm-detail-card { padding: 20px; border-radius: 12px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border); }
-.bm-detail-title { font-size: 16px; font-weight: 600; color: var(--color-text); margin-bottom: 8px; }
-.bm-detail-url { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 12px; word-break: break-all; }
 
 .bm-empty { padding: 20px; text-align: center; color: var(--color-text-tertiary); font-size: 12px; }
 .bm-empty-folder { padding: 30px; text-align: center; color: var(--color-text-tertiary); font-size: 13px; }
@@ -2070,24 +2089,6 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 .bm-subrow-meta { margin-left: auto; font-size: 11px; color: var(--color-text-tertiary); flex-shrink: 0; }
 .bm-subrow-arrow { display: flex; align-items: center; color: var(--color-text-tertiary); opacity: 0; transition: opacity 0.1s; flex-shrink: 0; }
 .bm-subrow:hover .bm-subrow-arrow { opacity: 1; }
-
-/* 全宽行：链接 */
-.bm-link-rows { display: flex; flex-direction: column; gap: 2px; }
-.bm-linkrow {
-  display: flex; align-items: center; gap: 8px;
-  height: 36px; padding: 0 10px;
-  border-radius: 6px; cursor: pointer;
-  border: 0.5px solid transparent;
-  transition: background 0.1s, border-color 0.1s;
-}
-.bm-linkrow:hover { background: var(--color-background-secondary); border-color: var(--color-border-tertiary); }
-.bm-linkrow.active { background: var(--color-accent-subtle); border-color: var(--color-accent); }
-.bm-linkrow-favicon { display: flex; align-items: center; color: var(--color-text-tertiary); flex-shrink: 0; }
-.bm-linkrow-favicon .bm-favicon-img { width: 14px; height: 14px; }
-.bm-linkrow-title { font-size: 13px; color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; min-width: 80px; }
-.bm-linkrow-url { font-size: 11px; color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 60px; }
-.bm-linkrow-actions { display: flex; align-items: center; gap: 6px; opacity: 0; transition: opacity 0.1s; flex-shrink: 0; }
-.bm-linkrow:hover .bm-linkrow-actions, .bm-linkrow.active .bm-linkrow-actions { opacity: 1; }
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
