@@ -1895,7 +1895,7 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 
 /* ===================== 浏览器收藏夹 ===================== */
 
-.bm-view { display: flex; height: 100%; overflow: hidden; }
+.bm-view { display: flex; flex: 1; min-width: 0; height: 100%; overflow: hidden; }
 
 .bm-tree-panel {
   display: flex; flex-direction: column;
