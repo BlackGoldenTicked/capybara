@@ -74,10 +74,7 @@ export function SettingsView() {
           ))}
         </nav>
         <div className="settings-panel">
-          <div className="set-frame">
-            {/* 关闭按钮固定在内容列右上角：与各 tab 内容的水平距离恒定，不随窗口宽度变化 */}
-            <button className="settings-close" title="关闭设置" {...pressBtn(() => closeSettings())}><Icon name="close" size={16} /></button>
-            <TabErrorBoundary key={settingsTab}>
+          <TabErrorBoundary key={settingsTab}>
             {settingsTab === 'appearance' && <AppearanceTab />}
             {settingsTab === 'rss' && <RssManager />}
             {settingsTab === 'github' && <GithubStarManager />}
@@ -89,9 +86,10 @@ export function SettingsView() {
             {settingsTab === 'data' && <DbView />}
             {settingsTab === 'diag' && <DiagPanel />}
             {settingsTab === 'thanks' && <ThanksTab />}
-            </TabErrorBoundary>
-          </div>
+          </TabErrorBoundary>
         </div>
+        {/* 关闭按钮：弹窗最右上角（与面板右缘滚动条同侧） */}
+        <button className="settings-close" title="关闭设置" {...pressBtn(() => closeSettings())}><Icon name="close" size={16} /></button>
       </section>
     </div>
   )
