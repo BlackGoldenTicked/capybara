@@ -14,6 +14,8 @@ import './TweetEmbed.css'
  * 设计原则（见技术方案）：
  *   - 不自己解析 / 仿制 Tweet UI，交给 X 官方 Embed；
  *   - 不使用 <webview>、不关闭 webSecurity、不在主渲染进程运行 X 脚本；
+ *   - sandbox 必须含 allow-same-origin：实测 widgets.js 在 opaque-origin（无该标志）下
+ *     createTweet 会 resolve null（unavailable）导致渲染失败；加上后高度/就绪回传正常。
  *   - 失败时展示错误卡（重新加载 / 在 X 中打开）并可回退到本地正文快照。
  */
 export interface TweetEmbedProps {
@@ -146,7 +148,7 @@ export function TweetEmbed({
                 src={src}
                 title="X 帖子"
                 scrolling="no"
-                sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                 style={{ width: '100%', height }}
               />
             )}
