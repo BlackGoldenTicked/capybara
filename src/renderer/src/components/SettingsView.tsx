@@ -74,7 +74,10 @@ export function SettingsView() {
           ))}
         </nav>
         <div className="settings-panel">
-          <TabErrorBoundary key={settingsTab}>
+          <div className="set-frame">
+            {/* 关闭按钮固定在内容列右上角：与各 tab 内容的水平距离恒定，不随窗口宽度变化 */}
+            <button className="settings-close" title="关闭设置" {...pressBtn(() => closeSettings())}><Icon name="close" size={16} /></button>
+            <TabErrorBoundary key={settingsTab}>
             {settingsTab === 'appearance' && <AppearanceTab />}
             {settingsTab === 'rss' && <RssManager />}
             {settingsTab === 'github' && <GithubStarManager />}
@@ -86,9 +89,9 @@ export function SettingsView() {
             {settingsTab === 'data' && <DbView />}
             {settingsTab === 'diag' && <DiagPanel />}
             {settingsTab === 'thanks' && <ThanksTab />}
-          </TabErrorBoundary>
+            </TabErrorBoundary>
+          </div>
         </div>
-        <button className="settings-close" title="关闭设置" {...pressBtn(() => closeSettings())}><Icon name="close" size={16} /></button>
       </section>
     </div>
   )
@@ -711,24 +714,6 @@ function renderReadingThemes(activeId: string, onSelect: (id: string) => void) {
 }
 
 /* ===================== 致谢 ===================== */
-// 设计风格致谢卡片（仅作界面/交互参考的鸣谢，无商业关联）
-const THANKS_CARDS: Array<{ icon: IconName; accent: string; title: string; desc: string; url: string }> = [
-  {
-    icon: 'sparkles',
-    accent: '#10a37f',
-    title: 'ChatGPT · OpenAI',
-    desc: '感谢 OpenAI ChatGPT 在交互思路、文案润色与开发过程中的启发与协作——大量界面决策与自动化脚本受益于与其的对话。',
-    url: 'https://openai.com/chatgpt'
-  },
-  {
-    icon: 'palette',
-    accent: '#6c5ce7',
-    title: 'NewMax',
-    desc: '感谢 NewMax 的设计语言参考：配色体系、间距节奏与组件规范为 Capybara 的视觉风格提供了重要借鉴。',
-    url: ''
-  }
-]
-
 // 开源软件清单（按用途分组；版本号取自 package.json，许可证以各项目官方声明为准）
 const OSS_GROUPS: Array<{ title: string; items: Array<{ name: string; version: string; license: string; role: string }> }> = [
   {
@@ -793,35 +778,9 @@ function ThanksTab() {
         <div className="thanks-hero-text">
           <h2 className="thanks-title">致谢</h2>
           <p className="thanks-sub">
-            Capybara 是一款个人知识管线桌面客户端{ver ? `，当前版本 ${ver}` : ''}。它站在开源社区与优秀产品设计者的肩膀之上。
-            本页列出构建它所用的开源软件，并向给予设计启发与开发辅助的产品致以谢意。
+            Capybara 是一款个人知识管线桌面客户端{ver ? `，当前版本 ${ver}` : ''}。它站在开源社区的肩膀之上。
+            本页列出构建它所用的开源软件。
           </p>
-        </div>
-      </div>
-
-      <div className="set-card">
-        <div className="src-head-row">
-          <p className="src-label">设计风格致谢</p>
-        </div>
-        <p className="src-hint">以下产品的设计语言为 Capybara 的界面与交互提供了重要参考。</p>
-        <div className="thanks-cards">
-          {THANKS_CARDS.map((c) => (
-            <div className="thanks-card" key={c.title}>
-              <div className="thanks-card-icon" style={{ background: `color-mix(in srgb, ${c.accent} 14%, transparent)`, color: c.accent }}>
-                <Icon name={c.icon} size={20} />
-              </div>
-              <div className="thanks-card-body">
-                <p className="thanks-card-title">{c.title}</p>
-                <p className="thanks-card-desc">{c.desc}</p>
-                {c.url && (
-                  <a className="thanks-card-link" href={c.url}
-                    onClick={(e) => { e.preventDefault(); void window.capybara.invoke('shell:openExternal', c.url) }}>
-                    <Icon name="external" size={13} /> 访问官网 ↗
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
