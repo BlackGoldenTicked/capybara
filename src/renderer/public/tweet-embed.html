@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--
+    独立 embed 宿主页：只负责加载 X 官方 widgets.js 并渲染 Embedded Post。
+    运行在 sandbox iframe（opaque origin）内，自带 CSP，X 的脚本不进入应用主渲染进程。
+    通过 postMessage 向父窗口回传高度（resize）/ 就绪（ready）/ 失败（error）。
+    注意：X 资源域名可能随官方调整，若控制台报 CSP 拦截，按需在下表补对应域名。
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://platform.twitter.com https://platform.x.com; frame-src https://platform.twitter.com https://platform.x.com https://*.twitter.com https://*.x.com; connect-src https://platform.twitter.com https://*.twitter.com https://*.twimg.com https://*.x.com; img-src https: data: blob:; style-src 'unsafe-inline' https://platform.twitter.com https://*.twitter.com; font-src https://platform.twitter.com https://*.twitter.com data:; media-src https: blob:;" />
+  <title>X Embed</title>
+  <style>
+    html, body { margin: 0; padding: 0; background: transparent; }
+    body { display: flex; justify-content: center; }
+    #tweet { width: 100%; max-width: 620px; }
+    #tweet iframe { margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div id="tweet"></div>
+
+  <script>
+    (function () {
+      var SOURCE = 'readflow-tweet-embed';
+      var params = new URLSearchParams(location.search);
+      var id = (params.get('id') || '').trim();
+      var theme = params.get('theme') === 'dark' ? 'dark' : 'light';
+      var hideThread = params.get('hideThread') === '1';
+      var hideMedia = params.get('hideMedia') === '1';
+      var dnt = params.get('dnt') !== '0';
+      var lang = params.get('lang') || 'zh-cn';
+
+      var container = document.getElementById('tweet');
+      var timer = null;
+      var finished = false;
+      var poll = null;
+
+      function post(msg) {
+        try {
+          var payload = { source: SOURCE, id: id };
+          for (var k in msg) { if (Object.prototype.hasOwnProperty.call(msg, k)) payload[k] = msg[k]; }
+          parent.postMessage(payload, '*');
+        } catch (e) { /* 父窗口不可达时忽略 */ }
+      }
+
+      function clearTimers() {
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (poll) { clearInterval(poll); poll = null; }
+      }
+
+      function fail(reason) {
+        if (finished) return;
+        finished = true;
+        clearTimers();
+        post({ type: 'error', reason: reason || 'unknown' });
+      }
+
+      function measure(el) {
+        var h = 0;
+        try { h = el.getBoundingClientRect().height || el.offsetHeight || 0; } catch (e) { h = 0; }
+        if (h > 0) post({ type: 'resize', height: Math.ceil(h) });
+      }
+
+      function observe(el) {
+        if (finished) return;
+        finished = true;
+        if (timer) { clearTimeout(timer); timer = null; }
+        measure(el);
+        post({ type: 'ready' });
+        if (typeof ResizeObserver === 'function') {
+          try {
+            var ro = new ResizeObserver(function () { measure(el); });
+            ro.observe(el);
+          } catch (e) { /* ResizeObserver 不可用时靠下方轮询兜底 */ }
+        }
+        // 媒体（图片/视频/Quote）异步撑高：短时间内轮询补发高度，避免裁切
+        var n = 0;
+        poll = setInterval(function () { measure(el); if (++n >= 25) { clearInterval(poll); poll = null; } }, 300);
+      }
+
+      if (!/^\d+$/.test(id)) { fail('invalid-id'); return; }
+
+      function createTweet(twttr) {
+        if (finished) return;
+        var opts = {
+          theme: theme,
+          dnt: dnt,
+          lang: lang,
+          align: 'center',
+          hideMedia: hideMedia,
+          hideThread: hideThread,
+          conversation: hideThread ? 'none' : 'all'
+        };
+        if (hideMedia) opts.cards = 'hidden';
+        var result;
+        try {
+          result = twttr.widgets.createTweet(id, container, opts);
+        } catch (e) {
+          fail('create-threw');
+          return;
+        }
+        if (result && typeof result.then === 'function') {
+          result.then(function (el) {
+            if (el) observe(el);
+            else fail('unavailable');
+          })['catch'](function () { fail('create-failed'); });
+        } else {
+          // 兜底：极老版本 widgets.js 无 Promise 返回，轮询查找注入的 iframe
+          var tries = 0;
+          poll = setInterval(function () {
+            var f = container.querySelector('iframe');
+            if (f) { clearInterval(poll); poll = null; observe(f); }
+            else if (++tries >= 20) { clearInterval(poll); poll = null; fail('unavailable'); }
+          }, 300);
+        }
+      }
+
+      // 12s 内未成功即判定失败（网络不可用 / X 服务异常 / 超时）
+      timer = setTimeout(function () { fail('timeout'); }, 12000);
+
+      // 标准 widgets.js 异步 loader（带 onerror）
+      window.twttr = (function (d, s, lid) {
+        var js, fjs = d.getElementsByTagName(s)[0], t = window.twttr || {};
+        if (d.getElementById(lid)) return t;
+        js = d.createElement(s);
+        js.id = lid;
+        js.async = true;
+        js.charset = 'utf-8';
+        js.src = 'https://platform.twitter.com/widgets.js';
+        js.onerror = function () { fail('widgets-load-failed'); };
+        fjs.parentNode.insertBefore(js, fjs);
+        t._e = [];
+        t.ready = function (f) { t._e.push(f); };
+        return t;
+      }(document, 'script', 'twitter-wjs'));
+
+      window.twttr.ready(function (twttr) { createTweet(twttr); });
+    })();
+  </script>
+</body>
+</html>

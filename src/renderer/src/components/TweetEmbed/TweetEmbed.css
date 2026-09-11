@@ -1,0 +1,95 @@
+/* X / Twitter Embed 展示组件样式（tokens 取自全局 CSS 变量，随明暗主题自适应） */
+
+.tweet-embed {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+/* iframe 容器：高度由宿主页回传的实际内容高度驱动，避免裁切 */
+.tweet-embed-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  transition: height 0.15s var(--ease-out, ease);
+}
+
+.tweet-embed-iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+
+/* 加载态覆盖层 */
+.tweet-embed-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+
+.te-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border-secondary);
+  border-top-color: var(--color-text-info);
+  border-radius: 50%;
+  animation: te-spin 0.8s linear infinite;
+}
+
+@keyframes te-spin { to { transform: rotate(360deg); } }
+
+/* 失败错误卡 */
+.tweet-embed-error {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  text-align: center;
+  border: 0.5px dashed var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-tertiary);
+}
+
+.te-err-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.te-err-hint {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.te-err-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.te-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.te-btn:hover {
+  border-color: var(--color-border-info);
+  color: var(--color-text-info);
+}
+
+/* 失败时的本地快照兜底区 */
+.tweet-embed-fallback {
+  max-width: 620px;
+  margin: 14px auto 0;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--color-border-tertiary);
+}

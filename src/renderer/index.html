@@ -2,7 +2,8 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: board-asset: cover: local-path:; media-src 'self' https: board-asset: cover: local-path:; frame-src https://www.youtube-nocookie.com https://player.bilibili.com;" />
+    <!-- frame-src 放行 'self'（dev 的 localhost 同源）与 file:（prod 的 file:// renderer），用于加载本地 X Embed 宿主页 tweet-embed.html；X 的脚本/嵌套帧由该宿主页自带 CSP 管理，父页无需放行 X 域名 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: board-asset: cover: local-path:; media-src 'self' https: board-asset: cover: local-path:; frame-src 'self' file: https://www.youtube-nocookie.com https://player.bilibili.com;" />
     <title>水豚 Capybara</title>
   </head>
   <body>

@@ -3,7 +3,9 @@ import { useStore } from '../store'
 import type { Item } from '../env'
 import { Icon } from './icons'
 import { cleanArticleHtml, renderArticleHtml, plainTextFromHtml, buildToc, type TocHeading } from '../lib/reader'
-import { getAllReadingThemes, FOLLOW_UI_ID } from '../lib/reading-themes'
+import { getAllReadingThemes, FOLLOW_UI_ID, getReadingThemeById } from '../lib/reading-themes'
+import { resolveDark } from '../lib/appearance'
+import { TweetEmbed } from './TweetEmbed'
 
 /** 秒数 → "mm:ss" / "h:mm:ss" */
 function fmtDuration(sec: number): string {
@@ -79,7 +81,10 @@ export function ReaderPane() {
   const { html, toc } = useMemo(() => {
     const raw = cleanHtml || (item?.content_html ? renderArticleHtml(item.content_html) : '')
     if (!raw) return { html: '', toc: [] as TocHeading[] }
-    return buildToc(raw)
+    const built = buildToc(raw)
+    // X 书签走官方 Embed 渲染，正文快照仅作失败兜底，不需要悬浮目录尺
+    if (item?.source_type === 'x_bookmark') return { html: built.html, toc: [] as TocHeading[] }
+    return built
   }, [cleanHtml, item])
 
   // 点击目录项：平滑滚动到对应章节（与正文顶部留 18px 余白）
@@ -122,6 +127,15 @@ export function ReaderPane() {
   if (selectedId == null || !item) {
     return (<section className="reader"><div className="reader-empty">选择左侧条目开始阅读 · J/K 快速浏览{loading ? ' · 加载中…' : ''}</div></section>)
   }
+
+  // X（Twitter）书签：改用官方 Embedded Post 渲染（区别于 RSS 的文章式正文）
+  const isTweet = item.source_type === 'x_bookmark'
+  // Embed 明暗跟随阅读主题；阅读主题为「跟随界面」或无效时回退到 UI 明暗
+  const embedTheme: 'dark' | 'light' = (() => {
+    const rt = appearance.readingTheme
+    if (rt && rt !== FOLLOW_UI_ID) { const t = getReadingThemeById(rt); if (t) return t.mode }
+    return resolveDark(appearance.theme) ? 'dark' : 'light'
+  })()
 
   // GitHub 条目正在拉取 README 时的提示
   const showReadmeLoading = item.source_type === 'github' && !html && fetchingReadme
@@ -178,7 +192,20 @@ export function ReaderPane() {
           <a className="reader-title-link" href={item.url} onClick={(e) => { e.preventDefault(); openInBrowser(item.url, { x: e.clientX, y: e.clientY }) }} title="用系统默认浏览器打开"><h2 className="reader-title">{item.title}</h2></a>
           <p className="reader-meta">{item.author || item.source_name}</p>
 
-          {item.kind === 'podcast' ? (
+          {isTweet ? (
+            <TweetEmbed
+              url={item.url}
+              theme={embedTheme}
+              hideMedia={noImg}
+              width="100%"
+              onOpenExternal={(u) => openInBrowser(u)}
+              fallback={
+                html
+                  ? <div className={contentClass} onClick={onContentClick} dangerouslySetInnerHTML={{ __html: html }} />
+                  : <div className={`${contentClass} plain`} onClick={onContentClick}>{plainTextFromHtml(item.content_text || item.summary) || '（无正文快照）'}</div>
+              }
+            />
+          ) : item.kind === 'podcast' ? (
             <div className="media-podcast">
               {item.media_url
                 ? <audio controls src={item.media_url} className="podcast-player" preload="none" />
