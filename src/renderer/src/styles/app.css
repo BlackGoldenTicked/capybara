@@ -32,6 +32,15 @@ button:active { transform: scale(0.97); }
 button:hover { background: var(--color-background-secondary); }
 button:disabled { opacity: 0.45; cursor: default; }
 button:disabled:active { transform: none; }
+/* 纯图标按钮统一重置：全局 button 的 padding: 5px 12px 与 min-height: 30px
+   在小尺寸固定宽高图标按钮上有两类 bug——border-box 下内容区被挤为 0 使 svg 不可见、
+   min-height 把高度撑到 30。此处集中重置 min-height；未重置过 padding 的类补充 padding: 0。 */
+.titlebar-hamburger, .sec-add, .side-act, .view-toggle button, .settings-close,
+.feed-refresh-all, .feed-refresh, .feed-unsub, .act, .rail-btn, .dock-item,
+.bm-action-btn, .bm-toggle, .bm-toggle-all, .bm-folder-random, .bm-folder-del, .bm-link-del, .bm-cover-btn {
+  min-height: 0;
+}
+.sec-add, .bm-toggle, .bm-toggle-all { padding: 0; }
 
 input {
   font: inherit;
@@ -2053,13 +2062,16 @@ input[type="range"]:not(.fs-slider)::-moz-range-thumb { width: 14px; height: 14p
 .bm-cover-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.1s; }
 .bm-cover-card:hover .bm-cover-actions, .bm-cover-card.selected .bm-cover-actions { opacity: 1; }
 /* 浅色磨砂高对比：深/浅封面上都清晰可见（旧深色半透明在暗封面上隐形） */
+/* 必须重置全局 button 的 padding: 5px 12px 与 min-height: 30px，
+   否则 border-box 下内容区被挤为 0：svg 被 flex-shrink 缩到不可见、尺寸变 25×30 */
 .bm-cover-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border-radius: 6px; cursor: pointer;
+  width: 24px; height: 24px; min-height: 0; padding: 0; border-radius: 6px; cursor: pointer;
   border: 0.5px solid rgba(0, 0, 0, 0.22);
   background: rgba(255, 255, 255, 0.92); color: #262626;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
+.bm-cover-btn svg { flex-shrink: 0; }
 .bm-cover-btn:hover { background: #fff; color: #000; }
 .bm-cover-btn.danger:hover { color: var(--ds-danger); }
 /* 预览缓存标记：绿点=已有网页截图缓存，灰点=未缓存 */
