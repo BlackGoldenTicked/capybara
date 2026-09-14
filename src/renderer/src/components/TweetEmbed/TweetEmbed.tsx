@@ -35,7 +35,7 @@ export interface TweetEmbedProps {
 
 type Status = 'idle' | 'loading' | 'ready' | 'error'
 
-const MSG_SOURCE = 'readflow-tweet-embed'
+const MSG_SOURCE = 'capybara-tweet-embed'
 const MIN_HEIGHT = 180
 const READY_TIMEOUT = 15000
 

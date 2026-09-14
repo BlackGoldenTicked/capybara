@@ -19,7 +19,7 @@ import { feedColor } from '../lib/feedColor'
 import type { BookmarkTreeNode, BookmarkLink } from '../env'
 import type { CSSProperties } from 'react'
 
-const STORAGE_KEY = 'readflow:bookmark-expanded:v2'
+const STORAGE_KEY = 'capybara:bookmark-expanded:v2'
 
 /** 从 localStorage 读取展开状态；从未保存过返回 null（与「手动全部收起」区分） */
 function loadExpandedIds(): Set<number> | null {
