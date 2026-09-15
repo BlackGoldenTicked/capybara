@@ -8,6 +8,11 @@ dist/
 Capybara.app/
 electron.vite.config.*.mjs
 
+# 根目录游离的打包产物（历史误提交，防止再次入库）
+/index.js
+/index-*.js
+/app.asar
+
 # 第三方源码（调研时临时下载，勿入库）
 fluent-reader-master/
 leser-master/
