@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 
 APP_NAME = "Capybara"
 
@@ -29,6 +30,7 @@ DS_STORE_SCRIPT = r'''
 from mac_alias import Alias
 from ds_store import DSStore
 import os
+import shutil
 
 VOLUME = os.environ["RF_VOLUME"]
 BG_NAME = ".background.png"
@@ -110,7 +112,7 @@ def main():
         subprocess.run(["cp", BG, f"{mpoint}/.background.png"], check=True)
         # 4. 写入 DS_Store
         env = dict(os.environ, RF_VOLUME=mpoint)
-        subprocess.run(["python3", "-c", DS_STORE_SCRIPT], env=env, check=True)
+        subprocess.run([sys.executable, "-c", DS_STORE_SCRIPT], env=env, check=True)
     finally:
         # 5. 卸载（不打开 Finder）
         subprocess.run(["hdiutil", "detach", mpoint, "-quiet"], check=True)
