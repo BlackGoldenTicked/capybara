@@ -110,9 +110,20 @@ export function listIconThemes(): IconThemeMeta[] {
   return [...registry.values()].map((e) => e.meta)
 }
 
+/** 按主题 ID 取映射（未注册时返回 undefined），供设置页预览各套装图标风格 */
+export function getIconThemeMapById(id: IconThemeId): IconThemeMap | undefined {
+  return registry.get(id)?.map
+}
+
 /** 按名称获取当前主题下的图标组件 */
 export function resolveIcon(name: IconName): IconComponent {
   return activeMap[name] ?? LUCIDE_ICON_MAP[name] ?? LUCIDE_ICON_MAP['info']
+}
+
+/** 按 (主题 ID, 图标名) 解析组件，未命中时回退 Lucide，用于跨主题预览 */
+export function resolveIconFrom(themeId: IconThemeId, name: IconName): IconComponent {
+  const map = registry.get(themeId)?.map
+  return map?.[name] ?? LUCIDE_ICON_MAP[name] ?? LUCIDE_ICON_MAP['info']
 }
 
 /** 订阅图标主题变化（返回取消订阅函数） */

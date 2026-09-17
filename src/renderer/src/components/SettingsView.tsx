@@ -14,6 +14,8 @@ import {
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { listThemeBundles, type ThemeBundle } from '../lib/theme-bundles'
+import { resolveIconFrom } from '../lib/icon-themes'
+import { previewSoundTheme } from '../lib/sound'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
 import {
   SHORTCUT_GROUPS, DEFAULT_SHORTCUTS, formatCombo, eventToCombo,
@@ -143,25 +145,48 @@ function AppearanceTab() {
           <p className="src-label">主题套装</p>
           <span className="cur-chip">{listThemeBundles().find((b: ThemeBundle) => b.id === themeBundleId)?.label || '自定义'}</span>
         </div>
-        <p className="src-hint">一键切换图标风格 + 音效风格，全局即时生效。后续接入新素材包后会在此列出可选套装。</p>
+        <p className="src-hint">一键切换图标风格 + 音效风格，全局即时生效。点卡片右上试听图标可预览该套装音效。</p>
         <div className="bundle-grid">
-          {listThemeBundles().map((b: ThemeBundle) => (
-            <button key={b.id} className={`bundle-opt ${themeBundleId === b.id ? 'active' : ''}`}
-              onClick={() => setThemeBundle(b.id)}>
-              <div className="bundle-preview">
-                <Icon name="sparkles" size={20} />
-                <Icon name="music" size={16} />
-              </div>
-              <div className="bundle-info">
-                <span className="bundle-name">{b.label}</span>
-                {b.description && <span className="bundle-desc">{b.description}</span>}
-              </div>
-            </button>
-          ))}
+          {listThemeBundles().map((b: ThemeBundle) => {
+            const iconThemeId = b.iconTheme || 'default'
+            const previewNames: IconName[] = ['rss', 'star', 'settings']
+            return (
+              <button key={b.id} className={`bundle-opt ${themeBundleId === b.id ? 'active' : ''}`}
+                onClick={() => setThemeBundle(b.id)}>
+                <div className="bundle-preview">
+                  {previewNames.map((n) => {
+                    const C = resolveIconFrom(iconThemeId, n)
+                    return <C key={n} size={16} strokeWidth={1.75} />
+                  })}
+                </div>
+                <div className="bundle-info">
+                  <span className="bundle-name">{b.label}</span>
+                  {b.description && <span className="bundle-desc">{b.description}</span>}
+                </div>
+                {b.soundTheme && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className="bundle-audition"
+                    title={`试听「${b.label}」音效`}
+                    aria-label={`试听 ${b.label} 音效`}
+                    onClick={(e) => { e.stopPropagation(); previewSoundTheme(b.soundTheme!) }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault(); e.stopPropagation(); previewSoundTheme(b.soundTheme!)
+                      }
+                    }}
+                  >
+                    <Icon name="music" size={13} />
+                  </span>
+                )}
+              </button>
+            )
+          })}
           {themeBundleId === 'custom' && (
             <div className="bundle-opt active">
               <div className="bundle-preview">
-                <Icon name="sparkles" size={20} />
+                <Icon name="sparkles" size={16} />
                 <Icon name="music" size={16} />
               </div>
               <div className="bundle-info">

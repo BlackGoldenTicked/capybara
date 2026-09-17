@@ -164,3 +164,10 @@ export function resolveSoundCue(cue: SoundCue): SynthConfig[] {
   // 回退到 Crystal 默认
   return CRYSTAL_MAP[cue] ?? []
 }
+
+/** 按主题 ID 获取合成参数序列（不改变当前主题），供设置页试听 */
+export function resolveSoundCueFrom(themeId: string, cue: SoundCue): SynthConfig[] {
+  const m = registry.get(themeId)?.map
+  if (m && m[cue]) return m[cue]
+  return CRYSTAL_MAP[cue] ?? []
+}

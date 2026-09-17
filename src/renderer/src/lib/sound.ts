@@ -11,7 +11,7 @@
  */
 
 import type { SoundCue, ToneConfig, NoiseConfig } from './sound-themes'
-import { resolveSoundCue } from './sound-themes'
+import { resolveSoundCue, resolveSoundCueFrom } from './sound-themes'
 
 export type { SoundCue } from './sound-themes'
 
@@ -161,12 +161,14 @@ export function playScrollGear(delta: number, allow = false) {
     const force = Math.min(1, Math.max(0.25, Math.abs(delta) / 90))
     const upward = delta < 0
     noise(ctx, destination, {
+      type: 'noise',
       duration: 0.011,
       gain: 0.012 + force * 0.012,
       frequency: upward ? 3100 : 2600,
       filter: 'bandpass'
     })
     tone(ctx, destination, {
+      type: 'tone',
       frequency: upward ? 620 : 520,
       endFrequency: upward ? 520 : 420,
       duration: 0.028,
@@ -183,4 +185,33 @@ export function playScrollGear(delta: number, allow = false) {
 export function primeAudio() {
   if (context && audioReady) return
   ensureAudio()
+}
+
+/**
+ * 试听指定音效主题：按主题 ID 依次播放几个代表性 cue，不改变当前激活主题。
+ * 供设置页套装卡片的「试听」按钮使用，即使全局音效开关未启用也能播放（试听为显式意图）。
+ */
+export function previewSoundTheme(themeId: string, cues: SoundCue[] = ['tap', 'toggle', 'complete']) {
+  if (typeof AudioContext === 'undefined') return
+  const audio = ensureAudio()
+  if (!audio) return
+  const { ctx, out: destination } = audio
+  let offset = 0
+  const gap = 0.18 // cue 之间的间隔（秒）
+  try {
+    for (const cue of cues) {
+      const configs = resolveSoundCueFrom(themeId, cue)
+      for (const cfg of configs) {
+        const shifted = { ...cfg, at: (cfg.at ?? 0) + offset }
+        if (shifted.type === 'tone') {
+          tone(ctx, destination, shifted as ToneConfig)
+        } else {
+          noise(ctx, destination, shifted as NoiseConfig)
+        }
+      }
+      offset += gap
+    }
+  } catch {
+    /* 静默降级 */
+  }
 }

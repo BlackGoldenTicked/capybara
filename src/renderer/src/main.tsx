@@ -2,6 +2,8 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { bootAppearance } from './lib/appearance'
+// 注册内置图标 / 音效 / 套装预设，必须早于 store.initAppearance 中的 applyThemeBundle 执行
+import './lib/theme-presets'
 import './styles/tokens.css'
 import './styles/themes.css'
 import './styles/app.css'
