@@ -19,11 +19,19 @@ import { registerSoundTheme } from './sound-themes'
 import { TABLER_ICON_MAP } from './icons-map-tabler'
 import { PHOSPHOR_DUOTONE_ICON_MAP, PHOSPHOR_FILL_ICON_MAP } from './icons-map-phosphor'
 import { PIXEL_ICON_MAP } from './icons-map-pixel'
+import { SOLAR_BROKEN_ICON_MAP } from './icons-map-solar-broken'
+import { SOLAR_LINE_DUOTONE_ICON_MAP } from './icons-map-solar-line-duotone'
+import { SOLAR_BOLD_DUOTONE_ICON_MAP } from './icons-map-solar-bold-duotone'
+import { SOLAR_BOLD_ICON_MAP } from './icons-map-solar-bold'
+import { CARBON_ICON_MAP } from './icons-map-carbon'
 import {
   WOODEN_SOUND_MAP,
   MECHANICAL_SOUND_MAP,
   RETRO_SOUND_MAP,
-  GLASS_SOUND_MAP
+  GLASS_SOUND_MAP,
+  LASER_SOUND_MAP,
+  METAL_SOUND_MAP,
+  BUBBLE_SOUND_MAP
 } from './sound-presets'
 
 /* ===================== 图标库 ===================== */
@@ -62,6 +70,44 @@ registerIconTheme('pixel', PIXEL_ICON_MAP, {
   builtIn: true
 })
 
+// Solar 一套包内含 6 种设计语言，此处取与既有库反差最大的四种
+// （linear / outline 与 Lucide、Tabler 同为连续细描边，重复度高，不入列）
+
+registerIconTheme('solar-broken', SOLAR_BROKEN_ICON_MAP, {
+  label: 'Solar 断续线',
+  description: '线条断开留白，像手绘草稿',
+  preview: PREVIEW,
+  builtIn: true
+})
+
+registerIconTheme('solar-line-duotone', SOLAR_LINE_DUOTONE_ICON_MAP, {
+  label: 'Solar 细线双色',
+  description: '细描边 + 半透明副色块',
+  preview: PREVIEW,
+  builtIn: true
+})
+
+registerIconTheme('solar-bold-duotone', SOLAR_BOLD_DUOTONE_ICON_MAP, {
+  label: 'Solar 粗双色调',
+  description: '粗主体 + 实色副块，冲击力强',
+  preview: PREVIEW,
+  builtIn: true
+})
+
+registerIconTheme('solar-bold', SOLAR_BOLD_ICON_MAP, {
+  label: 'Solar 粗描边',
+  description: '加粗圆端点，厚重直白',
+  preview: PREVIEW,
+  builtIn: true
+})
+
+registerIconTheme('carbon', CARBON_ICON_MAP, {
+  label: '直角企业',
+  description: 'IBM Carbon 全直角实心，秩序感最强',
+  preview: PREVIEW,
+  builtIn: true
+})
+
 /* ===================== 音效库 ===================== */
 
 // crystal（Crystal 水晶）已在 sound-themes 内置注册，此处注册其余四种音色
@@ -90,6 +136,30 @@ registerSoundTheme('retro', RETRO_SOUND_MAP, {
 registerSoundTheme('glass', GLASS_SOUND_MAP, {
   label: '玻璃清亮',
   description: '高频玻璃泛音，明亮通透',
+  preview: ['tap', 'toggle', 'complete', 'open', 'delete'],
+  builtIn: true
+})
+
+// 以下三套改用 ZzFX 参数化合成引擎（见 lib/zzfx.ts），
+// 提供 tone/noise 表达不了的滑音、噪声混合、位压缩音色
+
+registerSoundTheme('laser', LASER_SOUND_MAP, {
+  label: '激光电子',
+  description: '锯齿波快速滑音，科技感强',
+  preview: ['tap', 'toggle', 'complete', 'open', 'delete'],
+  builtIn: true
+})
+
+registerSoundTheme('metal', METAL_SOUND_MAP, {
+  label: '金属敲击',
+  description: '噪声 + 位压缩，金属片质感',
+  preview: ['tap', 'toggle', 'complete', 'open', 'delete'],
+  builtIn: true
+})
+
+registerSoundTheme('bubble', BUBBLE_SOUND_MAP, {
+  label: '水泡湿润',
+  description: '正弦上滑气泡音，柔和圆润',
   preview: ['tap', 'toggle', 'complete', 'open', 'delete'],
   builtIn: true
 })

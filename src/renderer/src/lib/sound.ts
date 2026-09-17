@@ -10,8 +10,9 @@
  * 切换音效主题后，所有 playSound() 调用自动使用新参数，无需改动业务代码。
  */
 
-import type { SoundCue, ToneConfig, NoiseConfig } from './sound-themes'
+import type { SoundCue, ToneConfig, NoiseConfig, ZzfxConfig } from './sound-themes'
 import { resolveSoundCue, resolveSoundCueFrom } from './sound-themes'
+import { playZzfx } from './zzfx'
 
 export type { SoundCue } from './sound-themes'
 
@@ -137,6 +138,8 @@ export function playSound(cue: SoundCue) {
     for (const cfg of configs) {
       if (cfg.type === 'tone') {
         tone(ctx, destination, cfg)
+      } else if (cfg.type === 'zzfx') {
+        playZzfx(ctx, destination, 1, cfg.params, cfg.at ?? 0)
       } else {
         noise(ctx, destination, cfg)
       }
@@ -202,12 +205,14 @@ export function previewSoundTheme(themeId: string, cues: SoundCue[] = ['tap', 't
     for (const cue of cues) {
       const configs = resolveSoundCueFrom(themeId, cue)
       for (const cfg of configs) {
-        const shifted = { ...cfg, at: (cfg.at ?? 0) + offset }
-        if (shifted.type === 'tone') {
-          tone(ctx, destination, shifted as ToneConfig)
-        } else {
-          noise(ctx, destination, shifted as NoiseConfig)
-        }
+      const shifted = { ...cfg, at: (cfg.at ?? 0) + offset }
+      if (shifted.type === 'tone') {
+        tone(ctx, destination, shifted as ToneConfig)
+      } else if (shifted.type === 'zzfx') {
+        playZzfx(ctx, destination, 1, (shifted as ZzfxConfig).params, shifted.at ?? 0)
+      } else {
+        noise(ctx, destination, shifted as NoiseConfig)
+      }
       }
       offset += gap
     }

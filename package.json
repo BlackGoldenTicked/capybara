@@ -61,8 +61,10 @@
     ]
   },
   "dependencies": {
+    "@carbon/icons-react": "^11.88.0",
     "@mozilla/readability": "^0.6.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@solar-icons/react": "^2.2.0",
     "@tabler/icons-react": "^3.46.0",
     "@tiptap/core": "^3.29.2",
     "@tiptap/pm": "^3.29.2",

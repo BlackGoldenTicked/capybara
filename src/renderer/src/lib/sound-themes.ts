@@ -47,7 +47,19 @@ export interface NoiseConfig {
   at?: number
 }
 
-export type SynthConfig = ToneConfig | NoiseConfig
+/**
+ * ZzFX 参数化音效（见 lib/zzfx.ts）。
+ * 与 tone/noise 并列的第三种合成方式，用于表达滑音、噪声混合、位压缩等音色。
+ */
+export interface ZzfxConfig {
+  type: 'zzfx'
+  /** ZzFX 参数表（顺序见 zzfx.ts 的注释） */
+  params: number[]
+  /** 起始时刻（秒），用于把单音串成短琶音 */
+  at?: number
+}
+
+export type SynthConfig = ToneConfig | NoiseConfig | ZzfxConfig
 
 /** 一个音效主题 = SoundCue → 合成参数序列 的映射 */
 export type SoundThemeMap = Record<SoundCue, SynthConfig[]>

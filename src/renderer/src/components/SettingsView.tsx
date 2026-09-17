@@ -191,10 +191,10 @@ function AppearanceTab() {
                 className="lib-audition"
                 title={`试听「${t.label}」音效`}
                 aria-label={`试听 ${t.label} 音效`}
-                onClick={(e) => { e.stopPropagation(); previewSoundTheme(t.id) }}
+                onClick={(e) => { e.stopPropagation(); previewSoundTheme(t.id, t.preview) }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault(); e.stopPropagation(); previewSoundTheme(t.id)
+                    e.preventDefault(); e.stopPropagation(); previewSoundTheme(t.id, t.preview)
                   }
                 }}
               >
@@ -759,8 +759,19 @@ const OSS_GROUPS: Array<{ title: string; items: Array<{ name: string; version: s
       { name: 'React', version: '^18.3.1', license: 'MIT', role: 'UI 框架' },
       { name: 'React DOM', version: '^18.3.1', license: 'MIT', role: 'DOM 渲染' },
       { name: 'react-window', version: '^1.8.11', license: 'MIT', role: '长列表虚拟滚动' },
-      { name: 'zustand', version: '^4.5.5', license: 'MIT', role: '轻量状态管理' },
-      { name: 'lucide-react', version: '^1.28.0', license: 'ISC', role: '线性图标集' }
+      { name: 'zustand', version: '^4.5.5', license: 'MIT', role: '轻量状态管理' }
+    ]
+  },
+  {
+    title: '图标与音效',
+    items: [
+      { name: 'lucide-react', version: '^1.28.0', license: 'ISC', role: '线性图标集（默认）' },
+      { name: '@tabler/icons-react', version: '^3.46.0', license: 'MIT', role: '硬朗线性图标集' },
+      { name: '@solar-icons/react', version: '^2.2.0', license: 'MIT / CC BY 4.0', role: '断续线、细线双色、粗双色调、粗描边图标集（图标设计 © 480 Design）' },
+      { name: '@phosphor-icons/react', version: '^2.1.10', license: 'MIT', role: '双色调 / 实心图标集' },
+      { name: '@carbon/icons-react', version: '^11.88.0', license: 'Apache-2.0', role: '直角企业图标集（IBM Carbon）' },
+      { name: 'pixelarticons', version: '^2.4.1', license: 'MIT', role: '像素风图标集' },
+      { name: 'ZzFX', version: '内联 v1.3.2', license: 'MIT', role: '参数化音效合成引擎（Frank Force）' }
     ]
   },
   {
