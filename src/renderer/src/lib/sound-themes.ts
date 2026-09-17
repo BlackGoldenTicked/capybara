@@ -56,6 +56,8 @@ export type SoundThemeMap = Record<SoundCue, SynthConfig[]>
 export interface SoundThemeMeta {
   id: string
   label: string
+  /** 卡片说明（设置页展示音色特征） */
+  description?: string
   /** 预览音效序列（用于设置页试听） */
   preview: SoundCue[]
   builtIn: boolean
@@ -72,7 +74,13 @@ let activeMap: SoundThemeMap | null = null
 
 /** 内置主题元信息 */
 const BUILTIN_META: SoundThemeMeta[] = [
-  { id: 'crystal', label: 'Crystal 水晶', preview: ['tap', 'toggle', 'complete', 'open', 'delete'], builtIn: true }
+  {
+    id: 'crystal',
+    label: 'Crystal 水晶',
+    description: '高频泛音颗粒，清脆不抢戏',
+    preview: ['tap', 'toggle', 'complete', 'open', 'delete'],
+    builtIn: true
+  }
 ]
 
 /**
@@ -129,6 +137,7 @@ export function registerSoundTheme(id: string, map: SoundThemeMap, meta?: Partia
   const fullMeta: SoundThemeMeta = {
     id,
     label: meta?.label ?? id,
+    description: meta?.description,
     preview: meta?.preview ?? ['tap', 'toggle', 'complete'],
     builtIn: meta?.builtIn ?? false
   }

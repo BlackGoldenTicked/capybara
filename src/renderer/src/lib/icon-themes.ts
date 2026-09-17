@@ -49,6 +49,8 @@ export type IconThemeMap = Record<IconName, IconComponent>
 export interface IconThemeMeta {
   id: IconThemeId
   label: string
+  /** 卡片说明（设置页展示设计语言差异） */
+  description?: string
   /** 预览图标名（用于设置页展示该主题风格） */
   preview: IconName[]
   /** 是否内置（内置主题不可删除） */
@@ -69,7 +71,13 @@ const listeners = new Set<() => void>()
 
 /** 内置主题元信息列表 */
 const BUILTIN_META: IconThemeMeta[] = [
-  { id: 'default', label: 'Lucide 线性', preview: ['rss', 'star', 'settings', 'trash', 'search'], builtIn: true }
+  {
+    id: 'default',
+    label: 'Lucide 线性',
+    description: '圆润中性、2px 圆端点，通用度最高',
+    preview: ['rss', 'star', 'settings', 'trash', 'search'],
+    builtIn: true
+  }
 ]
 
 // 注册内置主题
@@ -80,6 +88,7 @@ export function registerIconTheme(id: IconThemeId, map: IconThemeMap, meta?: Par
   const fullMeta: IconThemeMeta = {
     id,
     label: meta?.label ?? id,
+    description: meta?.description,
     preview: meta?.preview ?? ['rss', 'star', 'settings', 'trash', 'search'],
     builtIn: meta?.builtIn ?? false
   }
@@ -124,6 +133,22 @@ export function resolveIcon(name: IconName): IconComponent {
 export function resolveIconFrom(themeId: IconThemeId, name: IconName): IconComponent {
   const map = registry.get(themeId)?.map
   return map?.[name] ?? LUCIDE_ICON_MAP[name] ?? LUCIDE_ICON_MAP['info']
+}
+
+/**
+ * 用 Lucide 回退补齐部分映射，得到完整 IconThemeMap。
+ *
+ * 第三方图标库（Tabler / Phosphor / Pixelarticons）难免有个别语义名没有对应图形，
+ * 若因此放弃整套映射会浪费其余 60 项；此函数让各库只声明自己覆盖的项，
+ * 缺失项静默回退 Lucide，保证 UI 任何位置都不断图标。
+ */
+export function withLucideFallback(partial: Partial<IconThemeMap>): IconThemeMap {
+  const out = { ...LUCIDE_ICON_MAP }
+  for (const key of Object.keys(partial) as IconName[]) {
+    const C = partial[key]
+    if (C) out[key] = C
+  }
+  return out
 }
 
 /** 订阅图标主题变化（返回取消订阅函数） */

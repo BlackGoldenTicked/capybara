@@ -13,8 +13,8 @@ import {
   uiFontStack,
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
-import { listThemeBundles, type ThemeBundle } from '../lib/theme-bundles'
-import { resolveIconFrom } from '../lib/icon-themes'
+import { listIconThemes, resolveIconFrom } from '../lib/icon-themes'
+import { listSoundThemes } from '../lib/sound-themes'
 import { previewSoundTheme } from '../lib/sound'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
 import {
@@ -99,7 +99,10 @@ export function SettingsView() {
 
 /* ===================== 外观 ===================== */
 function AppearanceTab() {
-  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo, showToast, themeBundleId, setThemeBundle } = useStore()
+  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo, showToast, iconThemeId, setIconTheme, soundThemeId, setSoundTheme } = useStore()
+  // 图标库 / 音效库列表来自模块级注册表（见 lib/theme-presets.ts），切换后由 store 状态驱动重渲染
+  const iconThemes = listIconThemes()
+  const soundThemes = listSoundThemes()
   const [systemFonts, setSystemFonts] = useState<string[]>([])
   const [logos, setLogos] = useState<Array<{ id: string; name: string; thumb: string }>>([])
   const styleGridRef = useRef<HTMLDivElement>(null)
@@ -142,59 +145,63 @@ function AppearanceTab() {
     <div className="set-scroll">
       <div className="set-card">
         <div className="src-head-row">
-          <p className="src-label">主题套装</p>
-          <span className="cur-chip">{listThemeBundles().find((b: ThemeBundle) => b.id === themeBundleId)?.label || '自定义'}</span>
+          <p className="src-label">图标库</p>
+          <span className="cur-chip">{iconThemes.find((t) => t.id === iconThemeId)?.label || 'Lucide 线性'}</span>
         </div>
-        <p className="src-hint">一键切换图标风格 + 音效风格，全局即时生效。点卡片右上试听图标可预览该套装音效。</p>
-        <div className="bundle-grid">
-          {listThemeBundles().map((b: ThemeBundle) => {
-            const iconThemeId = b.iconTheme || 'default'
-            const previewNames: IconName[] = ['rss', 'star', 'settings']
-            return (
-              <button key={b.id} className={`bundle-opt ${themeBundleId === b.id ? 'active' : ''}`}
-                onClick={() => setThemeBundle(b.id)}>
-                <div className="bundle-preview">
-                  {previewNames.map((n) => {
-                    const C = resolveIconFrom(iconThemeId, n)
-                    return <C key={n} size={16} strokeWidth={1.75} />
-                  })}
-                </div>
-                <div className="bundle-info">
-                  <span className="bundle-name">{b.label}</span>
-                  {b.description && <span className="bundle-desc">{b.description}</span>}
-                </div>
-                {b.soundTheme && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    className="bundle-audition"
-                    title={`试听「${b.label}」音效`}
-                    aria-label={`试听 ${b.label} 音效`}
-                    onClick={(e) => { e.stopPropagation(); previewSoundTheme(b.soundTheme!) }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault(); e.stopPropagation(); previewSoundTheme(b.soundTheme!)
-                      }
-                    }}
-                  >
-                    <Icon name="music" size={13} />
-                  </span>
-                )}
-              </button>
-            )
-          })}
-          {themeBundleId === 'custom' && (
-            <div className="bundle-opt active">
-              <div className="bundle-preview">
-                <Icon name="sparkles" size={16} />
+        <p className="src-hint">不同设计语言的图标集，点击卡片即时全局生效。各卡片预览的是同一组图标，便于横向对比风格差异。</p>
+        <div className="lib-grid">
+          {iconThemes.map((t) => (
+            <button key={t.id} className={`lib-opt ${iconThemeId === t.id ? 'active' : ''}`}
+              onClick={() => setIconTheme(t.id)} title={t.description}>
+              <div className="lib-preview">
+                {t.preview.map((n) => {
+                  const C = resolveIconFrom(t.id, n)
+                  return <C key={n} size={16} strokeWidth={1.75} />
+                })}
+              </div>
+              <div className="lib-info">
+                <span className="lib-name">{t.label}</span>
+                {t.description && <span className="lib-desc">{t.description}</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">音效库</p>
+          <span className="cur-chip">{soundThemes.find((t) => t.id === soundThemeId)?.label || 'Crystal 水晶'}</span>
+        </div>
+        <p className="src-hint">点击卡片右上角的试听按钮预览音色，试听不受全局音效开关影响。</p>
+        <div className="lib-grid">
+          {soundThemes.map((t) => (
+            <button key={t.id} className={`lib-opt ${soundThemeId === t.id ? 'active' : ''}`}
+              onClick={() => setSoundTheme(t.id)} title={t.description}>
+              <div className="lib-preview">
                 <Icon name="music" size={16} />
               </div>
-              <div className="bundle-info">
-                <span className="bundle-name">自定义</span>
-                <span className="bundle-desc">图标与音效来自不同主题</span>
+              <div className="lib-info">
+                <span className="lib-name">{t.label}</span>
+                {t.description && <span className="lib-desc">{t.description}</span>}
               </div>
-            </div>
-          )}
+              <span
+                role="button"
+                tabIndex={0}
+                className="lib-audition"
+                title={`试听「${t.label}」音效`}
+                aria-label={`试听 ${t.label} 音效`}
+                onClick={(e) => { e.stopPropagation(); previewSoundTheme(t.id) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault(); e.stopPropagation(); previewSoundTheme(t.id)
+                  }
+                }}
+              >
+                <Icon name="music" size={13} />
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 

@@ -2,7 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { bootAppearance } from './lib/appearance'
-// 注册内置图标 / 音效 / 套装预设，必须早于 store.initAppearance 中的 applyThemeBundle 执行
+// 注册内置图标库 / 音效库，必须早于 store.initAppearance 中的图标库与音效库恢复执行
 import './lib/theme-presets'
 import './styles/tokens.css'
 import './styles/themes.css'

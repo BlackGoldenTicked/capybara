@@ -3,7 +3,8 @@ import type { Item, ItemRow, View, Screen, Feed, Board, Card, BoardLink, NetLogE
 import { applyAppearance, persistAppearance, watchSystemTheme, DEFAULT_APPEARANCE, type Appearance } from './lib/appearance'
 import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/shortcuts'
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
-import { applyThemeBundle, type ThemeBundle } from './lib/theme-bundles'
+import { setIconTheme as applyIconTheme, getIconThemeId } from './lib/icon-themes'
+import { setSoundTheme as applySoundTheme, getSoundThemeId } from './lib/sound-themes'
 
 /** 设置页标签（含新增的「快捷键」）。 */
 export type SettingsTab = 'appearance' | 'rss' | 'github' | 'twitter' | 'bookmarks' | 'actions' | 'shortcuts' | 'data' | 'diag' | 'thanks' | 'ai'
@@ -38,9 +39,12 @@ interface State {
   soundVolume: number
   logo: string
 
-  /** 主题套装 ID（图标+音效组合） */
-  themeBundleId: string
-  setThemeBundle: (id: string) => void
+  /** 当前图标库 ID（与音效库彼此独立） */
+  iconThemeId: string
+  setIconTheme: (id: string) => void
+  /** 当前音效库 ID */
+  soundThemeId: string
+  setSoundTheme: (id: string) => void
 
   developerMode: boolean
   netLog: NetLogEntry[]
@@ -151,7 +155,8 @@ export const useStore = create<State>((set, get) => ({
   soundVolume: 0.7,
   logo: '默认.png',
 
-  themeBundleId: 'default',
+  iconThemeId: 'default',
+  soundThemeId: 'crystal',
 
   developerMode: false,
   netLog: [],
@@ -460,17 +465,20 @@ setScreen: (screen) => {
       shortcuts?: string | null
       developerMode: boolean
       logo?: string | null
-      themeBundle?: string | null
+      iconTheme?: string | null
+      soundTheme?: string | null
     }
     const a = boot.appearance
     applyAppearance(a)
     audioSetEnabled(boot.soundEnabled)
     audioSetVolume(boot.soundVolume)
     set({ appearance: a, soundEnabled: boot.soundEnabled, soundVolume: boot.soundVolume, shortcuts: parseShortcuts(boot.shortcuts), developerMode: boot.developerMode, logo: boot.logo || '默认.png' })
-    // 恢复主题套装（图标+音效）
-    const bundleId = boot.themeBundle || 'default'
-    applyThemeBundle(bundleId)
-    set({ themeBundleId: bundleId })
+    // 恢复图标库 / 音效库（两者彼此独立，各自持久化）
+    const iconId = boot.iconTheme || 'default'
+    const soundId = boot.soundTheme || 'crystal'
+    applyIconTheme(iconId)
+    applySoundTheme(soundId)
+    set({ iconThemeId: getIconThemeId(), soundThemeId: getSoundThemeId() })
     // 加载当前数据库路径配置
     void window.capybara.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
     // 系统亮暗偏好变化时，system 模式下跟随切换（重新应用 .dark 类）
@@ -513,11 +521,19 @@ setScreen: (screen) => {
     void window.capybara.invoke('settings:set', 'sound_volume', String(v))
     set({ soundVolume: v })
   },
-  setThemeBundle: (id) => {
-    const bundle = applyThemeBundle(id)
-    if (!bundle) return
-    void window.capybara.invoke('settings:set', 'theme_bundle', id)
-    set({ themeBundleId: id })
+  setIconTheme: (id) => {
+    applyIconTheme(id)
+    // 未注册的主题 ID 会被 applyIconTheme 忽略，此处以实际生效值为准
+    if (getIconThemeId() !== id) return
+    void window.capybara.invoke('settings:set', 'icon_theme', id)
+    set({ iconThemeId: id })
+    playSound('style')
+  },
+  setSoundTheme: (id) => {
+    applySoundTheme(id)
+    if (getSoundThemeId() !== id) return
+    void window.capybara.invoke('settings:set', 'sound_theme', id)
+    set({ soundThemeId: id })
     playSound('style')
   },
   setLogo: (id) => {
