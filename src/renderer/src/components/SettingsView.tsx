@@ -14,6 +14,7 @@ import {
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { listIconThemes, resolveIconFrom } from '../lib/icon-themes'
+import { listMenuPalettes } from '../lib/menu-palettes'
 import { listSoundThemes } from '../lib/sound-themes'
 import { previewSoundTheme } from '../lib/sound'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
@@ -99,10 +100,12 @@ export function SettingsView() {
 
 /* ===================== 外观 ===================== */
 function AppearanceTab() {
-  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo, showToast, iconThemeId, setIconTheme, soundThemeId, setSoundTheme } = useStore()
+  const { appearance, soundEnabled, soundVolume, updateAppearance, setSoundEnabled, setSoundVolume, logo, setLogo, showToast, iconThemeId, setIconTheme, soundThemeId, setSoundTheme, menuPaletteId, setMenuPalette } = useStore()
   // 图标库 / 音效库列表来自模块级注册表（见 lib/theme-presets.ts），切换后由 store 状态驱动重渲染
   const iconThemes = listIconThemes()
   const soundThemes = listSoundThemes()
+  // 菜单配色方案（见 lib/menu-palettes.ts）：默认 + 四套多彩，为侧边栏图标着色
+  const menuPalettes = listMenuPalettes()
   const [systemFonts, setSystemFonts] = useState<string[]>([])
   const [logos, setLogos] = useState<Array<{ id: string; name: string; thumb: string }>>([])
   const styleGridRef = useRef<HTMLDivElement>(null)
@@ -162,6 +165,32 @@ function AppearanceTab() {
               <div className="lib-info">
                 <span className="lib-name">{t.label}</span>
                 {t.description && <span className="lib-desc">{t.description}</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="set-card">
+        <div className="src-head-row">
+          <p className="src-label">菜单配色</p>
+          <span className="cur-chip">{menuPalettes.find((p) => p.id === menuPaletteId)?.label || '默认'}</span>
+        </div>
+        <p className="src-hint">为侧边栏菜单图标上色。默认跟随界面配色；四套多彩方案为每个菜单项分配独立颜色，点击卡片即时生效。与图标库组合使用，形状与颜色互不影响。</p>
+        <div className="lib-grid">
+          {menuPalettes.map((p) => (
+            <button key={p.id} className={`lib-opt ${menuPaletteId === p.id ? 'active' : ''}`}
+              onClick={() => setMenuPalette(p.id)} title={p.description}>
+              <div className="lib-preview">
+                {p.preview.map((n) => {
+                  const C = resolveIconFrom(iconThemeId, n)
+                  const c = p.colors[n]
+                  return <C key={n} size={16} strokeWidth={1.75} style={c ? { color: c } : undefined} />
+                })}
+              </div>
+              <div className="lib-info">
+                <span className="lib-name">{p.label}</span>
+                {p.description && <span className="lib-desc">{p.description}</span>}
               </div>
             </button>
           ))}

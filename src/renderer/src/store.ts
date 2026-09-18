@@ -5,6 +5,7 @@ import { DEFAULT_SHORTCUTS, parseShortcuts, type ShortcutAction } from './lib/sh
 import { setSoundEnabled as audioSetEnabled, setSoundVolume as audioSetVolume, playSound } from './lib/sound'
 import { setIconTheme as applyIconTheme, getIconThemeId } from './lib/icon-themes'
 import { setSoundTheme as applySoundTheme, getSoundThemeId } from './lib/sound-themes'
+import { isKnownMenuPalette } from './lib/menu-palettes'
 
 /** 设置页标签（含新增的「快捷键」）。 */
 export type SettingsTab = 'appearance' | 'rss' | 'github' | 'twitter' | 'bookmarks' | 'actions' | 'shortcuts' | 'data' | 'diag' | 'thanks' | 'ai'
@@ -45,6 +46,9 @@ interface State {
   /** 当前音效库 ID */
   soundThemeId: string
   setSoundTheme: (id: string) => void
+  /** 当前菜单配色方案 ID（侧边栏图标着色，与图标库正交） */
+  menuPaletteId: string
+  setMenuPalette: (id: string) => void
 
   developerMode: boolean
   netLog: NetLogEntry[]
@@ -157,6 +161,7 @@ export const useStore = create<State>((set, get) => ({
 
   iconThemeId: 'default',
   soundThemeId: 'crystal',
+  menuPaletteId: 'default',
 
   developerMode: false,
   netLog: [],
@@ -467,6 +472,7 @@ setScreen: (screen) => {
       logo?: string | null
       iconTheme?: string | null
       soundTheme?: string | null
+      menuPalette?: string | null
     }
     const a = boot.appearance
     applyAppearance(a)
@@ -478,7 +484,9 @@ setScreen: (screen) => {
     const soundId = boot.soundTheme || 'crystal'
     applyIconTheme(iconId)
     applySoundTheme(soundId)
-    set({ iconThemeId: getIconThemeId(), soundThemeId: getSoundThemeId() })
+    // 菜单配色：非法 ID 兜底为默认（跟随界面配色）
+    const menuPaletteId = boot.menuPalette && isKnownMenuPalette(boot.menuPalette) ? boot.menuPalette : 'default'
+    set({ iconThemeId: getIconThemeId(), soundThemeId: getSoundThemeId(), menuPaletteId })
     // 加载当前数据库路径配置
     void window.capybara.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
     // 系统亮暗偏好变化时，system 模式下跟随切换（重新应用 .dark 类）
@@ -534,6 +542,13 @@ setScreen: (screen) => {
     if (getSoundThemeId() !== id) return
     void window.capybara.invoke('settings:set', 'sound_theme', id)
     set({ soundThemeId: id })
+    playSound('style')
+  },
+  setMenuPalette: (id) => {
+    // 未注册的方案 ID 直接忽略，避免持久化脏值
+    if (!isKnownMenuPalette(id)) return
+    void window.capybara.invoke('settings:set', 'menu_palette', id)
+    set({ menuPaletteId: id })
     playSound('style')
   },
   setLogo: (id) => {

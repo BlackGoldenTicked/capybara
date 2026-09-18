@@ -3,6 +3,7 @@ import { useStore } from '../store'
 import type { View } from '../env'
 import { Icon, type IconName } from './icons'
 import { press, pressBtn } from '../lib/press'
+import { getMenuPaletteColors } from '../lib/menu-palettes'
 
 // 折叠态（图标栏）仍按原顺序展示全部视图（侧栏收起时）
 const NAV: Array<{ key: View; label: string; icon: IconName }> = [
@@ -50,11 +51,16 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
   style?: CSSProperties
   dragging?: boolean
 }) {
-  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, openSettings, settingsOpen, ghSyncing, ghSyncError, retryGithubStars } = useStore()
+  const { screen, setScreen, setView, view, activeSourceType, setSourceType, counts, sourceCounts, boards, createBoard, openSettings, settingsOpen, ghSyncing, ghSyncError, retryGithubStars, menuPaletteId } = useStore()
   const [editingBoard, setEditingBoard] = useState<number | null>(null)
   const [boardName, setBoardName] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
   const [collapsedSec, setCollapsedSec] = useState<Record<string, boolean>>({})
+
+  // 菜单配色：按当前方案为侧边栏图标着色；默认方案无颜色映射，返回 undefined 保持继承界面色
+  const menuColors = getMenuPaletteColors(menuPaletteId)
+  const icoStyle = (name: IconName): CSSProperties | undefined =>
+    menuColors[name] ? { color: menuColors[name] } : undefined
 
   useEffect(() => {
     if (editingBoard != null && renameInputRef.current) {
@@ -90,21 +96,21 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
         {NAV.map((n) => (
           <button key={n.key} className={`rail-btn ${screen === 'library' && view === n.key && !activeSourceType ? 'active' : ''}`}
             title={`${n.label}（${counts[n.key] || 0}）`} {...pressBtn(() => setView(n.key))}>
-            <span className="rail-icon"><Icon name={n.icon} size={19} /></span>
+            <span className="rail-icon" style={icoStyle(n.icon)}><Icon name={n.icon} size={19} /></span>
           </button>
         ))}
         <button className={`rail-btn ${activeSourceType === 'github' ? 'active' : ''}`} title={`GitHub ★（${sourceCounts['github'] || 0}）${ghSyncing ? ' · 同步中…' : ghSyncError ? ` · 同步失败：${ghSyncError}` : ''}`} {...pressBtn(() => ghSyncError ? retryGithubStars() : setSourceType('github'))}>
-          <span className="rail-icon">
+          <span className="rail-icon" style={icoStyle('github')}>
             {ghSyncing ? <Icon name="refresh" size={19} className="spin" /> : <Icon name="github" size={19} />}
           </span>
         </button>
-        <button className={`rail-btn ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} title={`Twitter 书签（${sourceCounts['x_bookmark'] || 0}）`} {...pressBtn(() => setSourceType('x_bookmark'))}><span className="rail-icon"><Icon name="twitter" size={19} /></span></button>
-        <button className={`rail-btn ${screen === 'bookmarks' ? 'active' : ''}`} title="浏览器收藏夹" {...pressBtn(() => setScreen('bookmarks'))}><span className="rail-icon"><Icon name="bookmark" size={19} /></span></button>
+        <button className={`rail-btn ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} title={`Twitter 书签（${sourceCounts['x_bookmark'] || 0}）`} {...pressBtn(() => setSourceType('x_bookmark'))}><span className="rail-icon" style={icoStyle('twitter')}><Icon name="twitter" size={19} /></span></button>
+        <button className={`rail-btn ${screen === 'bookmarks' ? 'active' : ''}`} title="浏览器收藏夹" {...pressBtn(() => setScreen('bookmarks'))}><span className="rail-icon" style={icoStyle('bookmark')}><Icon name="bookmark" size={19} /></span></button>
         <div className="rail-sep" />
-        <button className={`rail-btn ${screen === 'board' ? 'active' : ''}`} title="白板" {...pressBtn(() => setScreen('board'))}><span className="rail-icon"><Icon name="board" size={19} /></span></button>
+        <button className={`rail-btn ${screen === 'board' ? 'active' : ''}`} title="白板" {...pressBtn(() => setScreen('board'))}><span className="rail-icon" style={icoStyle('board')}><Icon name="board" size={19} /></span></button>
         <button className="rail-btn" title="新建白板" {...pressBtn(() => void createBoard())}><span className="rail-icon"><Icon name="plus" size={19} /></span></button>
         <div className="rail-sep" />
-        <button className={`rail-btn ${settingsOpen ? 'active' : ''}`} title="系统配置" {...pressBtn(() => openSettings())}><span className="rail-icon"><Icon name="settings" size={19} /></span></button>
+        <button className={`rail-btn ${settingsOpen ? 'active' : ''}`} title="系统配置" {...pressBtn(() => openSettings())}><span className="rail-icon" style={icoStyle('settings')}><Icon name="settings" size={19} /></span></button>
       </aside>
     )
   }
@@ -118,7 +124,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
           role="button" tabIndex={0}
           {...press(() => setView('all'))}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView('all') } }}>
-          <span className="side-ico"><Icon name="all" size={16} /></span>
+          <span className="side-ico" style={icoStyle('all')}><Icon name="all" size={16} /></span>
           <span>全部</span>
           <span className="count">{counts['all'] || ''}</span>
         </div>
@@ -127,7 +133,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
             className={`side-item ${screen === 'library' && view === n.key && !activeSourceType ? 'active' : ''}`}
             {...press(() => setView(n.key))}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView(n.key) } }}>
-            <span className="side-ico"><Icon name={n.icon} size={16} /></span>
+            <span className="side-ico" style={icoStyle(n.icon)}><Icon name={n.icon} size={16} /></span>
             <span>{n.label}</span>
             <span className="count">{counts[n.key] || ''}</span>
           </div>
@@ -140,7 +146,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
       <div className={`side-item ${activeSourceType === 'github' ? 'active' : ''}`} role="button" tabIndex={0}
         {...press(() => setSourceType('github'))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSourceType('github') } }}>
-        <span className="side-ico">
+        <span className="side-ico" style={icoStyle('github')}>
           {ghSyncing ? <Icon name="refresh" size={16} className="spin" /> : <Icon name="github" size={16} />}
         </span>
         <span>GitHub ★</span>
@@ -161,7 +167,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
       <div className={`side-item ${activeSourceType === 'x_bookmark' ? 'active' : ''}`} role="button" tabIndex={0}
         {...press(() => setSourceType('x_bookmark'))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSourceType('x_bookmark') } }}>
-        <span className="side-ico"><Icon name="twitter" size={16} /></span>
+        <span className="side-ico" style={icoStyle('twitter')}><Icon name="twitter" size={16} /></span>
         <span>书签</span>
         <span className="count">{sourceCounts['x_bookmark'] || ''}</span>
       </div>
@@ -172,7 +178,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
       <div className={`side-item ${screen === 'bookmarks' ? 'active' : ''}`} role="button" tabIndex={0}
         {...press(() => setScreen('bookmarks'))}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setScreen('bookmarks') } }}>
-        <span className="side-ico"><Icon name="bookmark" size={16} /></span>
+        <span className="side-ico" style={icoStyle('bookmark')}><Icon name="bookmark" size={16} /></span>
         <span>收藏夹</span>
       </div>
 
@@ -193,7 +199,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
           return (
             <div key={b.id} className={`side-item ${isActive ? 'active' : ''}`}
               onClick={() => { if (!isEditing) void useStore.getState().openBoard(b.id) }}>
-              <span className="side-ico"><Icon name="board" size={16} /></span>
+              <span className="side-ico" style={icoStyle('board')}><Icon name="board" size={16} /></span>
               {isEditing ? (
                 <input ref={renameInputRef} className="side-rename" value={boardName}
                   onClick={(e) => e.stopPropagation()}
@@ -216,7 +222,7 @@ export function Sidebar({ collapsed = false, style, dragging = false }: {
       <div className={`side-item sys-item ${settingsOpen ? 'active' : ''}`} role="button" tabIndex={0}
         {...press(() => openSettings())}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSettings() } }}>
-        <span className="side-ico"><Icon name="settings" size={16} /></span>
+        <span className="side-ico" style={icoStyle('settings')}><Icon name="settings" size={16} /></span>
         <span>系统设置</span>
       </div>
     </aside>

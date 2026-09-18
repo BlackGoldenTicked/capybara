@@ -459,6 +459,7 @@ function registerIpc() {
         logo: g('logo') ?? '默认.png',
         iconTheme: g('icon_theme') || 'default',
         soundTheme: g('sound_theme') || 'crystal',
+        menuPalette: g('menu_palette') || 'default',
         layout: {
           sideW: num('side_w', 196),
           listW: num('list_w', 320),
