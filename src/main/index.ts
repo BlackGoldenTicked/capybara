@@ -1,4 +1,6 @@
 import { app, BrowserWindow, ipcMain, protocol, shell, dialog, nativeImage, net } from 'electron'
+// 默认多彩图标的文件名（getSetting 未设置 logo 时作为应用内置默认）
+const DEFAULT_LOGO = '多彩.png'
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -333,12 +335,12 @@ function listLogos(): Array<{ id: string; name: string; thumb: string }> {
   return out
 }
 
-/** 把指定 logo 应用到 Dock 图标（macOS）；id 为空或文件缺失则回退到内置默认 png。 */
+/** 把指定 logo 应用到 Dock 图标（macOS）；id 为空或文件缺失则回退到内置多彩 png。 */
 function applyLogo(id: string): void {
   if (!app.dock) return // 非 macOS 无 Dock，忽略
   let p = ''
   if (id) p = path.join(logoDir(), id)
-  if (!p || !fs.existsSync(p)) p = path.join(logoDir(), '默认.png')
+  if (!p || !fs.existsSync(p)) p = path.join(logoDir(), DEFAULT_LOGO)
   try {
     const img = nativeImage.createFromPath(p)
     if (!img.isEmpty()) app.dock.setIcon(img)
@@ -456,7 +458,7 @@ function registerIpc() {
         soundVolume: Number(g('sound_volume')) || 0.7,
         shortcuts: g('shortcuts'),
         developerMode: bool('developer_mode'),
-        logo: g('logo') ?? '默认.png',
+        logo: g('logo') ?? DEFAULT_LOGO,
         iconTheme: g('icon_theme') || 'default',
         soundTheme: g('sound_theme') || 'crystal',
         menuPalette: g('menu_palette') || 'default',
@@ -989,10 +991,13 @@ app.whenReady().then(() => {
     }
     return net.fetch(url.pathToFileURL(filePath).toString())
   })
+  // Dock 图标须在窗口创建前应用，macOS 冷启动时系统会先读取 bundle 原始 Icon，
+  // 若 createWindow() 之后才 setIcon，Dock 可能已经展示默认图标并无法切回
+  applyLogo(getSetting('logo') ?? DEFAULT_LOGO)
   // 2) 窗口先行：保证 UI 永远能打开；次级服务（ingest / scheduler）即便抛错也不再拖垮窗口
   createWindow()
-  // 启动即应用上次选择的 Dock 图标
-  applyLogo(getSetting('logo') ?? '默认.png')
+  // Windows 再次应用一次（窗口创建后会重设 Dock tile，兜底恢复用户选择）
+  applyLogo(getSetting('logo') ?? DEFAULT_LOGO)
   try { startIngestServer() } catch (e) { console.error('[ingest] failed:', (e as Error).message) }
   try { startScheduler(notifyRefresh) } catch (e) { console.error('[scheduler] failed:', (e as Error).message) }
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
