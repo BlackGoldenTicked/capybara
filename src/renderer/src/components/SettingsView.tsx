@@ -14,7 +14,7 @@ import {
   type ThemeMode, type ColorThemeKey, type FontWeight
 } from '../lib/appearance'
 import { listIconThemes, resolveIconFrom } from '../lib/icon-themes'
-import { listMenuPalettes } from '../lib/menu-palettes'
+import { getMenuPaletteColors, listMenuPalettes } from '../lib/menu-palettes'
 import { listSoundThemes } from '../lib/sound-themes'
 import { previewSoundTheme } from '../lib/sound'
 import { READING_THEMES, FOLLOW_UI_ID, type ReadingTheme, getAllReadingThemes, deleteCustomReadingTheme, upsertCustomReadingTheme } from '../lib/reading-themes'
@@ -63,7 +63,11 @@ const TABS: Array<{ key: SettingsTab; label: string; icon: IconName }> = [
 ]
 
 export function SettingsView() {
-  const { settingsTab, setSettingsTab, refreshAll, closeSettings } = useStore()
+  const { settingsTab, setSettingsTab, refreshAll, closeSettings, menuPaletteId } = useStore()
+  // 菜单配色：设置导航图标与侧边栏图标同步着色
+  const navColors = getMenuPaletteColors(menuPaletteId)
+  const navStyle = (name: IconName): React.CSSProperties | undefined =>
+    navColors[name] ? { color: navColors[name] } : undefined
 
   return (
     <div className="settings-modal-mask" {...press(() => closeSettings())}>
@@ -71,7 +75,7 @@ export function SettingsView() {
         <nav className="settings-nav">
           {TABS.map((t) => (
             <button key={t.key} className={`set-nav ${settingsTab === t.key ? 'active' : ''}`} {...pressBtn(() => setSettingsTab(t.key))}>
-              <Icon name={t.icon} size={16} />
+              <Icon name={t.icon} size={16} style={navStyle(t.icon)} />
               <span>{t.label}</span>
             </button>
           ))}

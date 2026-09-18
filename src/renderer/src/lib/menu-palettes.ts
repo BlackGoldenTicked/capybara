@@ -1,11 +1,11 @@
 /**
- * 菜单配色方案 —— 侧边栏菜单图标的多彩着色预设
+ * 菜单配色方案 —— 侧边栏 + 设置页菜单图标的多彩着色预设
  *
  * 设计目标：
- * - 在「默认（跟随界面配色）」之外，提供若干套多彩方案，为侧边栏各菜单项
+ * - 在「默认（跟随界面配色）」之外，提供若干套多彩方案，为侧边栏与设置页左侧导航
  *   图标按语义名分配独立颜色，提升辨识度与个性化。
- * - 纯数据模块：不含任何副作用。由 store 持久化当前方案 ID，Sidebar 读取
- *   颜色映射后以内联样式着色，切换即时生效。
+ * - 纯数据模块：不含任何副作用。由 store 持久化当前方案 ID，Sidebar / SettingsView
+ *   读取颜色映射后以内联样式着色，切换即时生效。
  *
  * 与图标库（icon-themes）正交：图标库决定「形状」，菜单配色决定「颜色」，
  * 两者可自由组合。所有配色取自中等饱和 / 中等亮度色阶，明暗主题下均清晰。
@@ -49,7 +49,10 @@ const PALETTES: MenuPalette[] = [
     colors: {
       all: '#6366f1', rss: '#f97316', podcast: '#a855f7', video: '#ef4444',
       later: '#3b82f6', favorite: '#eab308', github: '#64748b', twitter: '#06b6d4',
-      bookmark: '#ec4899', board: '#22c55e', settings: '#8b5cf6'
+      bookmark: '#ec4899', board: '#22c55e', settings: '#8b5cf6',
+      // 设置导航
+      palette: '#6366f1', archived: '#f97316', sparkles: '#a855f7',
+      keyboard: '#3b82f6', book: '#eab308', activity: '#ef4444', heart: '#ec4899'
     },
     builtIn: true
   },
@@ -61,7 +64,10 @@ const PALETTES: MenuPalette[] = [
     colors: {
       all: '#16a34a', rss: '#ea580c', podcast: '#65a30d', video: '#dc2626',
       later: '#0891b2', favorite: '#ca8a04', github: '#4d7c0f', twitter: '#059669',
-      bookmark: '#d97706', board: '#15803d', settings: '#84cc16'
+      bookmark: '#d97706', board: '#15803d', settings: '#84cc16',
+      // 设置导航
+      palette: '#16a34a', archived: '#ea580c', sparkles: '#65a30d',
+      keyboard: '#0891b2', book: '#ca8a04', activity: '#dc2626', heart: '#d97706'
     },
     builtIn: true
   },
@@ -73,7 +79,10 @@ const PALETTES: MenuPalette[] = [
     colors: {
       all: '#0284c7', rss: '#ea580c', podcast: '#4f46e5', video: '#0891b2',
       later: '#2563eb', favorite: '#0d9488', github: '#475569', twitter: '#38bdf8',
-      bookmark: '#7c3aed', board: '#0e7490', settings: '#6366f1'
+      bookmark: '#7c3aed', board: '#0e7490', settings: '#6366f1',
+      // 设置导航
+      palette: '#0284c7', archived: '#ea580c', sparkles: '#4f46e5',
+      keyboard: '#2563eb', book: '#0d9488', activity: '#0891b2', heart: '#7c3aed'
     },
     builtIn: true
   },
@@ -85,7 +94,10 @@ const PALETTES: MenuPalette[] = [
     colors: {
       all: '#f59e0b', rss: '#ea580c', podcast: '#db2777', video: '#dc2626',
       later: '#f97316', favorite: '#eab308', github: '#b45309', twitter: '#e11d48',
-      bookmark: '#c026d3', board: '#d946ef', settings: '#9333ea'
+      bookmark: '#c026d3', board: '#d946ef', settings: '#9333ea',
+      // 设置导航
+      palette: '#f59e0b', archived: '#ea580c', sparkles: '#db2777',
+      keyboard: '#f97316', book: '#eab308', activity: '#dc2626', heart: '#c026d3'
     },
     builtIn: true
   }
@@ -106,7 +118,7 @@ export function getMenuPaletteById(id: MenuPaletteId): MenuPalette | undefined {
 
 /**
  * 取指定方案的颜色映射；未知 ID 回退空映射（即跟随界面配色）。
- * Sidebar 据此为各菜单图标着色，未命中的图标保持继承色。
+ * Sidebar 与 SettingsView 据此为各菜单图标着色，未命中的图标保持继承色。
  */
 export function getMenuPaletteColors(id: MenuPaletteId): Partial<Record<IconName, string>> {
   return registry.get(id)?.colors ?? {}
