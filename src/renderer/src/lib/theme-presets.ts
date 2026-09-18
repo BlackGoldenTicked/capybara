@@ -24,6 +24,8 @@ import { SOLAR_LINE_DUOTONE_ICON_MAP } from './icons-map-solar-line-duotone'
 import { SOLAR_BOLD_DUOTONE_ICON_MAP } from './icons-map-solar-bold-duotone'
 import { SOLAR_BOLD_ICON_MAP } from './icons-map-solar-bold'
 import { CARBON_ICON_MAP } from './icons-map-carbon'
+import { SKETCHY_ICON_MAP } from './icons-map-sketchy'
+import { SCRIBBLES_ICON_MAP } from './icons-map-scribbles'
 import {
   WOODEN_SOUND_MAP,
   MECHANICAL_SOUND_MAP,
@@ -104,6 +106,20 @@ registerIconTheme('solar-bold', SOLAR_BOLD_ICON_MAP, {
 registerIconTheme('carbon', CARBON_ICON_MAP, {
   label: '直角企业',
   description: 'IBM Carbon 全直角实心，秩序感最强',
+  preview: PREVIEW,
+  builtIn: true
+})
+
+registerIconTheme('sketchy', SKETCHY_ICON_MAP, {
+  label: 'Sketchy 手绘',
+  description: 'Lucide 几何派生的手绘风，线条微抖、俏皮松弛',
+  preview: PREVIEW,
+  builtIn: true
+})
+
+registerIconTheme('scribbles', SCRIBBLES_ICON_MAP, {
+  label: 'Scribbles 墨迹',
+  description: '可变宽墨迹笔触，拐角与末端略粗，像钢笔画',
   preview: PREVIEW,
   builtIn: true
 })
