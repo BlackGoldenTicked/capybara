@@ -201,3 +201,188 @@ html[data-theme="vibrant"].dark {
   --ds-surface-400: #42494c;
   --ds-on-surface: rgba(0,206,201,0.06);
 }
+
+/* ── 6) sunset-rose · 玫瑰粉 ── */
+html[data-theme="sunset-rose"] {
+  --ds-text-primary: #881337;
+  --ds-text-secondary: rgba(136,19,55,0.56);
+  --ds-text-tertiary: rgba(136,19,55,0.3);
+  --ds-brand-primary: #e11d48;
+  --ds-brand-primary-text: rgba(255,255,255,0.96);
+  --ds-selection-bg: rgba(225,29,72,0.95);
+  --ds-glow-rgb: 225,29,72;
+  --ds-accent: #e11d48;
+  --ds-accent-text: rgba(255,255,255,0.96);
+  --ds-icon: #9ca3af;
+  --ds-surface-100: #fff1f2;
+  --ds-surface-200: #ffe4e6;
+  --ds-surface-300: #fecdd3;
+  --ds-surface-400: #fda4af;
+  --ds-on-surface: rgba(225,29,72,0.06);
+}
+
+html[data-theme="sunset-rose"].dark {
+  --ds-text-primary: #fecdd3;
+  --ds-text-secondary: rgba(254,205,211,0.62);
+  --ds-text-tertiary: rgba(254,205,211,0.38);
+  --ds-brand-primary: #fb7185;
+  --ds-brand-primary-text: rgba(60,8,22,0.96);
+  --ds-selection-bg: rgba(251,113,133,0.95);
+  --ds-glow-rgb: 251,113,133;
+  --ds-accent: #fb7185;
+  --ds-accent-text: rgba(60,8,22,0.96);
+  --ds-icon: #fda4af;
+  --ds-surface-100: #3f0d1c;
+  --ds-surface-200: #4c1225;
+  --ds-surface-300: #5e1930;
+  --ds-surface-400: #7a2342;
+  --ds-on-surface: rgba(251,113,133,0.08);
+}
+
+/* ── 7) forest-pine · 松林翠 ── */
+html[data-theme="forest-pine"] {
+  --ds-text-primary: #14532d;
+  --ds-text-secondary: rgba(20,83,45,0.56);
+  --ds-text-tertiary: rgba(20,83,45,0.3);
+  --ds-brand-primary: #15803d;
+  --ds-brand-primary-text: rgba(255,255,255,0.96);
+  --ds-selection-bg: rgba(21,128,61,0.95);
+  --ds-glow-rgb: 21,128,61;
+  --ds-accent: #15803d;
+  --ds-accent-text: rgba(255,255,255,0.96);
+  --ds-icon: #6b7280;
+  --ds-surface-100: #f0fdf4;
+  --ds-surface-200: #dcfce7;
+  --ds-surface-300: #bbf7d0;
+  --ds-surface-400: #86efac;
+  --ds-on-surface: rgba(21,128,61,0.06);
+}
+
+html[data-theme="forest-pine"].dark {
+  --ds-text-primary: #bbf7d0;
+  --ds-text-secondary: rgba(187,247,208,0.62);
+  --ds-text-tertiary: rgba(187,247,208,0.38);
+  --ds-brand-primary: #4ade80;
+  --ds-brand-primary-text: rgba(5,46,22,0.96);
+  --ds-selection-bg: rgba(74,222,128,0.95);
+  --ds-glow-rgb: 74,222,128;
+  --ds-accent: #4ade80;
+  --ds-accent-text: rgba(5,46,22,0.96);
+  --ds-icon: #86efac;
+  --ds-surface-100: #052e16;
+  --ds-surface-200: #064e3b;
+  --ds-surface-300: #065f46;
+  --ds-surface-400: #047857;
+  --ds-on-surface: rgba(74,222,128,0.08);
+}
+
+/* ── 8) lavender-dusk · 薰衣草 ── */
+html[data-theme="lavender-dusk"] {
+  --ds-text-primary: #4c1d95;
+  --ds-text-secondary: rgba(76,29,149,0.56);
+  --ds-text-tertiary: rgba(76,29,149,0.3);
+  --ds-brand-primary: #7c3aed;
+  --ds-brand-primary-text: rgba(255,255,255,0.96);
+  --ds-selection-bg: rgba(124,58,237,0.95);
+  --ds-glow-rgb: 124,58,237;
+  --ds-accent: #7c3aed;
+  --ds-accent-text: rgba(255,255,255,0.96);
+  --ds-icon: #6b7280;
+  --ds-surface-100: #f5f3ff;
+  --ds-surface-200: #ede9fe;
+  --ds-surface-300: #ddd6fe;
+  --ds-surface-400: #c4b5fd;
+  --ds-on-surface: rgba(124,58,237,0.06);
+}
+
+html[data-theme="lavender-dusk"].dark {
+  --ds-text-primary: #ddd6fe;
+  --ds-text-secondary: rgba(221,214,254,0.62);
+  --ds-text-tertiary: rgba(221,214,254,0.38);
+  --ds-brand-primary: #a78bfa;
+  --ds-brand-primary-text: rgba(46,16,101,0.96);
+  --ds-selection-bg: rgba(167,139,250,0.95);
+  --ds-glow-rgb: 167,139,250;
+  --ds-accent: #a78bfa;
+  --ds-accent-text: rgba(46,16,101,0.96);
+  --ds-icon: #c4b5fd;
+  --ds-surface-100: #1e1340;
+  --ds-surface-200: #2a1d5c;
+  --ds-surface-300: #352678;
+  --ds-surface-400: #433194;
+  --ds-on-surface: rgba(167,139,250,0.08);
+}
+
+/* ── 9) honey-amber · 蜜琥珀 ── */
+html[data-theme="honey-amber"] {
+  --ds-text-primary: #78350f;
+  --ds-text-secondary: rgba(120,53,15,0.56);
+  --ds-text-tertiary: rgba(120,53,15,0.3);
+  --ds-brand-primary: #d97706;
+  --ds-brand-primary-text: rgba(255,255,255,0.96);
+  --ds-selection-bg: rgba(217,119,6,0.95);
+  --ds-glow-rgb: 217,119,6;
+  --ds-accent: #d97706;
+  --ds-accent-text: rgba(255,255,255,0.96);
+  --ds-icon: #78716c;
+  --ds-surface-100: #fffbeb;
+  --ds-surface-200: #fef3c7;
+  --ds-surface-300: #fde68a;
+  --ds-surface-400: #fcd34d;
+  --ds-on-surface: rgba(217,119,6,0.06);
+}
+
+html[data-theme="honey-amber"].dark {
+  --ds-text-primary: #fde68a;
+  --ds-text-secondary: rgba(253,230,138,0.62);
+  --ds-text-tertiary: rgba(253,230,138,0.38);
+  --ds-brand-primary: #fbbf24;
+  --ds-brand-primary-text: rgba(69,26,3,0.96);
+  --ds-selection-bg: rgba(251,191,36,0.95);
+  --ds-glow-rgb: 251,191,36;
+  --ds-accent: #fbbf24;
+  --ds-accent-text: rgba(69,26,3,0.96);
+  --ds-icon: #fcd34d;
+  --ds-surface-100: #3a1d07;
+  --ds-surface-200: #4d2810;
+  --ds-surface-300: #6a3818;
+  --ds-surface-400: #834620;
+  --ds-on-surface: rgba(251,191,36,0.08);
+}
+
+/* ── 10) mist-slate · 雾灰岩 ── */
+html[data-theme="mist-slate"] {
+  --ds-text-primary: #1e293b;
+  --ds-text-secondary: rgba(30,41,59,0.62);
+  --ds-text-tertiary: rgba(30,41,59,0.4);
+  --ds-brand-primary: #475569;
+  --ds-brand-primary-text: rgba(255,255,255,0.92);
+  --ds-selection-bg: rgba(71,85,105,0.92);
+  --ds-glow-rgb: 71,85,105;
+  --ds-accent: #64748b;
+  --ds-accent-text: rgba(255,255,255,0.92);
+  --ds-icon: #64748b;
+  --ds-surface-100: #f8fafc;
+  --ds-surface-200: #f1f5f9;
+  --ds-surface-300: #e2e8f0;
+  --ds-surface-400: #cbd5e1;
+  --ds-on-surface: rgba(71,85,105,0.06);
+}
+
+html[data-theme="mist-slate"].dark {
+  --ds-text-primary: #e2e8f0;
+  --ds-text-secondary: rgba(226,232,240,0.62);
+  --ds-text-tertiary: rgba(226,232,240,0.38);
+  --ds-brand-primary: #94a3b8;
+  --ds-brand-primary-text: rgba(15,23,42,0.96);
+  --ds-selection-bg: rgba(148,163,184,0.92);
+  --ds-glow-rgb: 148,163,184;
+  --ds-accent: #94a3b8;
+  --ds-accent-text: rgba(15,23,42,0.96);
+  --ds-icon: #cbd5e1;
+  --ds-surface-100: #0f172a;
+  --ds-surface-200: #1e293b;
+  --ds-surface-300: #334155;
+  --ds-surface-400: #475569;
+  --ds-on-surface: rgba(148,163,184,0.08);
+}

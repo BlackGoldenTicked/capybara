@@ -203,8 +203,33 @@ function AppearanceTab() {
 
       <div className="set-card">
         <div className="src-head-row">
-          <p className="src-label">音效库</p>
+          <p className="src-label">音效</p>
           <span className="cur-chip">{soundThemes.find((t) => t.id === soundThemeId)?.label || 'Crystal 水晶'}</span>
+        </div>
+        <label className="switch-row">
+          <span>启用界面音效</span>
+          <button className={`switch ${soundEnabled ? 'on' : ''}`} role="switch" aria-checked={soundEnabled}
+            {...pressBtn(() => setSoundEnabled(!soundEnabled))}><span className="knob" /></button>
+        </label>
+        <div className="src-row" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
+          <span>音量</span>
+          <span className="fs-pill" aria-live="polite">{Math.round(soundVolume * 100)}%</span>
+        </div>
+        <div className="font-size-slider-wrap" style={{ marginBottom: 12 }}>
+          <span className="fs-label-min">小</span>
+          <DsSlider
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(soundVolume * 100)}
+            disabled={!soundEnabled}
+            onChange={(v) => setSoundVolume(v / 100)}
+            formatValue={(v) => `${v}%`}
+            showTicks={false}
+            className="flex-1"
+            aria-label="音量"
+          />
+          <span className="fs-label-max">大</span>
         </div>
         <p className="src-hint">点击卡片右上角的试听按钮预览音色，试听不受全局音效开关影响。</p>
         <div className="lib-grid">
@@ -236,6 +261,7 @@ function AppearanceTab() {
             </button>
           ))}
         </div>
+        <p className="src-hint" style={{ marginTop: 8 }}>克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
       </div>
 
       <div className="set-card">
@@ -370,35 +396,6 @@ function AppearanceTab() {
         )}
       </div>
 
-      <div className="set-card">
-        <p className="src-label">音效</p>
-        <label className="switch-row">
-          <span>启用界面音效</span>
-          <button className={`switch ${soundEnabled ? 'on' : ''}`} role="switch" aria-checked={soundEnabled}
-            {...pressBtn(() => setSoundEnabled(!soundEnabled))}><span className="knob" /></button>
-        </label>
-        <div className="src-row" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
-          <span>音量</span>
-          <span className="fs-pill" aria-live="polite">{Math.round(soundVolume * 100)}%</span>
-        </div>
-        <div className="font-size-slider-wrap" style={{ marginBottom: 4 }}>
-          <span className="fs-label-min">小</span>
-          <DsSlider
-            min={0}
-            max={100}
-            step={1}
-            value={Math.round(soundVolume * 100)}
-            disabled={!soundEnabled}
-            onChange={(v) => setSoundVolume(v / 100)}
-            formatValue={(v) => `${v}%`}
-            showTicks={false}
-            className="flex-1"
-            aria-label="音量"
-          />
-          <span className="fs-label-max">大</span>
-        </div>
-        <p className="src-hint">克制的合成音：点击、切换、收藏、打开外链等交互反馈。首次需一次点击以解锁音频。</p>
-      </div>
     </div>
   )
 }
