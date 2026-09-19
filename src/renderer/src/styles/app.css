@@ -592,7 +592,10 @@ background-color: var(--color-background-primary);
   margin: 0;
   border: none;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-text-primary) 24%, transparent);
+  /* 正文区前景（fallback UI 前景），mix 18% 透明让暗色背景也能看到细线；
+     box-shadow 内描边兜底：即便某配色主题对比度不足，也有轮廓可见。 */
+  background: color-mix(in srgb, var(--rt-fg, var(--color-text-primary)) 18%, transparent);
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--rt-fg, var(--color-text-primary)) 12%, transparent);
   cursor: pointer;
   pointer-events: auto;
   transition: width .16s ease, height .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease;
