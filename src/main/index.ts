@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, protocol, shell, dialog, nativeImage, net } from 'electron'
-// 默认多彩图标的文件名（getSetting 未设置 logo 时作为应用内置默认）
-const DEFAULT_LOGO = '多彩.png'
+// 默认 app 图标的文件名（getSetting 未设置 logo 时作为应用内置默认）
+const DEFAULT_LOGO = '呆若.png'
 import path from 'node:path'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -335,7 +335,7 @@ function listLogos(): Array<{ id: string; name: string; thumb: string }> {
   return out
 }
 
-/** 把指定 logo 应用到 Dock 图标（macOS）；id 为空或文件缺失则回退到内置多彩 png。 */
+/** 把指定 logo 应用到 Dock 图标（macOS）；id 为空或文件缺失则回退到内置 png。 */
 function applyLogo(id: string): void {
   if (!app.dock) return // 非 macOS 无 Dock，忽略
   let p = ''
