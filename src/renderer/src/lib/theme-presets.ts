@@ -31,8 +31,8 @@ import {
   MECHANICAL_SOUND_MAP,
   RETRO_SOUND_MAP,
   GLASS_SOUND_MAP,
-  LASER_SOUND_MAP,
-  METAL_SOUND_MAP,
+  SOFT_BREEZE_SOUND_MAP,
+  RAINDROP_SOUND_MAP,
   BUBBLE_SOUND_MAP
 } from './sound-presets'
 
@@ -126,7 +126,7 @@ registerIconTheme('scribbles', SCRIBBLES_ICON_MAP, {
 
 /* ===================== 音效库 ===================== */
 
-// crystal（Crystal 水晶）已在 sound-themes 内置注册，此处注册其余四种音色
+// crystal（Crystal 水晶）已在 sound-themes 内置注册，此处注册其余音色
 
 registerSoundTheme('wooden', WOODEN_SOUND_MAP, {
   label: '木质温润',
@@ -156,19 +156,19 @@ registerSoundTheme('glass', GLASS_SOUND_MAP, {
   builtIn: true
 })
 
-// 以下三套改用 ZzFX 参数化合成引擎（见 lib/zzfx.ts），
-// 提供 tone/noise 表达不了的滑音、噪声混合、位压缩音色
+// 以下三套为柔和提示音 / ZzFX 参数化合成（见 lib/zzfx.ts），
+// 提供更轻柔的交互反馈或 tone/noise 表达不了的滑音、噪声混合音色
 
-registerSoundTheme('laser', LASER_SOUND_MAP, {
-  label: '激光电子',
-  description: '锯齿波快速滑音，科技感强',
+registerSoundTheme('soft-breeze', SOFT_BREEZE_SOUND_MAP, {
+  label: '柔风轻语',
+  description: '正弦波柔和滑音，低频温暖',
   preview: ['tap', 'toggle', 'complete', 'open', 'delete'],
   builtIn: true
 })
 
-registerSoundTheme('metal', METAL_SOUND_MAP, {
-  label: '金属敲击',
-  description: '噪声 + 位压缩，金属片质感',
+registerSoundTheme('raindrop', RAINDROP_SOUND_MAP, {
+  label: '雨滴柔和',
+  description: '短促正弦衰减，拟雨滴落水',
   preview: ['tap', 'toggle', 'complete', 'open', 'delete'],
   builtIn: true
 })

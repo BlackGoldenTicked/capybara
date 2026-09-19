@@ -180,7 +180,7 @@ function AppearanceTab() {
           <p className="src-label">菜单配色</p>
           <span className="cur-chip">{menuPalettes.find((p) => p.id === menuPaletteId)?.label || '默认'}</span>
         </div>
-        <p className="src-hint">为侧边栏菜单图标上色。默认跟随界面配色；四套多彩方案为每个菜单项分配独立颜色，点击卡片即时生效。与图标库组合使用，形状与颜色互不影响。</p>
+        <p className="src-hint">为侧边栏菜单图标上色。默认跟随界面配色；七套多彩方案为每个菜单项分配独立颜色，点击卡片即时生效。与图标库组合使用，形状与颜色互不影响。</p>
         <div className="lib-grid">
           {menuPalettes.map((p) => (
             <button key={p.id} className={`lib-opt ${menuPaletteId === p.id ? 'active' : ''}`}

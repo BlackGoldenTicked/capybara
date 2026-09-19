@@ -17,6 +17,7 @@ export type ThemeMode = 'system' | 'light' | 'dark'
 export type ColorThemeKey =
   | 'azure' | 'claude' | 'ocean' | 'snow-cinnabar' | 'vibrant'
   | 'sunset-rose' | 'forest-pine' | 'lavender-dusk' | 'honey-amber' | 'mist-slate'
+  | 'coral-warm'
 export type FontWeight = 'thin' | 'normal' | 'bold'
 
 /** 系统默认 UI 字体栈（全局文字兜底）。 */
@@ -63,7 +64,7 @@ export const THEME_OPTIONS: Array<{ key: ThemeMode; label: string }> = [
   { key: 'dark', label: '暗色' }
 ]
 
-/** 实色颜色主题（10 套），对应 themes.css 中的 html[data-theme]。 */
+/** 实色颜色主题（11 套），对应 themes.css 中的 html[data-theme]。 */
 export const COLOR_THEMES: Array<{ key: ColorThemeKey; label: string; preview: string }> = [
   { key: 'azure', label: '晴空蓝', preview: 'linear-gradient(135deg,#0a64d6,#7fc3ff)' },
   { key: 'claude', label: '陶土暖', preview: 'linear-gradient(135deg,#d97757,#faf9f5)' },
@@ -74,7 +75,8 @@ export const COLOR_THEMES: Array<{ key: ColorThemeKey; label: string; preview: s
   { key: 'forest-pine', label: '松林翠', preview: 'linear-gradient(135deg,#15803d,#86efac)' },
   { key: 'lavender-dusk', label: '薰衣草', preview: 'linear-gradient(135deg,#7c3aed,#c4b5fd)' },
   { key: 'honey-amber', label: '蜜琥珀', preview: 'linear-gradient(135deg,#d97706,#fcd34d)' },
-  { key: 'mist-slate', label: '雾灰岩', preview: 'linear-gradient(135deg,#475569,#cbd5e1)' }
+  { key: 'mist-slate', label: '雾灰岩', preview: 'linear-gradient(135deg,#475569,#cbd5e1)' },
+  { key: 'coral-warm', label: '珊瑚暖', preview: 'linear-gradient(135deg,#e76f51,#f4a261)' }
 ]
 
 /** 所有合法 colorTheme 取值（实色），用于持久化校验与启动兜底。 */

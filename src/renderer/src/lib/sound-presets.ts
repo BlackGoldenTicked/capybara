@@ -193,9 +193,12 @@ export const GLASS_SOUND_MAP: SoundThemeMap = {
   ]
 }
 
-/* ===================== ZzFX 参数化音效 ===================== */
+/* ===================== 柔和音效 + ZzFX 参数化音效 ===================== */
 
 /**
+ * 以下主题使用正弦波合成或 ZzFX 参数化合成引擎（见 lib/zzfx.ts），
+ * 提供更柔和的提示音或 tone/noise 表达不了的滑音、噪声混合、位压缩音色。
+ *
  * ZzFX 参数速查（完整说明见 lib/zzfx.ts）：
  *   [0] 音量  [1] 频率随机抖动  [2] 基频 Hz  [3] 起音  [4] 保持  [5] 释放
  *   [6] 波形（0 正弦 / 1 三角 / 2 锯齿 / 3 正切 / 4 噪声 / 5 方波占空比）  [7] 波形曲线
@@ -209,75 +212,87 @@ export const GLASS_SOUND_MAP: SoundThemeMap = {
  *   音高跳变增量即 pitchJump Hz
  */
 
-/** 激光电子：锯齿/三角波快速滑音，短促有劲，适合科技感界面 */
-export const LASER_SOUND_MAP: SoundThemeMap = {
+/** 柔风轻语：正弦波柔和滑音，低频温暖，轻柔不打扰 */
+export const SOFT_BREEZE_SOUND_MAP: SoundThemeMap = {
   tap: [
-    { type: 'zzfx', params: [0.4, 0.02, 1400, 0, 0, 0.05, 2, 0.8, -45] }
+    { type: 'tone', frequency: 440, endFrequency: 520, duration: 0.06, gain: 0.018, oscillator: 'sine' }
   ],
   toggle: [
-    { type: 'zzfx', params: [0.38, 0.02, 900, 0, 0, 0.06, 2, 0.9, 30] }
+    { type: 'tone', frequency: 392, endFrequency: 523.25, duration: 0.09, gain: 0.02, oscillator: 'sine' },
+    { type: 'tone', at: 0.04, frequency: 659.25, duration: 0.08, gain: 0.01, oscillator: 'sine' }
   ],
   open: [
-    { type: 'zzfx', params: [0.42, 0.02, 500, 0, 0.03, 0.16, 2, 0.9, 25] }
+    { type: 'tone', frequency: 330, endFrequency: 494, duration: 0.16, gain: 0.022, oscillator: 'sine' },
+    { type: 'tone', at: 0.06, frequency: 660, duration: 0.12, gain: 0.008, oscillator: 'sine' }
   ],
   delete: [
-    { type: 'zzfx', params: [0.4, 0.05, 2000, 0, 0, 0.12, 2, 1, -25, 0, 0, 0, 0, 0.2] }
+    { type: 'tone', frequency: 392, endFrequency: 247, duration: 0.14, gain: 0.022, oscillator: 'sine' },
+    { type: 'noise', duration: 0.02, gain: 0.006, frequency: 400, filter: 'lowpass' }
   ],
   lift: [
-    { type: 'zzfx', params: [0.35, 0.02, 800, 0, 0, 0.05, 1, 1, 60] }
+    { type: 'tone', frequency: 392, endFrequency: 494, duration: 0.09, gain: 0.016, oscillator: 'sine' }
   ],
   drop: [
-    { type: 'zzfx', params: [0.38, 0.02, 1600, 0, 0, 0.07, 1, 1, -30] }
+    { type: 'tone', frequency: 494, endFrequency: 392, duration: 0.1, gain: 0.02, oscillator: 'sine' }
   ],
   complete: [
-    { type: 'zzfx', at: 0, params: [0.32, 0.02, 784, 0, 0, 0.09, 1, 1, 40] },
-    { type: 'zzfx', at: 0.07, params: [0.32, 0.02, 988, 0, 0, 0.09, 1, 1, 40] },
-    { type: 'zzfx', at: 0.14, params: [0.34, 0.02, 1319, 0, 0.02, 0.2, 1, 1, 15] }
+    { type: 'tone', at: 0, frequency: 523.25, duration: 0.2, gain: 0.022, oscillator: 'sine' },
+    { type: 'tone', at: 0.1, frequency: 659.25, duration: 0.2, gain: 0.022, oscillator: 'sine' },
+    { type: 'tone', at: 0.2, frequency: 783.99, duration: 0.36, gain: 0.024, oscillator: 'sine' }
   ],
   style: [
-    { type: 'zzfx', params: [0.35, 0.02, 600, 0, 0.03, 0.16, 2, 0.9, 10, 200] }
+    { type: 'tone', frequency: 440, endFrequency: 554, duration: 0.16, gain: 0.018, oscillator: 'sine' },
+    { type: 'tone', at: 0.04, frequency: 659, duration: 0.14, gain: 0.006, oscillator: 'sine' }
   ],
   hover: [
-    { type: 'zzfx', params: [0.2, 0.02, 1800, 0, 0, 0.04, 0, 1, 20] }
+    { type: 'tone', frequency: 880, duration: 0.05, gain: 0.008, oscillator: 'sine' }
   ],
   mark: [
-    { type: 'zzfx', params: [0.32, 0.02, 1000, 0, 0, 0.07, 1, 1, 25] }
+    { type: 'tone', frequency: 440, endFrequency: 554, duration: 0.1, gain: 0.02, oscillator: 'sine' },
+    { type: 'tone', at: 0.04, frequency: 659, duration: 0.08, gain: 0.008, oscillator: 'sine' }
   ]
 }
 
-/** 金属敲击：噪声混合 + 位压缩 + 低通阻尼，拟金属片与机械按键 */
-export const METAL_SOUND_MAP: SoundThemeMap = {
+/** 雨滴柔和：短促正弦衰减，拟雨滴落水，轻柔圆润 */
+export const RAINDROP_SOUND_MAP: SoundThemeMap = {
   tap: [
-    { type: 'zzfx', params: [0.45, 0.3, 2200, 0, 0, 0.045, 3, 0.9, 0, 0, 0, 0, 0, 0.35, 0, 0.5] }
+    { type: 'tone', frequency: 880, endFrequency: 660, duration: 0.05, gain: 0.016, oscillator: 'sine' },
+    { type: 'tone', at: 0.01, frequency: 1320, duration: 0.03, gain: 0.004, oscillator: 'sine' }
   ],
   toggle: [
-    { type: 'zzfx', params: [0.45, 0.25, 1500, 0, 0, 0.05, 3, 1, -20, 0, 0, 0, 0, 0.3, 0, 0.4] }
+    { type: 'tone', frequency: 660, endFrequency: 880, duration: 0.08, gain: 0.018, oscillator: 'sine' },
+    { type: 'tone', at: 0.03, frequency: 1100, duration: 0.06, gain: 0.006, oscillator: 'sine' }
   ],
   open: [
-    { type: 'zzfx', params: [0.5, 0.25, 1800, 0, 0.03, 0.18, 3, 1, -8, 0, 0, 0, 0, 0.25, 0, 0.35, 0, 1, 0, 0, -1500] }
+    { type: 'tone', frequency: 523.25, endFrequency: 784, duration: 0.14, gain: 0.02, oscillator: 'sine' },
+    { type: 'tone', at: 0.05, frequency: 1046.5, duration: 0.1, gain: 0.006, oscillator: 'sine' }
   ],
   delete: [
-    { type: 'zzfx', params: [0.5, 0.4, 1200, 0, 0, 0.2, 3, 1, -6, 0, 0, 0, 0, 0.5, 0, 0.6, 0, 1, 0, 0, -900] }
+    { type: 'tone', frequency: 660, endFrequency: 392, duration: 0.12, gain: 0.02, oscillator: 'sine' },
+    { type: 'noise', duration: 0.016, gain: 0.006, frequency: 600, filter: 'lowpass' }
   ],
   lift: [
-    { type: 'zzfx', params: [0.38, 0.3, 2600, 0, 0, 0.035, 3, 0.8, 0, 0, 0, 0, 0, 0.3, 0, 0.45] }
+    { type: 'tone', frequency: 587.33, endFrequency: 784, duration: 0.08, gain: 0.014, oscillator: 'sine' }
   ],
   drop: [
-    { type: 'zzfx', params: [0.45, 0.3, 1400, 0, 0, 0.06, 3, 1, -25, 0, 0, 0, 0, 0.4, 0, 0.5] }
+    { type: 'tone', frequency: 784, endFrequency: 523.25, duration: 0.1, gain: 0.018, oscillator: 'sine' },
+    { type: 'tone', at: 0.02, frequency: 1100, duration: 0.06, gain: 0.005, oscillator: 'sine' }
   ],
   complete: [
-    { type: 'zzfx', at: 0, params: [0.42, 0.2, 1200, 0, 0, 0.08, 3, 1, 0, 0, 0, 0, 0, 0.3, 0, 0.4, 0, 1, 0, 0, -2000] },
-    { type: 'zzfx', at: 0.06, params: [0.42, 0.2, 1500, 0, 0, 0.08, 3, 1, 0, 0, 0, 0, 0, 0.3, 0, 0.4, 0, 1, 0, 0, -2000] },
-    { type: 'zzfx', at: 0.12, params: [0.45, 0.2, 2000, 0, 0.02, 0.22, 3, 1, 0, 0, 0, 0, 0, 0.25, 0, 0.3, 0, 1, 0, 0, -1200] }
+    { type: 'tone', at: 0, frequency: 659.25, duration: 0.18, gain: 0.018, oscillator: 'sine' },
+    { type: 'tone', at: 0.08, frequency: 783.99, duration: 0.18, gain: 0.018, oscillator: 'sine' },
+    { type: 'tone', at: 0.16, frequency: 1046.5, duration: 0.32, gain: 0.022, oscillator: 'sine' }
   ],
   style: [
-    { type: 'zzfx', params: [0.4, 0.2, 2400, 0, 0.02, 0.14, 3, 1, -4, 0, 0, 0, 0, 0.2, 0, 0.3, 0, 1, 0, 0, -1800] }
+    { type: 'tone', frequency: 523.25, endFrequency: 698.46, duration: 0.14, gain: 0.016, oscillator: 'sine' },
+    { type: 'tone', at: 0.03, frequency: 880, duration: 0.12, gain: 0.005, oscillator: 'sine' }
   ],
   hover: [
-    { type: 'zzfx', params: [0.22, 0.3, 3200, 0, 0, 0.03, 5, 0.5, 0, 0, 0, 0, 0, 0.4, 0, 0.5] }
+    { type: 'tone', frequency: 1320, duration: 0.03, gain: 0.006, oscillator: 'sine' }
   ],
   mark: [
-    { type: 'zzfx', params: [0.4, 0.25, 1800, 0, 0, 0.06, 3, 1, -6, 0, 0, 0, 0, 0.3, 0, 0.45, 0, 1, 0, 0, -1600] }
+    { type: 'tone', frequency: 587.33, endFrequency: 784, duration: 0.09, gain: 0.018, oscillator: 'sine' },
+    { type: 'tone', at: 0.03, frequency: 988, duration: 0.06, gain: 0.006, oscillator: 'sine' }
   ]
 }
 

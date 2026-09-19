@@ -486,7 +486,12 @@ setScreen: (screen) => {
     applySoundTheme(soundId)
     // 菜单配色：非法 ID 兜底为默认（跟随界面配色）
     const menuPaletteId = boot.menuPalette && isKnownMenuPalette(boot.menuPalette) ? boot.menuPalette : 'default'
-    set({ iconThemeId: getIconThemeId(), soundThemeId: getSoundThemeId(), menuPaletteId })
+    // 音效主题：已删除的主题（如 laser / metal）回退到 crystal
+    const resolvedSoundId = getSoundThemeId()
+    if (resolvedSoundId !== soundId) {
+      void window.capybara.invoke('settings:set', 'sound_theme', resolvedSoundId)
+    }
+    set({ iconThemeId: getIconThemeId(), soundThemeId: resolvedSoundId, menuPaletteId })
     // 加载当前数据库路径配置
     void window.capybara.invoke('settings:getDbPath').then((p: unknown) => { if (typeof p === 'string') set({ dbPath: p }) })
     // 系统亮暗偏好变化时，system 模式下跟随切换（重新应用 .dark 类）
@@ -558,8 +563,7 @@ setScreen: (screen) => {
   },
   setSettingsTab: (t) => set({ settingsTab: t }),
   openSettings: (tab) => {
-    if (tab) set({ settingsTab: tab })
-    set({ settingsOpen: true })
+    set({ settingsTab: tab ?? 'appearance', settingsOpen: true })
   },
   closeSettings: () => set({ settingsOpen: false }),
   setShortcuts: (next) => {

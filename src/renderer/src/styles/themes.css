@@ -386,3 +386,40 @@ html[data-theme="mist-slate"].dark {
   --ds-surface-400: #475569;
   --ds-on-surface: rgba(148,163,184,0.08);
 }
+
+/* ── 11) coral-warm · 珊瑚暖 ── */
+html[data-theme="coral-warm"] {
+  --ds-text-primary: #5c2310;
+  --ds-text-secondary: rgba(92,35,16,0.62);
+  --ds-text-tertiary: rgba(92,35,16,0.4);
+  --ds-brand-primary: #e76f51;
+  --ds-brand-primary-text: rgba(255,255,255,0.96);
+  --ds-selection-bg: rgba(231,111,81,0.95);
+  --ds-glow-rgb: 231,111,81;
+  --ds-accent: #e76f51;
+  --ds-accent-text: rgba(255,255,255,0.96);
+  --ds-icon: #a87162;
+  --ds-surface-100: #fff8f5;
+  --ds-surface-200: #fef0eb;
+  --ds-surface-300: #fde0d5;
+  --ds-surface-400: #fbcdbd;
+  --ds-on-surface: rgba(231,111,81,0.06);
+}
+
+html[data-theme="coral-warm"].dark {
+  --ds-text-primary: #fde0d5;
+  --ds-text-secondary: rgba(253,224,213,0.62);
+  --ds-text-tertiary: rgba(253,224,213,0.38);
+  --ds-brand-primary: #f4a261;
+  --ds-brand-primary-text: rgba(58,24,10,0.96);
+  --ds-selection-bg: rgba(244,162,97,0.95);
+  --ds-glow-rgb: 244,162,97;
+  --ds-accent: #f4a261;
+  --ds-accent-text: rgba(58,24,10,0.96);
+  --ds-icon: #fbcdbd;
+  --ds-surface-100: #2d140c;
+  --ds-surface-200: #3d1d12;
+  --ds-surface-300: #4e2818;
+  --ds-surface-400: #5f341f;
+  --ds-on-surface: rgba(244,162,97,0.08);
+}

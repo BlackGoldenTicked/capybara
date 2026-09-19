@@ -100,6 +100,51 @@ const PALETTES: MenuPalette[] = [
       keyboard: '#f97316', book: '#eab308', activity: '#dc2626', heart: '#c026d3'
     },
     builtIn: true
+  },
+  {
+    id: 'aurora',
+    label: '极光',
+    description: '极地极光渐变，梦幻冷艳',
+    preview: PREVIEW,
+    colors: {
+      all: '#06b6d4', rss: '#8b5cf6', podcast: '#ec4899', video: '#f59e0b',
+      later: '#3b82f6', favorite: '#10b981', github: '#6366f1', twitter: '#14b8a6',
+      bookmark: '#a855f7', board: '#0ea5e9', settings: '#8b5cf6',
+      // 设置导航
+      palette: '#06b6d4', archived: '#8b5cf6', sparkles: '#ec4899',
+      keyboard: '#3b82f6', book: '#10b981', activity: '#f59e0b', heart: '#a855f7'
+    },
+    builtIn: true
+  },
+  {
+    id: 'earth',
+    label: '大地',
+    description: '泥土棕色系，沉稳质朴',
+    preview: PREVIEW,
+    colors: {
+      all: '#a16207', rss: '#9a3412', podcast: '#854d0e', video: '#7c2d12',
+      later: '#92400e', favorite: '#b45309', github: '#78350f', twitter: '#a16207',
+      bookmark: '#9a3412', board: '#854d0e', settings: '#a16207',
+      // 设置导航
+      palette: '#a16207', archived: '#9a3412', sparkles: '#854d0e',
+      keyboard: '#92400e', book: '#b45309', activity: '#7c2d12', heart: '#9a3412'
+    },
+    builtIn: true
+  },
+  {
+    id: 'neon',
+    label: '霓虹',
+    description: '赛博霓虹荧光，未来感十足',
+    preview: PREVIEW,
+    colors: {
+      all: '#d946ef', rss: '#f43f5e', podcast: '#8b5cf6', video: '#06b6d4',
+      later: '#3b82f6', favorite: '#eab308', github: '#10b981', twitter: '#ec4899',
+      bookmark: '#a855f7', board: '#0ea5e9', settings: '#d946ef',
+      // 设置导航
+      palette: '#d946ef', archived: '#f43f5e', sparkles: '#8b5cf6',
+      keyboard: '#3b82f6', book: '#eab308', activity: '#06b6d4', heart: '#ec4899'
+    },
+    builtIn: true
   }
 ]
 
