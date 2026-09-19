@@ -23,7 +23,14 @@
     "files": [
       "out/**/*",
       "package.json",
-      "!node_modules"
+      "!node_modules/@tabler/**",
+      "!node_modules/@solar-icons/**",
+      "!node_modules/@phosphor-icons/**",
+      "!node_modules/@carbon/**",
+      "!node_modules/lucide-react/**",
+      "!node_modules/@sketchyicons/**",
+      "!node_modules/pixelarticons/**",
+      "!node_modules/scribbles-icons/**"
     ],
     "mac": {
       "category": "public.app-category.productivity",
