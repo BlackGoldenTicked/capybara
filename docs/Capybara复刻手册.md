@@ -2,9 +2,9 @@
 
 > 本文档的目的：让一名不熟悉本项目的开发者，仅凭此手册即可**从头把「水豚 Capybara」这款桌面软件重新实现出来**——包括它的产品定位、技术选型、系统架构、数据模型、IPC 契约、各功能模块的实现要点、构建打包流程、关键 bug 修复与技术难点归纳，以及一份完整的开发历程时间线（可作为需求演进的参考）。
 >
-> 适用范围：macOS 平台，Electron 37 + React 18 + node:sqlite（零原生编译）。当前最新版本 **v0.7.192**。
+> 适用范围：macOS 平台，Electron 37 + React 18 + node:sqlite（零原生编译）。当前最新版本 **v0.7.235**。
 >
-> 文档以**当前代码事实**为准（已逐一核对 `src/main`、`src/preload`、`src/renderer`、`build/`、`scripts/`、`package.json`），并结合 11 轮对话时间线（2026-08-03 ～ 2026-08-14）进行梳理。
+> 文档以**当前代码事实**为准（已逐一核对 `src/main`、`src/preload`、`src/renderer`、`build/`、`scripts/`、`package.json`），并结合开发历程时间线（2026-08-03 起）进行梳理。
 
 ---
 
@@ -42,7 +42,7 @@
 1. **条目即卡片** —— 所有内容（RSS 条目、GitHub 仓库、推文、手动收集）都是同一个 `Item`，列表 / 阅读 / 白板引用都是同一份数据的不同视图。
 2. **本地优先** —— SQLite（node:sqlite 内置，零原生编译）+ 本地封面 / 白板附件仓，断网全功能可用。
 3. **键盘可达** —— 全程快捷键（`j/k` 浏览），单手处理信息流。
-4. **整面配色** —— 选一个卡片风格即确定整站基调与主强调色，配置即所见即所得。
+4. **整面配色** —— 选一个 UI 配色主题即确定整站基调与主强调色，配置即所见即所得。
 
 ### 双重参考体系
 
@@ -69,7 +69,7 @@
 | | linkedom | 0.18.13 | 服务端 DOM 清洗（Worker） |
 | RSS | rss-parser | 3.13.0 | 标准源解析（改为 `fetch`＋`parseString` 并打网络诊断日志） |
 | 列表 | react-window | 1.8.11 | 信息流虚拟滚动 |
-| 图标 | lucide-react | 1.28.0 | 统一线性图标 |
+| 图标 | lucide-react | 1.28.0 | 默认线性图标；另内置 Sketchy Icons（@sketchyicons/react）、Scribbles（scribbles-icons）两套可选图标主题，与 Lucide 同构（kebab-case 模块名一一对应），通过 `lib/icon-themes.ts` + `lib/theme-presets.ts` 注册切换 |
 | 编辑器 | @tiptap/* (core/react/starter-kit/pm) | 3.29.2 | 写作文档预留（UI 暂未接入） |
 | 音效 | 自研 Web Audio 合成（`lib/sound.ts`） | — | 全局轻触音效、外链提示音 |
 | 图片 | sharp | 0.35.3 | 仅 devDep，用于背景图生成 |
@@ -424,8 +424,10 @@ devtools:toggle  sync:backup
 
 ### 6.7 设计系统与配色
 
-- **三级语义色板** + 亮暗双主题（默认跟随系统）。设计令牌统一在 `styles/tokens.css`。
-- **整面配色（12 套卡片风格）**：纸感 / 玻璃 / 暗夜 / 极光 / 海洋 / 落日 / 薰衣草 / 森林 / 玫瑰 / 石板 / 琥珀 / 暗金。每套 light+dark 两套（共 24），经 `[data-card-style=X][data-theme=dark]` 组合生效；主强调色从签名色 `--card-accent` 派生。
+- **三级语义色板** + 亮暗双主题（默认跟随系统）。设计令牌统一在 `styles/tokens.css`（`--ds-*` 变量体系）。
+- **UI 配色（10 套实色预设）**：azure（晴空蓝）/ claude（陶土暖）/ ocean（碧海青）/ snow-cinnabar（朱砂赤）/ vibrant（青碧绿）/ sunset-rose（玫瑰粉）/ forest-pine（松林翠）/ lavender-dusk（薰衣草）/ honey-amber（蜜琥珀）/ mist-slate（雾灰岩）。每套 light+dark 两套，经 `html[data-theme="X"]` / `html[data-theme="X"].dark` 生效。改色板要同步改两处：`src/renderer/src/styles/themes.css` + `src/renderer/src/lib/appearance.ts`（`COLOR_THEMES` 数组 + `ColorThemeKey` 类型）。
+- **图标主题系统**：`lib/icon-themes.ts` 注册 `IconTheme`，`lib/theme-presets.ts` 注册具体主题。当前内置：lucide（默认）/ sketchy（@sketchyicons/react）/ scribbles（scribbles-icons）。新图标库须与 Lucide 同构（kebab-case 模块名一一对应），在 `lib/icons-map-*.tsx` 建映射，用 `icons-adapters.tsx` 的 adapter 转换 props。
+- **菜单配色系统**：`lib/menu-palettes.ts` 注册配色方案，为侧边栏与设置页导航图标着色。颜色须直接传给 `<Icon>` 的 style（Lucide 写入 SVG 后 `currentColor` 生效），仅设在包裹 `<span>` 上无法被继承。
 - **阅读配色（30 套内置 + 自定义）**：独立于 UI 配色，为阅读面板提供 30 套 VSCode 主题风格（`src/renderer/src/lib/reading-themes.ts`），经 `--rt-*` 注入；支持「跟随界面」。用户可对任意主题创建副本、编辑 15 个颜色值保存为自定义（localStorage）。
 - **动效令牌**：`--ease-out: cubic-bezier(0.23,1,0.32,1)`、`--dur-fast/base/slow = 120/160/240ms`；禁止弱 ease，UI 动效 <300ms，只用 transform/opacity，按钮 `:active{scale(0.97)}`，尊重 reduced-motion。
 - **Border Beam 光效**：纯 CSS `conic-gradient`+`mask` 的彩色脉动边框（`lib/beam.ts`），零依赖；用于 RSS 第三列文章卡片与发现页搜索按钮、分页器 thumb。
@@ -447,6 +449,8 @@ devtools:toggle  sync:backup
 - `package.json` `extraResources` 配置 `build/logos → logos`。
 - 主进程 `nativeImage.createFromPath` + `resize(128×128)` + `toDataURL()` 返回缩略图 data URL（不用自定义协议，因中文文件名 host 被 IDN 转码）。
 - `app.dock.setIcon()` 运行时切换 Dock 图标。
+- 默认图标由 `DEFAULT_LOGO` 常量控制（`src/main/index.ts`），当前为 `呆若.png`。
+- Dock 图标须在 `createWindow()` 之前 `applyLogo()`，macOS 冷启动时系统先读取 bundle 原始 Icon，若 `createWindow()` 之后才 `setIcon`，Dock 可能已展示默认图标并无法切回；Windows 需在 `createWindow()` 之后再 `applyLogo()` 一次（窗口创建后会重设 Dock tile）。
 
 ---
 
@@ -508,6 +512,13 @@ python3 build/make-dmg.py               # 自定义 DMG（修复背景图不显�
 |---|---|---|
 | `rm -rf /Applications/Capybara.app && cp -R` | 沙箱下 `rm -rf` 触发 bulk delete 弹窗，用户需多次确认 | 改用 `ditto`（`dangerouslyDisableSandbox`） |
 | `ditto release/mac/Capybara.app /Applications/Capybara.app` | 偶尔旧进程残留导致 `open` 激活旧实例 | 先 `pkill -f Capybara` 再安装 |
+
+### 8.7 asar 体积优化（v0.7.235）
+
+- **问题**：默认打包把 `node_modules` 全部塞进 `app.asar`，其中 8 个纯渲染进程的图标库（@tabler 140MB、@solar-icons 100MB、@phosphor-icons 57MB、@carbon 50MB、lucide-react 40MB、@sketchyicons 32MB、pixelarticons 14MB、scribbles-icons 116MB）共约 333MB，但它们已被 electron-vite 打进 renderer bundle，运行时不需要。
+- **修复**：在 `package.json` 的 `build.files` 里逐个排除这 8 个图标包（`!node_modules/@tabler/**` 等），保留 `linkedom`、`cheerio`、`dompurify`、`@tiptap/*` 等主进程运行时依赖。
+- **效果**：`app.asar` 333MB → 36MB，DMG 190MB → 115MB。
+- **陷阱**：不可用 `!node_modules` 一刀切排除，否则主进程 `require('linkedom')` 等运行时依赖会报 `Cannot find module` 崩溃。
 
 ---
 

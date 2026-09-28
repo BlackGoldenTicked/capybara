@@ -13,11 +13,6 @@ electron.vite.config.*.mjs
 /index-*.js
 /app.asar
 
-# 第三方源码（调研时临时下载，勿入库）
-fluent-reader-master/
-leser-master/
-
-# 日志与临时
 *.log
 .DS_Store
 coverage/
@@ -33,7 +28,3 @@ feeds/rss_cleaning_report.json
 
 # Electron 开发环境 userData（运行时缓存、数据库等，全自动生成）
 .capybara-userData/
-.readflow-userData/
-
-# 文档仅本地留存，不纳入版本控制
-docs/
